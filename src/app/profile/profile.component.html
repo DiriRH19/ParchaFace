@@ -1,0 +1,107 @@
+<div class="profile-container">
+  <div class="profile-header">
+    <a routerLink="/" class="back-link">
+      <span>←</span> Volver
+    </a>
+    <div class="logo">ParchaFace</div>
+    <div class="header-actions">
+      <button class="btn-cancel">Cancelar</button>
+      <button class="btn-save">Guardar</button>
+    </div>
+  </div>
+
+  <div class="profile-card">
+    <div class="cover-section">
+      <div class="cover-image">
+        <div class="cover-placeholder"></div>
+        <button class="btn-change-cover">Cambiar Portada</button>
+      </div>
+      <div class="profile-picture-wrapper">
+        <div class="profile-picture"></div>
+        <button class="btn-change-photo"></button>
+      </div>
+    </div>
+
+    <div class="profile-info">
+      <div class="user-details">
+        <h1 class="user-name">Juan Pérez</h1>
+        <p class="user-username">@juanperez</p>
+        <div class="user-meta">
+          <span class="meta-item">Armenia, Quindio, Colombia</span>
+          <span class="meta-item">Se unió en enero de 2023</span>
+        </div>
+      </div>
+      <div class="user-stats">
+        <div class="stat-item">
+          <span class="stat-value">24</span>
+          <span class="stat-label">Eventos</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-value">156</span>
+          <span class="stat-label">Seguidores</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-value">89</span>
+          <span class="stat-label">Siguiendo</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-value">4.8</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="profile-tabs">
+      <button 
+        *ngFor="let tab of tabs" 
+        class="tab-btn" 
+        [class.active]="activeTab === tab.id"
+        (click)="setActiveTab(tab.id)">
+        {{ tab.label }}
+      </button>
+    </div>
+
+    <div class="profile-content">
+      <div class="content-section">
+        <div class="section-card">
+          <h2 class="section-title">Acerca de</h2>
+          <p class="section-text">Amante de la música electrónica y los eventos gaming. Organizador de eventos en Armenia.</p>
+          <div class="contact-info">
+            <div class="contact-item">
+              <span class="contact-icon"></span>
+              <span>juan@email.com</span>
+            </div>
+            <div class="contact-item">
+              <span class="contact-icon"></span>
+              <span>+52 55 1234 5678</span>
+            </div>
+            <div class="contact-item">
+              <span class="contact-icon"></span>
+              <a href="https://juanperez.com" class="contact-link">https://juanperez.com</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="content-section">
+        <div class="section-card">
+          <h2 class="section-title">Intereses</h2>
+          <div class="interests-list">
+            <span class="interest-tag" *ngFor="let interest of interests">{{ interest }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="social-section">
+      <div class="section-card">
+        <h2 class="section-title">Redes Sociales</h2>
+        <div class="social-list">
+          <div class="social-item" *ngFor="let social of socialNetworks">
+            <span class="social-icon"></span>
+            <span>{{ social.handle }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

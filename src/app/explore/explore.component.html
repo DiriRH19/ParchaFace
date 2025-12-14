@@ -1,0 +1,58 @@
+<app-navbar></app-navbar>
+<div class="explore-container">
+  <div class="explore-layout">
+    <div class="filters-sidebar">
+      <div class="filters-card">
+        <h3 class="filters-title">Filtros</h3>
+        <div class="filter-group">
+          <input type="text" placeholder="Buscar eventos..." class="filter-input">
+        </div>
+        <div class="filter-group">
+          <label class="filter-label">Categoría</label>
+          <select class="filter-select">
+            <option>Todos</option>
+            <option>Música</option>
+            <option>Gaming</option>
+            <option>Fiestas</option>
+            <option>Networking</option>
+            <option>Deportes</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label class="filter-label">Ciudad</label>
+          <select class="filter-select">
+            <option>Todas las ciudades</option>
+            <option>Ciudad de México</option>
+            <option>Guadalajara</option>
+            <option>Monterrey</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label class="filter-label">Rango de Precio</label>
+          <div class="price-range">
+            <span>$0</span>
+            <input type="range" min="0" max="100" value="100" class="price-slider">
+            <span>$100</span>
+          </div>
+        </div>
+        <div class="filter-group">
+          <label class="filter-label">Ordenar por</label>
+          <select class="filter-select">
+            <option>Fecha</option>
+            <option>Precio</option>
+            <option>Popularidad</option>
+            <option>Rating</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="events-section">
+      <div class="events-header">
+        <h2 class="events-count">6 eventos encontrados</h2>
+      </div>
+      <div class="events-grid">
+        <app-event-card *ngFor="let event of events" [event]="event"></app-event-card>
+      </div>
+    </div>
+  </div>
+</div>

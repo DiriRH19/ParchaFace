@@ -1,0 +1,26 @@
+<header class="navbar">
+  <div class="navbar-content">
+    <div class="navbar-left">
+      <a routerLink="/" class="logo">
+        <div class="logo-icon"></div>
+        <span class="logo-text">ParchaFace</span>
+      </a>
+      <nav class="nav-links">
+        <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">Inicio</a>
+        <a routerLink="/explore" routerLinkActive="active">Explorar</a>
+        <a routerLink="/community" routerLinkActive="active">Comunidad</a>
+      </nav>
+    </div>
+    <div class="navbar-right">
+      <button class="btn-create-event" routerLink="/create-event">
+        <span>+</span> Crear Evento
+      </button>
+      <div class="user-menu">
+        <div class="notification-icon"></div>
+        <div class="user-avatar"></div>
+        <span class="user-name">Juan Pérez</span>
+      </div>
+    </div>
+  </div>
+</header>
+

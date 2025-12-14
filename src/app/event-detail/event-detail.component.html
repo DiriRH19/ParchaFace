@@ -1,0 +1,115 @@
+<div class="event-detail-container">
+  <div class="event-header">
+    <a routerLink="/explore" class="back-link">
+      <span>←</span> Volver
+    </a>
+    <div class="logo">ParchaFace</div>
+    <div class="header-actions">
+      <button class="btn-action">Guardar</button>
+      <button class="btn-action">Compartir</button>
+    </div>
+  </div>
+
+  <div class="event-content">
+    <div class="event-main">
+      <div class="event-image">
+        <span class="category-tag">{{ event.category }}</span>
+      </div>
+
+      <h1 class="event-title">{{ event.title }}</h1>
+      <p class="event-description">{{ event.description }}</p>
+
+      <div class="event-tags">
+        <span class="tag" *ngFor="let tag of event.tags">{{ tag }}</span>
+      </div>
+
+      <div class="event-description-section">
+        <h2 class="section-title">Descripción del Evento</h2>
+        
+        <div class="description-item">
+          <h3 class="item-title">Lineup Confirmado:</h3>
+          <ul class="item-list">
+            <li *ngFor="let artist of event.lineup">{{ artist }}</li>
+          </ul>
+        </div>
+
+        <div class="description-item">
+          <h3 class="item-title">Experiencias:</h3>
+          <ul class="item-list">
+            <li *ngFor="let exp of event.experiences">{{ exp }}</li>
+          </ul>
+        </div>
+
+        <div class="description-item">
+          <h3 class="item-title">Incluye:</h3>
+          <ul class="item-list">
+            <li *ngFor="let item of event.includes">{{ item }}</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="event-sidebar">
+      <div class="sidebar-card">
+        <div class="price-section">
+          <div class="price">{{ event.price }}</div>
+          <div class="attendees-info">{{ event.attendees }}</div>
+        </div>
+
+        <div class="event-info">
+          <div class="info-item">
+            <span class="info-icon"></span>
+            <span>{{ event.date }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-icon"></span>
+            <span>{{ event.time }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-icon"></span>
+            <div>
+              <div>{{ event.location }}</div>
+              <div class="address">{{ event.address }}</div>
+            </div>
+          </div>
+          <div class="info-item">
+            <span class="info-icon"></span>
+            <span>{{ event.attending }}</span>
+          </div>
+        </div>
+
+        <button class="btn-register">Inscribirse al Evento</button>
+        <p class="terms-text">Al inscribirte aceptas los términos y condiciones.</p>
+
+        <div class="organizer-section">
+          <h3 class="organizer-title">Organizador</h3>
+          <div class="organizer-info">
+            <div class="organizer-avatar"></div>
+            <div class="organizer-details">
+              <div class="organizer-name">{{ event.organizer.name }}</div>
+              <div class="organizer-rating">
+                {{ event.organizer.rating }}
+              </div>
+              <div class="organizer-stats">
+                <span>{{ event.organizer.followers }} Seguidores</span>
+                <span>{{ event.organizer.events }} Eventos</span>
+              </div>
+            </div>
+          </div>
+          <div class="organizer-contact">
+            <div class="contact-item">
+              <span></span> {{ event.organizer.email }}
+            </div>
+            <div class="contact-item">
+              <span></span> {{ event.organizer.phone }}
+            </div>
+            <div class="contact-item">
+              <span></span> {{ event.organizer.website }}
+            </div>
+          </div>
+          <button class="btn-contact">Contactar Organizador</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
