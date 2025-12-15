@@ -1,6 +1,6 @@
-import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable } from 'rxjs';
-import { RouterModule } from '@angular/router';
+import { Injectable, PLATFORM_ID, inject } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
+import { BehaviorSubject } from 'rxjs';
 
 @Injectable({
   providedIn: 'root'
@@ -8,16 +8,22 @@ import { RouterModule } from '@angular/router';
 export class AuthService {
   private isLoggedIn = new BehaviorSubject<boolean>(false);
   public isLoggedIn$ = this.isLoggedIn.asObservable();
+  private platformId = inject(PLATFORM_ID);
 
   constructor() {
-    // Verificar si hay token válido en localStorage al inicializar
-    this.validateToken();
+    // Verificar si hay token válido en localStorage al inicializar (solo en el navegador)
+    if (isPlatformBrowser(this.platformId)) {
+      this.validateToken();
+    }
   }
 
   /**
    * Valida si el token en localStorage es válido
    */
   private validateToken(): void {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
     const token = localStorage.getItem('authToken');
     if (token && this.isTokenValid(token)) {
       this.isLoggedIn.next(true);
@@ -44,7 +50,7 @@ export class AuthService {
   login(email: string, password: string): void {
     // TODO: Reemplazar con llamada HTTP a tu API de backend
     // Ejemplo: this.http.post('/api/auth/login', { email, password })
-    if (email && password) {
+    if (email && password && isPlatformBrowser(this.platformId)) {
       const token = 'token_' + Date.now();
       localStorage.setItem('authToken', token);
       this.isLoggedIn.next(true);
@@ -55,7 +61,9 @@ export class AuthService {
    * Logout del usuario
    */
   logout(): void {
-    localStorage.removeItem('authToken');
+    if (isPlatformBrowser(this.platformId)) {
+      localStorage.removeItem('authToken');
+    }
     this.isLoggedIn.next(false);
   }
 
@@ -70,6 +78,9 @@ export class AuthService {
    * Obtener el token actual
    */
   getToken(): string | null {
+    if (!isPlatformBrowser(this.platformId)) {
+      return null;
+    }
     return localStorage.getItem('authToken');
   }
 }

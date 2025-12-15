@@ -17,6 +17,6 @@ export const routes: Routes = [
   { path: 'register', component: RegisterComponent },
   { path: 'profile', component: ProfileComponent, canActivate: [authGuard] },
   { path: 'create-event', component: CreateEventComponent, canActivate: [authGuard] },
-  { path: 'event/:id', component: EventDetailComponent, canActivate: [authGuard] },
+  { path: 'event/:id', component: EventDetailComponent },
   { path: '**', redirectTo: '', pathMatch: 'full' },
 ];

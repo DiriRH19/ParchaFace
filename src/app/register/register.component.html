@@ -6,7 +6,7 @@
   </div>
   <div class="register-card">
     <div class="logo-section">
-      <div class="logo">ParchaFace</div>
+      <img src="https://res.cloudinary.com/dgaxlowpd/image/upload/v1765764539/logoParchaFace_fzz8sh.png" alt="ParchaFace Logo" class="logo-img">
     </div>
     <h1 class="register-title">¡Únete a ParchaFace!</h1>
     <p class="register-subtitle">Crea tu cuenta y comienza a descubrir eventos increíbles</p>
@@ -55,7 +55,7 @@
           <input [type]="showConfirmPassword ? 'text' : 'password'" placeholder="Repite tu contraseña" class="form-input" formControlName="confirmPassword">
           <button type="button" class="toggle-password" (click)="toggleConfirmPassword()">{{ showConfirmPassword ? 'Ocultar' : 'Mostrar' }}</button>
         </div>
-        @if ((f['confirmPassword']?.touched || registerForm?.touched) && registerForm?.errors?.['passwordMismatch']) {
+        @if ((f['confirmPassword']?.touched || registerForm.touched) && registerForm.errors?.['passwordMismatch']) {
           <div class="error">Las contraseñas no coinciden.</div>
         }
       </div>

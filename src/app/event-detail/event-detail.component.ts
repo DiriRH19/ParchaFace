@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { RouterLink, Router } from '@angular/router';
+import { AuthService } from '../services/auth.service';
 
 @Component({
   selector: 'app-event-detail',
@@ -10,6 +11,10 @@ import { RouterLink } from '@angular/router';
   styleUrls: ['./event-detail.component.css']
 })
 export class EventDetailComponent {
+  constructor(
+    private authService: AuthService,
+    private router: Router
+  ) {}
   event = {
     title: 'Festival de Música Electrónica 2024',
     category: 'Música',
@@ -53,5 +58,29 @@ export class EventDetailComponent {
       website: 'Sitio web'
     }
   };
+
+  /**
+   * Maneja el clic en el botón "Inscribirse al Evento"
+   * Si no está logueado, redirige al login; si está logueado, procesa la inscripción
+   */
+  onRegisterClick(): void {
+    if (this.authService.getIsLoggedIn()) {
+      // Usuario logueado: procesar inscripción
+      this.registerToEvent();
+    } else {
+      // Usuario no logueado: redirigir al login
+      this.router.navigate(['/login']);
+    }
+  }
+
+  /**
+   * Procesa la inscripción al evento (solo para usuarios logueados)
+   */
+  private registerToEvent(): void {
+    // TODO: Implementar lógica de inscripción (llamada HTTP al backend)
+    console.log('Inscribiendo al evento...');
+    // Ejemplo: this.http.post(`/api/events/${eventId}/register`, {})
+    alert('¡Te has inscrito al evento exitosamente!');
+  }
 }
 

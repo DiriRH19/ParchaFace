@@ -1,7 +1,6 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
-import { EventCardComponent } from '../event-card/event-card.component';
+import { EventCardComponent, Event } from '../event-card/event-card.component';
 import { NavbarComponent } from '../shared/navbar/navbar.component';
 
 @Component({
@@ -12,7 +11,7 @@ import { NavbarComponent } from '../shared/navbar/navbar.component';
   styleUrls: ['./explore.component.css']
 })
 export class ExploreComponent {
-  events = [
+  events: Event[] = [
     {
       title: 'Festival de Música Electrónica 2024',
       description: 'Los mejores DJs internacionales en una noche épica de música electrónica',
