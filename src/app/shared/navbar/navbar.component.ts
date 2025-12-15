@@ -13,10 +13,6 @@ import { AuthService } from '../../services/auth.service';
 export class NavbarComponent {
   constructor(private authService: AuthService, private router: Router) {}
 
-  /**
-   * Maneja el clic en el botón "Crear Evento"
-   * Si no está logueado, redirige al login; si está logueado, navega a crear evento
-   */
   onCreateEventClick(): void {
     if (this.authService.getIsLoggedIn()) {
       this.router.navigate(['/create-event']);

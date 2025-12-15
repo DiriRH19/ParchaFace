@@ -34,7 +34,6 @@ export class RegisterComponent {
     this.showConfirmPassword = !this.showConfirmPassword;
   }
 
-  // Validator that sets an error on the form group when passwords don't match
   passwordsMatchValidator(control: AbstractControl): ValidationErrors | null {
     const password = control.get('password')?.value;
     const confirm = control.get('confirmPassword')?.value;
@@ -44,19 +43,15 @@ export class RegisterComponent {
     return null;
   }
 
-  // convenience getters for template
   get f() { return this.registerForm.controls; }
 
   onSubmit() {
     if (this.registerForm.invalid) {
-      // mark all as touched to show validation messages
       this.registerForm.markAllAsTouched();
       return;
     }
 
-    // Aquí iría la lógica de registro (llamada a API, etc.)
     console.log('Registro válido. Datos:', this.registerForm.value);
-    // Por ejemplo, resetear el formulario al completar
     this.registerForm.reset();
   }
 }

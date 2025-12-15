@@ -59,27 +59,16 @@ export class EventDetailComponent {
     }
   };
 
-  /**
-   * Maneja el clic en el botón "Inscribirse al Evento"
-   * Si no está logueado, redirige al login; si está logueado, procesa la inscripción
-   */
   onRegisterClick(): void {
     if (this.authService.getIsLoggedIn()) {
-      // Usuario logueado: procesar inscripción
       this.registerToEvent();
     } else {
-      // Usuario no logueado: redirigir al login
       this.router.navigate(['/login']);
     }
   }
 
-  /**
-   * Procesa la inscripción al evento (solo para usuarios logueados)
-   */
   private registerToEvent(): void {
-    // TODO: Implementar lógica de inscripción (llamada HTTP al backend)
     console.log('Inscribiendo al evento...');
-    // Ejemplo: this.http.post(`/api/events/${eventId}/register`, {})
     alert('¡Te has inscrito al evento exitosamente!');
   }
 }
