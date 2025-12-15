@@ -12,8 +12,14 @@
       </nav>
     </div>
     <div class="navbar-right">
-      <a routerLink="/login" class="btn-login-nav">Iniciar Sesión</a>
-      <a routerLink="/register" class="btn-register-nav">Registrarse</a>
+      <ng-container *ngIf="!isLoggedIn">
+        <a routerLink="/login" class="btn-login-nav">Iniciar Sesión</a>
+        <a routerLink="/register" class="btn-register-nav">Registrarse</a>
+      </ng-container>
+      <ng-container *ngIf="isLoggedIn">
+        <a routerLink="/profile" class="btn-profile-nav">{{ userData?.usuario || userData?.nombre || 'Mi Perfil' }}</a>
+        <button (click)="onLogoutClick()" class="btn-logout-nav">Cerrar Sesión</button>
+      </ng-container>
     </div>
   </div>
 </header>

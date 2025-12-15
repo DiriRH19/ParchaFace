@@ -114,6 +114,44 @@
   box-shadow: 0 6px 16px rgba(232, 169, 47, 0.3);
 }
 
+.btn-profile-nav {
+  color: #E8A92F;
+  text-decoration: none;
+  padding: 8px 20px;
+  border: 2px solid #E8A92F;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  background: transparent;
+  cursor: pointer;
+  display: inline-block;
+}
+
+.btn-profile-nav:hover {
+  background: #E8A92F;
+  color: white;
+}
+
+.btn-logout-nav {
+  background: #E8A92F;
+  color: #333333;
+  text-decoration: none;
+  padding: 8px 24px;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(232, 169, 47, 0.2);
+}
+
+.btn-logout-nav:hover {
+  background: #D8991F;
+  box-shadow: 0 6px 16px rgba(232, 169, 47, 0.3);
+}
+
 .notification-icon {
   font-size: 20px;
   cursor: pointer;

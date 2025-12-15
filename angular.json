@@ -59,12 +59,16 @@
         },
         "serve": {
           "builder": "@angular/build:dev-server",
+          "options": {
+            "proxyConfig": "proxy.conf.json"
+          },
           "configurations": {
             "production": {
               "buildTarget": "ParchaFace:build:production"
             },
             "development": {
-              "buildTarget": "ParchaFace:build:development"
+              "buildTarget": "ParchaFace:build:development",
+              "proxyConfig": "proxy.conf.json"
             }
           },
           "defaultConfiguration": "development"

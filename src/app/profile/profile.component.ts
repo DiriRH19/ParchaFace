@@ -1,6 +1,7 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
+import { AuthService, UserData } from '../services/auth.service';
 
 @Component({
   selector: 'app-profile',
@@ -9,8 +10,9 @@ import { RouterLink } from '@angular/router';
   templateUrl: './profile.component.html',
   styleUrls: ['./profile.component.css']
 })
-export class ProfileComponent {
+export class ProfileComponent implements OnInit {
   activeTab = 'profile';
+  userData: UserData | null = null;
 
   tabs = [
     { id: 'profile', label: 'Perfil' },
@@ -27,7 +29,25 @@ export class ProfileComponent {
     { platform: 'Facebook', handle: 'juan.perez.mx' }
   ];
 
+  constructor(private authService: AuthService) {}
+
+  ngOnInit(): void {
+    this.userData = this.authService.getUserData();
+    
+    this.authService.userData$.subscribe(userData => {
+      this.userData = userData;
+    });
+  }
+
   setActiveTab(tabId: string) {
     this.activeTab = tabId;
+  }
+
+  getUserName(): string {
+    return this.userData?.usuario || this.userData?.nombre || 'Usuario';
+  }
+
+  getUserEmail(): string {
+    return this.userData?.correo || '';
   }
 }
