@@ -1,17 +1,37 @@
 .login-container {
+  background: linear-gradient(135deg, #f5f1e8 0%, #f0ebe0 50%, #ebe5d9 100%);
+  background-attachment: fixed;
   min-height: 100vh;
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 20px;
   position: relative;
+  overflow: hidden;
+}
+
+/* Patrón de imagen superpuesto con opacidad muy sutil */
+.login-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: url("https://res.cloudinary.com/dgaxlowpd/image/upload/v1765763429/backgroundLogin_gvqjog.jpg");
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+  opacity: 0.03;
+  z-index: 1;
+  pointer-events: none;
 }
 
 .back-link {
   position: absolute;
   top: 20px;
   left: 20px;
+  z-index: 3;
 }
 
 .back-link a {
@@ -29,12 +49,17 @@
 }
 
 .login-card {
-  background: var(--bg-card);
+  background: rgba(252, 250, 247, 0.95);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
   border-radius: 16px;
   padding: 48px;
   width: 100%;
   max-width: 480px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(232, 169, 47, 0.1);
+  position: relative;
+  z-index: 2;
 }
 
 .logo-section {
@@ -42,28 +67,25 @@
   margin-bottom: 32px;
 }
 
-.logo {
-  font-size: 32px;
-  font-weight: 700;
-  color: var(--accent-yellow);
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
+.logo-img {
+  height: 60px;
+  width: auto;
+  object-fit: contain;
 }
 
 .welcome-title {
-  font-size: 32px;
+  font-size: 28px;
   font-weight: 700;
-  color: var(--accent-yellow);
+  color: #E8A92F;
   text-align: center;
-  margin-bottom: 8px;
+  margin-bottom: 12px;
 }
 
 .welcome-subtitle {
-  font-size: 16px;
-  color: var(--text-secondary);
+  font-size: 14px;
+  color: #666666;
   text-align: center;
-  margin-bottom: 32px;
+  margin-bottom: 28px;
 }
 
 .login-form {
@@ -79,22 +101,24 @@
 }
 
 .form-label {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
-  color: var(--text-primary);
+  color: #333333;
 }
 
 .form-input {
-  padding: 12px 16px;
-  border: 1px solid var(--border-color);
-  border-radius: 10px;
-  font-size: 16px;
+  padding: 10px 14px;
+  border: 1px solid #E0E0E0;
+  border-radius: 8px;
+  font-size: 14px;
   background: white;
   transition: border-color 0.3s ease;
+  color: #333333;
 }
 
 .form-input:focus {
-  border-color: var(--accent-yellow);
+  border-color: #E8A92F;
+  outline: none;
 }
 
 .form-input::placeholder {
@@ -139,8 +163,8 @@
 }
 
 .forgot-password {
-  color: var(--accent-yellow);
-  font-size: 14px;
+  color: #E8A92F;
+  font-size: 13px;
   font-weight: 500;
   text-decoration: none;
 }
@@ -150,19 +174,22 @@
 }
 
 .btn-login {
-  background: linear-gradient(135deg, var(--accent-yellow) 0%, #FFB347 100%);
-  color: white;
-  padding: 14px;
-  border-radius: 10px;
+  background: #E8A92F;
+  color: #333333;
+  padding: 12px 16px;
+  border-radius: 8px;
   font-size: 16px;
-  font-weight: 700;
-  box-shadow: 0 4px 12px rgba(232, 169, 47, 0.3);
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(232, 169, 47, 0.2);
   transition: all 0.3s ease;
 }
 
 .btn-login:hover {
+  background: #D8991F;
   transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(232, 169, 47, 0.4);
+  box-shadow: 0 6px 16px rgba(232, 169, 47, 0.3);
 }
 
 .divider {

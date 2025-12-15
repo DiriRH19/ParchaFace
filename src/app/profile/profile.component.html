@@ -24,11 +24,11 @@
 
     <div class="profile-info">
       <div class="user-details">
-        <h1 class="user-name">Juan Pérez</h1>
-        <p class="user-username">@juanperez</p>
+        <h1 class="user-name">{{ getUserName() }}</h1>
+        <p class="user-username">@{{ userData?.usuario || 'usuario' }}</p>
         <div class="user-meta">
-          <span class="meta-item">Armenia, Quindio, Colombia</span>
-          <span class="meta-item">Se unió en enero de 2023</span>
+          <span class="meta-item">{{ userData?.correo || '' }}</span>
+          <span class="meta-item">Usuario activo</span>
         </div>
       </div>
       <div class="user-stats">
@@ -68,7 +68,7 @@
           <div class="contact-info">
             <div class="contact-item">
               <span class="contact-icon"></span>
-              <span>juan@email.com</span>
+              <span>{{ getUserEmail() || 'No disponible' }}</span>
             </div>
             <div class="contact-item">
               <span class="contact-icon"></span>

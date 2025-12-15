@@ -1,7 +1,8 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
+import { EventoService } from '../services/evento';
 
 @Component({
   selector: 'app-create-event',
@@ -11,9 +12,10 @@ import { RouterLink } from '@angular/router';
   styleUrls: ['./create-event.component.css']
 })
 export class CreateEventComponent {
+
   currentStep = 1;
   totalSteps = 4;
-  
+
   eventData = {
     title: '',
     description: '',
@@ -47,6 +49,11 @@ export class CreateEventComponent {
     { id: 4, title: 'Configuración', description: 'Privacidad y configuraciones finales', icon: '' }
   ];
 
+  constructor(
+    private eventoService: EventoService,
+    private router: Router
+  ) {}
+
   addTag() {
     if (this.newTag.trim() && !this.eventData.tags.includes(this.newTag.trim())) {
       this.eventData.tags.push(this.newTag.trim());
@@ -75,6 +82,9 @@ export class CreateEventComponent {
   }
 
   createEvent() {
-    console.log('Evento creado:', this.eventData);
+    this.eventoService.crearEvento(this.eventData).subscribe({
+      next: () => this.router.navigate(['/eventos']),
+      error: err => console.error('Error creando evento', err)
+    });
   }
 }

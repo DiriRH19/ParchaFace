@@ -6,27 +6,30 @@
   </div>
   <div class="register-card">
     <div class="logo-section">
-      <div class="logo">ParchaFace</div>
+      <img src="https://res.cloudinary.com/dgaxlowpd/image/upload/v1765764539/logoParchaFace_fzz8sh.png" alt="ParchaFace Logo" class="logo-img">
     </div>
     <h1 class="register-title">¡Únete a ParchaFace!</h1>
     <p class="register-subtitle">Crea tu cuenta y comienza a descubrir eventos increíbles</p>
     <form class="register-form" [formGroup]="registerForm" (ngSubmit)="onSubmit()">
+      <div *ngIf="errorMessage" class="error-message">
+        {{ errorMessage }}
+      </div>
       <div class="form-group">
-        <label class="form-label">Nombre Completo</label>
-        <input type="text" placeholder="Tu nombre completo" class="form-input" formControlName="fullName">
-        @if (f['fullName']?.touched && f['fullName']?.invalid) {
-          <div class="error">El nombre es obligatorio.</div>
+        <label class="form-label">Usuario</label>
+        <input type="text" placeholder="Tu nombre de usuario" class="form-input" formControlName="usuario">
+        @if (f['usuario']?.touched && f['usuario']?.invalid) {
+          <div class="error">El usuario es obligatorio.</div>
         }
       </div>
       <div class="form-group">
         <label class="form-label">Correo Electrónico</label>
-        <input type="email" placeholder="tu@email.com" class="form-input" formControlName="email">
-        @if (f['email']?.touched && f['email']?.errors) {
+        <input type="email" placeholder="tu@email.com" class="form-input" formControlName="correo">
+        @if (f['correo']?.touched && f['correo']?.errors) {
           <div class="error">
-            @if (f['email']?.errors?.['required']) {
+            @if (f['correo']?.errors?.['required']) {
               <div>El correo es obligatorio.</div>
             }
-            @if (f['email']?.errors?.['email']) {
+            @if (f['correo']?.errors?.['email']) {
               <div>Ingresa un correo válido.</div>
             }
           </div>
@@ -35,15 +38,15 @@
       <div class="form-group">
         <label class="form-label">Contraseña</label>
         <div class="password-input-wrapper">
-          <input [type]="showPassword ? 'text' : 'password'" placeholder="Mínimo 8 caracteres" class="form-input" formControlName="password">
+          <input [type]="showPassword ? 'text' : 'password'" placeholder="Mínimo 8 caracteres" class="form-input" formControlName="contrasena">
           <button type="button" class="toggle-password" (click)="togglePassword()">{{ showPassword ? 'Ocultar' : 'Mostrar' }}</button>
         </div>
-        @if (f['password']?.touched && f['password']?.errors) {
+        @if (f['contrasena']?.touched && f['contrasena']?.errors) {
           <div class="error">
-            @if (f['password']?.errors?.['required']) {
+            @if (f['contrasena']?.errors?.['required']) {
               <div>La contraseña es obligatoria.</div>
             }
-            @if (f['password']?.errors?.['minlength']) {
+            @if (f['contrasena']?.errors?.['minlength']) {
               <div>La contraseña debe tener al menos 8 caracteres.</div>
             }
           </div>
@@ -52,10 +55,10 @@
       <div class="form-group">
         <label class="form-label">Confirmar Contraseña</label>
         <div class="password-input-wrapper">
-          <input [type]="showConfirmPassword ? 'text' : 'password'" placeholder="Repite tu contraseña" class="form-input" formControlName="confirmPassword">
+          <input [type]="showConfirmPassword ? 'text' : 'password'" placeholder="Repite tu contraseña" class="form-input" formControlName="confirmarContrasena">
           <button type="button" class="toggle-password" (click)="toggleConfirmPassword()">{{ showConfirmPassword ? 'Ocultar' : 'Mostrar' }}</button>
         </div>
-        @if ((f['confirmPassword']?.touched || registerForm?.touched) && registerForm?.errors?.['passwordMismatch']) {
+        @if ((f['confirmarContrasena']?.touched || registerForm.touched) && registerForm.errors?.['passwordMismatch']) {
           <div class="error">Las contraseñas no coinciden.</div>
         }
       </div>
@@ -72,7 +75,9 @@
           <div class="error">Debes aceptar los términos para continuar.</div>
         }
       </div>
-      <button type="submit" class="btn-register" [disabled]="registerForm.invalid">Crear Cuenta</button>
+      <button type="submit" class="btn-register" [disabled]="registerForm.invalid || isLoading">
+        {{ isLoading ? 'Creando cuenta...' : 'Crear Cuenta' }}
+      </button>
       <div class="divider">
         <span>O regístrate con</span>
       </div>

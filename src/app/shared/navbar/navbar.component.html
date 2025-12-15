@@ -2,24 +2,24 @@
   <div class="navbar-content">
     <div class="navbar-left">
       <a routerLink="/" class="logo">
-        <div class="logo-icon"></div>
+        <img src="https://res.cloudinary.com/dgaxlowpd/image/upload/v1765764539/logoParchaFace_fzz8sh.png" alt="ParchaFace Logo" class="logo-img">
         <span class="logo-text">ParchaFace</span>
       </a>
       <nav class="nav-links">
-        <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">Inicio</a>
-        <a routerLink="/explore" routerLinkActive="active">Explorar</a>
+        <a routerLink="/explore" routerLinkActive="active">Eventos</a>
+        <a routerLink="/create-event" routerLinkActive="active">Crear Evento</a>
         <a routerLink="/community" routerLinkActive="active">Comunidad</a>
       </nav>
     </div>
     <div class="navbar-right">
-      <button class="btn-create-event" (click)="onCreateEventClick()">
-        <span>+</span> Crear Evento
-      </button>
-      <a routerLink="/profile" class="user-menu">
-        <div class="notification-icon"></div>
-        <div class="user-avatar"></div>
-        <span class="user-name">Juan Pérez</span>
-      </a>
+      <ng-container *ngIf="!isLoggedIn">
+        <a routerLink="/login" class="btn-login-nav">Iniciar Sesión</a>
+        <a routerLink="/register" class="btn-register-nav">Registrarse</a>
+      </ng-container>
+      <ng-container *ngIf="isLoggedIn">
+        <a routerLink="/profile" class="btn-profile-nav">{{ userData?.usuario || userData?.nombre || 'Mi Perfil' }}</a>
+        <button (click)="onLogoutClick()" class="btn-logout-nav">Cerrar Sesión</button>
+      </ng-container>
     </div>
   </div>
 </header>

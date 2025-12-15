@@ -1,7 +1,8 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { RouterLink, Router } from '@angular/router';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
+import { AuthService } from '../services/auth.service';
 
 @Component({
   selector: 'app-register',
@@ -13,15 +14,20 @@ import { ReactiveFormsModule, FormBuilder, FormGroup, Validators, AbstractContro
 export class RegisterComponent {
   showPassword = false;
   showConfirmPassword = false;
-
   registerForm: FormGroup;
+  isLoading = false;
+  errorMessage = '';
 
-  constructor(private fb: FormBuilder) {
+  constructor(
+    private fb: FormBuilder,
+    private authService: AuthService,
+    private router: Router
+  ) {
     this.registerForm = this.fb.group({
-      fullName: ['', [Validators.required]],
-      email: ['', [Validators.required, Validators.email]],
-      password: ['', [Validators.required, Validators.minLength(8)]],
-      confirmPassword: ['', [Validators.required]],
+      usuario: ['', [Validators.required]],
+      correo: ['', [Validators.required, Validators.email]],
+      contrasena: ['', [Validators.required, Validators.minLength(8)]],
+      confirmarContrasena: ['', [Validators.required]],
       acceptTerms: [false, [Validators.requiredTrue]]
     }, { validators: [this.passwordsMatchValidator] });
   }
@@ -34,30 +40,65 @@ export class RegisterComponent {
     this.showConfirmPassword = !this.showConfirmPassword;
   }
 
-  // Validator that sets an error on the form group when passwords don't match
   passwordsMatchValidator(control: AbstractControl): ValidationErrors | null {
-    const password = control.get('password')?.value;
-    const confirm = control.get('confirmPassword')?.value;
-    if (password && confirm && password !== confirm) {
+    const contrasena = control.get('contrasena')?.value;
+    const confirm = control.get('confirmarContrasena')?.value;
+    if (contrasena && confirm && contrasena !== confirm) {
       return { passwordMismatch: true };
     }
     return null;
   }
 
-  // convenience getters for template
   get f() { return this.registerForm.controls; }
 
   onSubmit() {
     if (this.registerForm.invalid) {
-      // mark all as touched to show validation messages
       this.registerForm.markAllAsTouched();
       return;
     }
 
-    // Aquí iría la lógica de registro (llamada a API, etc.)
-    console.log('Registro válido. Datos:', this.registerForm.value);
-    // Por ejemplo, resetear el formulario al completar
-    this.registerForm.reset();
+    this.isLoading = true;
+    this.errorMessage = '';
+
+    const { usuario, correo, contrasena, confirmarContrasena } = this.registerForm.value;
+
+    this.authService.register(usuario, correo, contrasena, confirmarContrasena).subscribe({
+      next: (response) => {
+        this.isLoading = false;
+        this.router.navigate(['/']);
+      },
+      error: (error) => {
+        this.isLoading = false;
+        console.error('Error completo de registro:', error);
+        
+        if (error.status === 0) {
+          this.errorMessage = 'No se puede conectar con el servidor. Verifica que el backend esté corriendo en http://localhost:8080';
+        } else if (error.error) {
+          try {
+            let errorObj: any;
+            if (typeof error.error === 'string') {
+              errorObj = JSON.parse(error.error);
+            } else {
+              errorObj = error.error;
+            }
+            
+            if (errorObj.error) {
+              this.errorMessage = errorObj.error;
+            } else if (errorObj.message) {
+              this.errorMessage = errorObj.message;
+            } else {
+              this.errorMessage = typeof error.error === 'string' ? error.error : 'Error al registrar usuario';
+            }
+          } catch (e) {
+            this.errorMessage = typeof error.error === 'string' ? error.error : 'Error al registrar usuario. Por favor, intenta de nuevo.';
+          }
+        } else if (error.message) {
+          this.errorMessage = error.message;
+        } else {
+          this.errorMessage = 'Error al registrar usuario. Por favor, intenta de nuevo.';
+        }
+      }
+    });
   }
 }
 

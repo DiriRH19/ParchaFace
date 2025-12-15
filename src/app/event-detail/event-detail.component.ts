@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { RouterLink, Router } from '@angular/router';
+import { AuthService } from '../services/auth.service';
 
 @Component({
   selector: 'app-event-detail',
@@ -10,6 +11,10 @@ import { RouterLink } from '@angular/router';
   styleUrls: ['./event-detail.component.css']
 })
 export class EventDetailComponent {
+  constructor(
+    private authService: AuthService,
+    private router: Router
+  ) {}
   event = {
     title: 'Festival de Música Electrónica 2024',
     category: 'Música',
@@ -53,5 +58,18 @@ export class EventDetailComponent {
       website: 'Sitio web'
     }
   };
+
+  onRegisterClick(): void {
+    if (this.authService.getIsLoggedIn()) {
+      this.registerToEvent();
+    } else {
+      this.router.navigate(['/login']);
+    }
+  }
+
+  private registerToEvent(): void {
+    console.log('Inscribiendo al evento...');
+    alert('¡Te has inscrito al evento exitosamente!');
+  }
 }
 

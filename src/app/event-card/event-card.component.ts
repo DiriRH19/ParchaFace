@@ -2,6 +2,18 @@ import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 
+export interface Event {
+  title: string;
+  description: string;
+  date: string;
+  location: string;
+  attendees: string;
+  category: string;
+  tags: string[];
+  price: string;
+  rating: number;
+}
+
 @Component({
   selector: 'app-event-card',
   standalone: true,
@@ -10,7 +22,7 @@ import { RouterLink } from '@angular/router';
   styleUrls: ['./event-card.component.css']
 })
 export class EventCardComponent {
-  @Input() event: any = {
+  @Input() event: Event = {
     title: 'Evento',
     description: '',
     date: '',
