@@ -7,15 +7,16 @@ import { RegisterComponent } from './register/register.component';
 import { ProfileComponent } from './profile/profile.component';
 import { CreateEventComponent } from './create-event/create-event.component';
 import { EventDetailComponent } from './event-detail/event-detail.component';
+import { authGuard } from './guards/auth.guard';
 
 export const routes: Routes = [
   { path: '', component: HomeComponent },
   { path: 'explore', component: ExploreComponent },
-  { path: 'community', component: CommunityComponent },
+  { path: 'community', component: CommunityComponent, canActivate: [authGuard] },
   { path: 'login', component: LoginComponent },
   { path: 'register', component: RegisterComponent },
-  { path: 'profile', component: ProfileComponent },
-  { path: 'create-event', component: CreateEventComponent },
-  { path: 'event/:id', component: EventDetailComponent },
+  { path: 'profile', component: ProfileComponent, canActivate: [authGuard] },
+  { path: 'create-event', component: CreateEventComponent, canActivate: [authGuard] },
+  { path: 'event/:id', component: EventDetailComponent, canActivate: [authGuard] },
   { path: '**', redirectTo: '', pathMatch: 'full' },
 ];
