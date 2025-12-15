@@ -12,14 +12,14 @@
       </nav>
     </div>
     <div class="navbar-right">
-      <button class="btn-create-event" routerLink="/create-event">
+      <button class="btn-create-event" (click)="onCreateEventClick()">
         <span>+</span> Crear Evento
       </button>
-      <div class="user-menu">
+      <a routerLink="/profile" class="user-menu">
         <div class="notification-icon"></div>
         <div class="user-avatar"></div>
         <span class="user-name">Juan Pérez</span>
-      </div>
+      </a>
     </div>
   </div>
 </header>

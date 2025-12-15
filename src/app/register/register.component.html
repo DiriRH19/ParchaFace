@@ -10,40 +10,69 @@
     </div>
     <h1 class="register-title">¡Únete a ParchaFace!</h1>
     <p class="register-subtitle">Crea tu cuenta y comienza a descubrir eventos increíbles</p>
-    <form class="register-form">
+    <form class="register-form" [formGroup]="registerForm" (ngSubmit)="onSubmit()">
       <div class="form-group">
         <label class="form-label">Nombre Completo</label>
-        <input type="text" placeholder="Tu nombre completo" class="form-input">
+        <input type="text" placeholder="Tu nombre completo" class="form-input" formControlName="fullName">
+        @if (f['fullName']?.touched && f['fullName']?.invalid) {
+          <div class="error">El nombre es obligatorio.</div>
+        }
       </div>
       <div class="form-group">
         <label class="form-label">Correo Electrónico</label>
-        <input type="email" placeholder="tu@email.com" class="form-input">
+        <input type="email" placeholder="tu@email.com" class="form-input" formControlName="email">
+        @if (f['email']?.touched && f['email']?.errors) {
+          <div class="error">
+            @if (f['email']?.errors?.['required']) {
+              <div>El correo es obligatorio.</div>
+            }
+            @if (f['email']?.errors?.['email']) {
+              <div>Ingresa un correo válido.</div>
+            }
+          </div>
+        }
       </div>
       <div class="form-group">
         <label class="form-label">Contraseña</label>
         <div class="password-input-wrapper">
-          <input [type]="showPassword ? 'text' : 'password'" placeholder="Mínimo 8 caracteres" class="form-input">
-          <button type="button" class="toggle-password" (click)="togglePassword()"></button>
+          <input [type]="showPassword ? 'text' : 'password'" placeholder="Mínimo 8 caracteres" class="form-input" formControlName="password">
+          <button type="button" class="toggle-password" (click)="togglePassword()">{{ showPassword ? 'Ocultar' : 'Mostrar' }}</button>
         </div>
+        @if (f['password']?.touched && f['password']?.errors) {
+          <div class="error">
+            @if (f['password']?.errors?.['required']) {
+              <div>La contraseña es obligatoria.</div>
+            }
+            @if (f['password']?.errors?.['minlength']) {
+              <div>La contraseña debe tener al menos 8 caracteres.</div>
+            }
+          </div>
+        }
       </div>
       <div class="form-group">
         <label class="form-label">Confirmar Contraseña</label>
         <div class="password-input-wrapper">
-          <input [type]="showConfirmPassword ? 'text' : 'password'" placeholder="Repite tu contraseña" class="form-input">
-          <button type="button" class="toggle-password" (click)="toggleConfirmPassword()"></button>
+          <input [type]="showConfirmPassword ? 'text' : 'password'" placeholder="Repite tu contraseña" class="form-input" formControlName="confirmPassword">
+          <button type="button" class="toggle-password" (click)="toggleConfirmPassword()">{{ showConfirmPassword ? 'Ocultar' : 'Mostrar' }}</button>
         </div>
+        @if ((f['confirmPassword']?.touched || registerForm?.touched) && registerForm?.errors?.['passwordMismatch']) {
+          <div class="error">Las contraseñas no coinciden.</div>
+        }
       </div>
       <div class="form-checkboxes">
         <label class="checkbox-label">
-          <input type="checkbox" class="checkbox">
+          <input type="checkbox" class="checkbox" formControlName="acceptTerms">
           <span>Acepto los <a href="#" class="link">términos y condiciones</a> y la <a href="#" class="link">política de la privacidad</a></span>
         </label>
         <label class="checkbox-label">
           <input type="checkbox" class="checkbox">
           <span>Quiero recibir notificaciones sobre eventos y novedades de ParchaFace</span>
         </label>
+        @if (f['acceptTerms']?.touched && f['acceptTerms']?.invalid) {
+          <div class="error">Debes aceptar los términos para continuar.</div>
+        }
       </div>
-      <button type="submit" class="btn-register">Crear Cuenta</button>
+      <button type="submit" class="btn-register" [disabled]="registerForm.invalid">Crear Cuenta</button>
       <div class="divider">
         <span>O regístrate con</span>
       </div>
