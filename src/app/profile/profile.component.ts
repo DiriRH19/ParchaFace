@@ -44,10 +44,22 @@ export class ProfileComponent implements OnInit {
   }
 
   getUserName(): string {
-    return this.userData?.usuario || this.userData?.nombre || 'Usuario';
+    return this.userData?.nombre || this.userData?.usuario || this.getFallbackName() || 'Usuario';
+  }
+
+  getDisplayHandle(): string {
+    return this.userData?.nombre || this.userData?.usuario || this.getFallbackName() || 'usuario';
   }
 
   getUserEmail(): string {
     return this.userData?.correo || '';
+  }
+
+  private getFallbackName(): string {
+    const correo = this.userData?.correo;
+    if (typeof correo === 'string' && correo.includes('@')) {
+      return correo.split('@')[0];
+    }
+    return '';
   }
 }

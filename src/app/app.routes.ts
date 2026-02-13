@@ -4,6 +4,7 @@ import { ExploreComponent } from './explore/explore.component';
 import { CommunityComponent } from './community/community.component';
 import { LoginComponent } from './login/login.component';
 import { RegisterComponent } from './register/register.component';
+import { PreferenciasComponent } from './preferencias/preferencias';
 import { ProfileComponent } from './profile/profile.component';
 import { CreateEventComponent } from './create-event/create-event.component';
 import { EventDetailComponent } from './event-detail/event-detail.component';
@@ -15,6 +16,7 @@ export const routes: Routes = [
   { path: 'community', component: CommunityComponent, canActivate: [authGuard] },
   { path: 'login', component: LoginComponent },
   { path: 'register', component: RegisterComponent },
+  { path: 'preferencias', component: PreferenciasComponent, canActivate: [authGuard] },
   { path: 'profile', component: ProfileComponent, canActivate: [authGuard] },
   { path: 'create-event', component: CreateEventComponent, canActivate: [authGuard] },
   { path: 'event/:id', component: EventDetailComponent },

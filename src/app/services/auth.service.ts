@@ -65,9 +65,18 @@ export class AuthService {
     try {
       const payload = token.split('.')[1];
       if (!payload) return null;
-      
-      const decoded = JSON.parse(atob(payload));
-      return decoded;
+      const decoded: Record<string, unknown> = JSON.parse(atob(payload));
+      const correo = (decoded['sub'] ?? decoded['correo']) as string | undefined;
+      const nombreFromToken = (decoded['nombre'] ?? decoded['usuario']) as string | undefined;
+      const fallbackNombre = typeof correo === 'string' && correo.includes('@') ? correo.split('@')[0] : undefined;
+      const nombre = nombreFromToken ?? fallbackNombre;
+      const usuario = (decoded['usuario'] ?? decoded['nombre'] ?? fallbackNombre) as string | undefined;
+      return {
+        ...decoded,
+        correo: correo ?? undefined,
+        nombre: nombre ?? undefined,
+        usuario: usuario ?? nombre ?? undefined
+      } as UserData;
     } catch (error) {
       console.error('Error decodificando token:', error);
       return null;
@@ -168,40 +177,23 @@ export class AuthService {
       { responseType: 'text' }
     ).pipe(
       map((response: string) => {
-        let token = response.trim();
-        console.log('Respuesta cruda del backend:', response);
-        
-        try {
-          if (token.startsWith('"') && token.endsWith('"')) {
-            token = JSON.parse(token);
-          } else {
-            const parsed = JSON.parse(token);
-            if (typeof parsed === 'string') {
-              token = parsed;
-            } else if (parsed.error) {
-              throw new Error(parsed.error);
-            } else if (parsed.token) {
-              token = parsed.token;
-            }
-          }
-        } catch (e) {
-          if (token.includes('error') || token.includes('Error')) {
-            try {
-              const errorObj = JSON.parse(token);
-              if (errorObj.error) {
-                throw new Error(errorObj.error);
-              }
-            } catch (parseError) {
-              throw new Error('Error al procesar respuesta del servidor');
-            }
-          }
+        const raw = (response || '').trim();
+        if (raw.startsWith('<')) {
+          throw new Error('El servidor devolvió una página. Arranca el backend (puerto 8080) y usa ng serve para el front.');
         }
-        
-        console.log('Token procesado:', token);
+        let data: { token?: string; error?: string };
+        try {
+          data = JSON.parse(raw);
+        } catch {
+          throw new Error('El servidor no respondió con JSON. ¿Está el backend en marcha en el puerto 8080?');
+        }
+        const token = data?.token;
+        if (!token || typeof token !== 'string') {
+          throw new Error(data?.error || 'El servidor no devolvió un token. ¿El backend está actualizado?');
+        }
         return token;
       }),
       tap((token: string) => {
-        console.log('Token recibido:', token);
         if (token && isPlatformBrowser(this.platformId)) {
           localStorage.setItem('token', token);
           this.isLoggedIn.next(true);

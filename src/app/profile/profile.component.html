@@ -25,7 +25,7 @@
     <div class="profile-info">
       <div class="user-details">
         <h1 class="user-name">{{ getUserName() }}</h1>
-        <p class="user-username">@{{ userData?.usuario || 'usuario' }}</p>
+        <p class="user-username">@{{ getDisplayHandle() }}</p>
         <div class="user-meta">
           <span class="meta-item">{{ userData?.correo || '' }}</span>
           <span class="meta-item">Usuario activo</span>

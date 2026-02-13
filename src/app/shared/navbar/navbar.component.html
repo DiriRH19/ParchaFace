@@ -17,7 +17,7 @@
         <a routerLink="/register" class="btn-register-nav">Registrarse</a>
       </ng-container>
       <ng-container *ngIf="isLoggedIn">
-        <a routerLink="/profile" class="btn-profile-nav">{{ userData?.usuario || userData?.nombre || 'Mi Perfil' }}</a>
+        <a routerLink="/profile" class="btn-profile-nav">{{ userData?.nombre || userData?.usuario || 'Mi Perfil' }}</a>
         <button (click)="onLogoutClick()" class="btn-logout-nav">Cerrar Sesión</button>
       </ng-container>
     </div>
