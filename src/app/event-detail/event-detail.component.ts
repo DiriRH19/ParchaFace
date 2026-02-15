@@ -66,10 +66,13 @@ export class EventDetailComponent {
       this.router.navigate(['/login']);
     }
   }
-
+  showSuccessMessage: boolean = false;
   private registerToEvent(): void {
-    console.log('Inscribiendo al evento...');
-    alert('¡Te has inscrito al evento exitosamente!');
+    this.showSuccessMessage = true;
+
+    setTimeout(() => {
+      this.showSuccessMessage = false;
+    }, 3000);
   }
 }
 

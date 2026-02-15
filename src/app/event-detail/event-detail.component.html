@@ -25,7 +25,7 @@
 
       <div class="event-description-section">
         <h2 class="section-title">Descripción del Evento</h2>
-        
+
         <div class="description-item">
           <h3 class="item-title">Lineup Confirmado:</h3>
           <ul class="item-list">
@@ -78,7 +78,13 @@
           </div>
         </div>
 
-        <button class="btn-register" (click)="onRegisterClick()">Inscribirse al Evento</button>
+        <button class="btn-register" (click)="onRegisterClick()">
+          Inscribirse al Evento
+        </button>
+
+        <div *ngIf="showSuccessMessage" class="success-message">
+          🎉 ¡Te has inscrito al evento exitosamente!
+        </div>
         <p class="terms-text">Al inscribirte aceptas los términos y condiciones.</p>
 
         <div class="organizer-section">
