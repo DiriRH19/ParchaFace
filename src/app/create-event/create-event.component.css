@@ -251,6 +251,8 @@
   border-radius: 10px;
   font-weight: 600;
   transition: all 0.3s ease;
+  border: none;
+  cursor: pointer;
 }
 
 .btn-add-tag:hover {
@@ -293,7 +295,7 @@
 .upload-area {
   border: 2px dashed var(--border-color);
   border-radius: 12px;
-  padding: 60px 20px;
+  padding: 40px 20px;
   text-align: center;
   background: var(--bg-secondary);
   cursor: pointer;
@@ -307,13 +309,23 @@
 
 .upload-icon {
   font-size: 48px;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
 
 .upload-hint {
   font-size: 12px;
   color: var(--text-light);
   margin-top: 8px;
+}
+
+/* ✅ preview de imagen */
+.cover-preview {
+  margin-top: 14px;
+  width: 100%;
+  max-width: 520px;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow);
 }
 
 .checkbox-label {
@@ -445,6 +457,8 @@
   align-items: center;
   gap: 8px;
   transition: all 0.3s ease;
+  border: none;
+  cursor: pointer;
 }
 
 .btn-next:hover,
@@ -452,4 +466,32 @@
   background: #D8991F;
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(232, 169, 47, 0.3);
+}
+
+/* ✅ responsive suave */
+@media (max-width: 768px) {
+  .header {
+    padding: 16px 18px;
+  }
+
+  .form-card {
+    padding: 22px;
+  }
+
+  .progress-bar {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .progress-bar::before {
+    display: none;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .summary-grid {
+    grid-template-columns: 1fr;
+  }
 }
