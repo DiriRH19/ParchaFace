@@ -58,6 +58,7 @@ export class EventDetailComponent {
       website: 'Sitio web'
     }
   };
+  showSuccessMessage: boolean = false;
 
   onRegisterClick(): void {
     if (this.authService.getIsLoggedIn()) {
@@ -66,13 +67,13 @@ export class EventDetailComponent {
       this.router.navigate(['/login']);
     }
   }
-  showSuccessMessage: boolean = false;
+
   private registerToEvent(): void {
     this.showSuccessMessage = true;
 
     setTimeout(() => {
       this.showSuccessMessage = false;
-    }, 3000);
+    }, 5000);
   }
 }
 
