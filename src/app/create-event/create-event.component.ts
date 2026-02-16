@@ -16,28 +16,45 @@ export class CreateEventComponent {
   currentStep = 1;
   totalSteps = 4;
 
-  eventData = {
-    title: '',
-    description: '',
-    category: '',
-    tags: [] as string[],
-    date: '',
-    startTime: '',
-    endTime: '',
-    isOnline: false,
-    placeName: '',
-    address: '',
-    city: '',
-    maxAttendees: '',
-    isFree: true,
-    requiresApproval: false,
-    contactEmail: '',
-    contactPhone: '',
-    website: '',
-    isPublic: true,
-    allowComments: true,
-    sendReminders: true,
-    collectFeedback: true
+  // ✅ archivo real seleccionado (para multipart)
+  private selectedCoverFile: File | null = null;
+
+  eventData: any = {
+    // Paso 1
+    titulo: '',
+    descripcion: '',
+    categoria: '',
+    tags: [] as string[], // (solo front) NO se envía
+    imagenPortadaUrl: '', // (solo preview)
+    imagenPortadaContentType: '',
+
+    // Paso 2
+    fecha: '',
+    horaInicio: '',
+    horaFin: '',
+    eventoEnLinea: false,
+    urlVirtual: '',
+    ubicacion: '',
+    nombreLugar: '',
+    direccionCompleta: '',
+    ciudad: '',
+
+    // Paso 3
+    cupo: 1,
+    eventoGratuito: true,
+    precio: null as number | null,
+    emailContacto: '',
+    telefonoContacto: '',
+    sitioWeb: '',
+
+    // Paso 4
+    eventoPublico: true,
+    detallePrivado: '',
+    permitirComentarios: true,
+    recordatoriosAutomaticos: false,
+
+    // (solo front)
+    collectFeedback: false
   };
 
   newTag = '';
@@ -54,37 +71,223 @@ export class CreateEventComponent {
     private router: Router
   ) {}
 
+  // =========================
+  // TAGS (SOLO FRONT)
+  // =========================
   addTag() {
-    if (this.newTag.trim() && !this.eventData.tags.includes(this.newTag.trim())) {
-      this.eventData.tags.push(this.newTag.trim());
+    const t = (this.newTag || '').trim();
+    if (t && !this.eventData.tags.includes(t)) {
+      this.eventData.tags.push(t);
       this.newTag = '';
     }
   }
 
   removeTag(tag: string) {
-    this.eventData.tags = this.eventData.tags.filter(t => t !== tag);
+    this.eventData.tags = this.eventData.tags.filter((t: string) => t !== tag);
   }
 
-  nextStep() {
-    if (this.currentStep < this.totalSteps) {
-      this.currentStep++;
+  // =========================
+  // IMAGEN (archivo real + preview)
+  // =========================
+  onImageSelected(event: Event) {
+    const input = event.target as HTMLInputElement;
+    if (!input.files || input.files.length === 0) return;
+
+    const file = input.files[0];
+
+    // Backend permite: jpg/jpeg/png/webp (según tu CrearEventoForm)
+    const ct = (file.type || '').toLowerCase().trim();
+    const ok =
+      ct === 'image/jpeg' ||
+      ct === 'image/jpg' ||
+      ct === 'image/png' ||
+      ct === 'image/webp';
+
+    if (!ok) {
+      alert('Formato no permitido. Solo JPG/JPEG/PNG/WEBP.');
+      input.value = '';
+      this.selectedCoverFile = null;
+      this.eventData.imagenPortadaUrl = '';
+      this.eventData.imagenPortadaContentType = '';
+      return;
     }
+
+    // ✅ Guardamos el File REAL para mandarlo por multipart
+    this.selectedCoverFile = file;
+    this.eventData.imagenPortadaContentType = ct;
+
+    // ✅ Preview (solo UI)
+    const reader = new FileReader();
+    reader.onload = () => {
+      this.eventData.imagenPortadaUrl = String(reader.result || '');
+    };
+    reader.readAsDataURL(file);
+  }
+
+  // =========================
+  // STEPS
+  // =========================
+  nextStep() {
+    const errors = this.validateCurrentStep();
+    if (errors.length) {
+      alert(errors.join('\n'));
+      return;
+    }
+    if (this.currentStep < this.totalSteps) this.currentStep++;
   }
 
   previousStep() {
-    if (this.currentStep > 1) {
-      this.currentStep--;
-    }
+    if (this.currentStep > 1) this.currentStep--;
   }
 
   isStepComplete(step: number): boolean {
     return step < this.currentStep;
   }
 
+  // =========================
+  // HELPERS
+  // =========================
+  private normalizeTime(t: string): string {
+    // input type="time" suele dar "HH:mm" -> lo volvemos "HH:mm:ss"
+    if (!t) return t;
+    return t.length === 5 ? `${t}:00` : t;
+  }
+
+  private appendIfNotEmpty(fd: FormData, key: string, value: any) {
+    if (value === null || value === undefined) return;
+    const s = String(value).trim();
+    if (s === '') return;
+    fd.append(key, s);
+  }
+
+  private toBooleanString(v: any): string {
+    return v ? 'true' : 'false';
+  }
+
+  // =========================
+  // VALIDACIONES FRONT (suaves)
+  // =========================
+  private validateCurrentStep(): string[] {
+    const e: string[] = [];
+
+    if (this.currentStep === 1) {
+      if (!this.eventData.titulo?.trim()) e.push('El título es obligatorio.');
+      if (!this.eventData.descripcion?.trim()) e.push('La descripción es obligatoria.');
+      if (!this.eventData.categoria?.trim()) e.push('La categoría es obligatoria.');
+    }
+
+    if (this.currentStep === 2) {
+      if (!this.eventData.fecha) e.push('La fecha es obligatoria.');
+      if (!this.eventData.horaInicio) e.push('La hora de inicio es obligatoria.');
+      if (!this.eventData.horaFin) e.push('La hora de finalización es obligatoria.');
+
+      // ✅ sin validar rango rígido (permite cruzar medianoche)
+      const enLinea = Boolean(this.eventData.eventoEnLinea);
+
+      if (enLinea) {
+        if (!this.eventData.urlVirtual?.trim()) e.push('Si el evento es en línea, urlVirtual es obligatoria.');
+      } else {
+        if (!this.eventData.ubicacion?.trim()) e.push('Si el evento es presencial, la ubicación es obligatoria.');
+      }
+    }
+
+    if (this.currentStep === 3) {
+      const cupo = Number(this.eventData.cupo);
+      if (!cupo || cupo < 1) e.push('El cupo debe ser mínimo 1.');
+
+      if (!Boolean(this.eventData.eventoGratuito)) {
+        const precio = Number(this.eventData.precio);
+        if (!precio || precio <= 0) e.push('Si no es gratuito, el precio debe ser mayor a 0.');
+      }
+    }
+
+    if (this.currentStep === 4) {
+      if (!Boolean(this.eventData.eventoPublico)) {
+        if (!this.eventData.detallePrivado?.trim()) e.push('Si no es público, detallePrivado es obligatorio.');
+      }
+    }
+
+    return e;
+  }
+
+  // =========================
+  // FORM DATA (backend CrearEventoForm + imagenPortada)
+  // =========================
+  private buildFormData(): FormData {
+    const fd = new FormData();
+
+    // ⚠️ claves deben coincidir con CrearEventoForm (exactas)
+    this.appendIfNotEmpty(fd, 'titulo', this.eventData.titulo);
+    this.appendIfNotEmpty(fd, 'descripcion', this.eventData.descripcion);
+    this.appendIfNotEmpty(fd, 'categoria', this.eventData.categoria);
+
+    // fecha y horas: como string
+    this.appendIfNotEmpty(fd, 'fecha', this.eventData.fecha);
+    this.appendIfNotEmpty(fd, 'horaInicio', this.normalizeTime(this.eventData.horaInicio));
+    this.appendIfNotEmpty(fd, 'horaFin', this.normalizeTime(this.eventData.horaFin));
+
+    // booleans (Spring los bindea si van como "true"/"false")
+    fd.append('eventoEnLinea', this.toBooleanString(this.eventData.eventoEnLinea));
+    fd.append('eventoGratuito', this.toBooleanString(this.eventData.eventoGratuito));
+    fd.append('eventoPublico', this.toBooleanString(this.eventData.eventoPublico));
+    fd.append('permitirComentarios', this.toBooleanString(this.eventData.permitirComentarios));
+    fd.append('recordatoriosAutomaticos', this.toBooleanString(this.eventData.recordatoriosAutomaticos));
+
+    // online/presencial condicional
+    if (Boolean(this.eventData.eventoEnLinea)) {
+      this.appendIfNotEmpty(fd, 'urlVirtual', this.eventData.urlVirtual);
+    } else {
+      this.appendIfNotEmpty(fd, 'ubicacion', this.eventData.ubicacion);
+      this.appendIfNotEmpty(fd, 'nombreLugar', this.eventData.nombreLugar);
+      this.appendIfNotEmpty(fd, 'direccionCompleta', this.eventData.direccionCompleta);
+      this.appendIfNotEmpty(fd, 'ciudad', this.eventData.ciudad);
+    }
+
+    // cupo
+    fd.append('cupo', String(Number(this.eventData.cupo)));
+
+    // precio si no es gratuito
+    if (!Boolean(this.eventData.eventoGratuito)) {
+      // BigDecimal en backend -> mandar número como string
+      this.appendIfNotEmpty(fd, 'precio', this.eventData.precio);
+    }
+
+    // contacto
+    this.appendIfNotEmpty(fd, 'emailContacto', this.eventData.emailContacto);
+    this.appendIfNotEmpty(fd, 'telefonoContacto', this.eventData.telefonoContacto);
+    this.appendIfNotEmpty(fd, 'sitioWeb', this.eventData.sitioWeb);
+
+    // detalle privado si no es público
+    if (!Boolean(this.eventData.eventoPublico)) {
+      this.appendIfNotEmpty(fd, 'detallePrivado', this.eventData.detallePrivado);
+    }
+
+    // ✅ archivo real: el nombre debe ser "imagenPortada"
+    if (this.selectedCoverFile) {
+      fd.append('imagenPortada', this.selectedCoverFile, this.selectedCoverFile.name);
+    }
+
+    return fd;
+  }
+
+  // =========================
+  // CREAR EVENTO (multipart)
+  // =========================
   createEvent() {
-    this.eventoService.crearEvento(this.eventData).subscribe({
+    const errors = this.validateCurrentStep();
+    if (errors.length) {
+      alert(errors.join('\n'));
+      return;
+    }
+
+    const formData = this.buildFormData();
+
+    this.eventoService.crearEvento(formData).subscribe({
       next: () => this.router.navigate(['/eventos']),
-      error: err => console.error('Error creando evento', err)
+      error: err => {
+        console.error('Error creando evento', err);
+        alert('No se pudo crear el evento. Revisa la consola para ver el error.');
+      }
     });
   }
 }
