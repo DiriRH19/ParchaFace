@@ -47,7 +47,7 @@
           <input type="checkbox" formControlName="rememberMe" class="checkbox">
           <span>Recordarme</span>
         </label>
-        <a href="#" class="forgot-password">¿Olvidaste tu contraseña?</a>
+        <a routerLink="/forgot-password" class="forgot-link">¿Olvidaste tu contraseña?</a>
       </div>
       <button type="submit" class="btn-login" [disabled]="isLoading">
         {{ isLoading ? 'Iniciando sesión...' : 'Iniciar Sesión' }}
