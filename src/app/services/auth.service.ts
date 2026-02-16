@@ -1,7 +1,7 @@
 import { Injectable, inject, PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
-import { BehaviorSubject, Observable, tap, catchError, throwError, map } from 'rxjs';
+import { BehaviorSubject, Observable, tap, catchError, throwError, map, of } from 'rxjs';
 import { Router } from '@angular/router';
 import { API_CONFIG } from '../config/api.config';
 
@@ -178,22 +178,47 @@ export class AuthService {
     ).pipe(
       map((response: string) => {
         const raw = (response || '').trim();
+        console.log('Respuesta cruda de registro:', raw);
+        
         if (raw.startsWith('<')) {
           throw new Error('El servidor devolvió una página. Arranca el backend (puerto 8080) y usa ng serve para el front.');
         }
-        let data: { token?: string; error?: string };
+        
+        let data: { token?: string; error?: string; mensaje?: string };
         try {
           data = JSON.parse(raw);
         } catch {
           throw new Error('El servidor no respondió con JSON. ¿Está el backend en marcha en el puerto 8080?');
         }
-        const token = data?.token;
-        if (!token || typeof token !== 'string') {
-          throw new Error(data?.error || 'El servidor no devolvió un token. ¿El backend está actualizado?');
+        
+        let token = data?.token;
+        
+        // Si no está en .token, intentar otros formatos comunes
+        if (!token && typeof data === 'string') {
+          token = data;
         }
+        
+        console.log('Token extraído:', token);
+        console.log('Datos parseados:', data);
+        
+        // Si no hay token pero el registro fue exitoso (tiene mensaje o correo), 
+        // se hará login automático para obtener el token
+        if (!token && data?.mensaje) {
+          console.log('Registro exitoso pero sin token. Se requiere login automático.');
+          // Lanzar error especial que será capturado en el catchError
+          const error: any = new Error('NEED_AUTO_LOGIN');
+          error.credentials = { correo, contrasena };
+          throw error;
+        }
+        
+        if (!token || typeof token !== 'string') {
+          throw new Error(data?.error || 'El servidor no devolvió un token válido.');
+        }
+        
         return token;
       }),
       tap((token: string) => {
+        console.log('Guardando token en localStorage:', token);
         if (token && isPlatformBrowser(this.platformId)) {
           localStorage.setItem('token', token);
           this.isLoggedIn.next(true);
@@ -204,7 +229,51 @@ export class AuthService {
         }
       }),
       catchError((error) => {
-        console.error('Error en registro:', error);
+        console.error('Error en registro - detalles completos:', {
+          status: error.status,
+          statusText: error.statusText,
+          error: error.error,
+          headers: error.headers,
+          message: error.message
+        });
+        
+        // Si el error es NEED_AUTO_LOGIN, hacer login automático
+        if (error.message === 'NEED_AUTO_LOGIN' && error.credentials) {
+          const { correo: loginCorreo, contrasena: loginContrasena } = error.credentials;
+          console.log('Haciendo login automático con:', loginCorreo);
+          
+          return this.login(loginCorreo, loginContrasena);
+        }
+        
+        // Intentar extraer el token incluso del error para casos donde el servidor devuelve error HTTP
+        // pero sin embargo registra el usuario
+        let token: string | null = null;
+        
+        if (error.error) {
+          try {
+            const errorResponse = typeof error.error === 'string' ? JSON.parse(error.error) : error.error;
+            console.log('Respuesta parseada del error:', errorResponse);
+            token = errorResponse?.token || errorResponse?.data?.token;
+            console.log('Token encontrado en respuesta de error:', token);
+          } catch (e) {
+            console.log('No se pudo extraer token de la respuesta de error', e);
+          }
+        }
+        
+        // Si encontramos un token en el error, guardarlo y considerar el registro exitoso
+        if (token && typeof token === 'string') {
+          console.log('Usando token de respuesta de error, registro considerado exitoso');
+          if (isPlatformBrowser(this.platformId)) {
+            localStorage.setItem('token', token);
+            this.isLoggedIn.next(true);
+            const userData = this.decodeToken(token);
+            if (userData) {
+              this.userData.next(userData);
+            }
+          }
+          console.log('Token guardado en localStorage exitosamente');
+          return of(token);
+        }
         
         let errorMessage = 'Error al registrar usuario';
         if (error.error) {

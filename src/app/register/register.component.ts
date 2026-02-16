@@ -70,6 +70,14 @@ export class RegisterComponent {
       error: (error) => {
         this.isLoading = false;
         console.error('Error completo de registro:', error);
+
+        // Verificar si el token se guardó a pesar del error (registro exitoso pero respuesta del servidor problemática)
+        const token = localStorage.getItem('token');
+        if (token) {
+          console.log('Token encontrado en localStorage. Registro exitoso, navegando a preferencias...');
+          this.router.navigate(['/preferencias']);
+          return;
+        }
         
         if (error.status === 0) {
           this.errorMessage = 'No se puede conectar con el servidor. Verifica que el backend esté corriendo en http://localhost:8080';
