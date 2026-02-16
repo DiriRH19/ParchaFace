@@ -33,6 +33,127 @@
     </div>
   </div>
 
+  <!-- Preview modal -->
+  <div class="preview-modal" *ngIf="showPreview">
+    <div class="preview-backdrop" (click)="togglePreview()"></div>
+
+    <div class="preview-panel" role="dialog" aria-modal="true" aria-label="Vista previa del evento">
+      <div class="preview-event-header">
+        <button class="preview-back-link" type="button" (click)="togglePreview()">
+          <span>←</span> Volver
+        </button>
+        <div class="preview-logo">ParchaFace</div>
+        <div class="preview-header-actions"></div>
+      </div>
+
+      <div class="preview-event-content">
+        <!-- Main content -->
+        <div class="preview-event-main">
+          <!-- Image -->
+          <div class="preview-event-image">
+            <img *ngIf="eventData.imagenPortadaUrl" [src]="eventData.imagenPortadaUrl" alt="Portada del evento" class="preview-img">
+            <div *ngIf="!eventData.imagenPortadaUrl" class="preview-img-placeholder">
+              🖼️ Imagen del evento
+            </div>
+            <span class="preview-category-tag">{{ eventData.categoria || 'Sin categoría' }}</span>
+          </div>
+
+          <!-- Title & Description -->
+          <h1 class="preview-event-title">{{ eventData.titulo || 'Sin título' }}</h1>
+          <p class="preview-event-description">{{ eventData.descripcion }}</p>
+
+          <!-- Tags -->
+          <div class="preview-event-tags" *ngIf="eventData.tags?.length > 0">
+            <span class="preview-tag" *ngFor="let tag of eventData.tags">#{{ tag }}</span>
+          </div>
+        </div>
+
+        <!-- Sidebar -->
+        <aside class="preview-event-sidebar" aria-labelledby="sidebar-title">
+          <div class="preview-sidebar-card">
+            <!-- Price & Capacity -->
+            <div class="preview-price-section">
+              <div class="preview-price">
+                {{ eventData.eventoGratuito ? 'Gratis' : ('$' + eventData.precio) }}
+              </div>
+              <div class="preview-attendees-info">{{ eventData.cupo || '—' }} cupo</div>
+            </div>
+
+            <!-- Event Info -->
+            <div class="preview-event-info" id="sidebar-title" role="region" aria-label="Información del evento">
+              <!-- Date -->
+              <div class="preview-info-item">
+                <span class="preview-info-icon">📅</span>
+                <div>
+                  <div class="info-label">Fecha</div>
+                  <div class="info-value">{{ eventData.fecha || '—' }}</div>
+                </div>
+              </div>
+
+              <!-- Time -->
+              <div class="preview-info-item">
+                <span class="preview-info-icon">🕐</span>
+                <div>
+                  <div class="info-label">Hora</div>
+                  <div class="info-value">
+                    {{ eventData.horaInicio || '—' }}
+                    <span *ngIf="eventData.horaFin"> - {{ eventData.horaFin }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Location/Online -->
+              <div class="preview-info-item">
+                <span class="preview-info-icon">
+                  {{ eventData.eventoEnLinea ? '🌐' : '📍' }}
+                </span>
+                <div>
+                  <div class="info-label">{{ eventData.eventoEnLinea ? 'En línea' : 'Presencial' }}</div>
+                  <div class="preview-address info-value">
+                    {{ eventData.eventoEnLinea ? (eventData.urlVirtual || '—') : (eventData.nombreLugar || eventData.ubicacion || '—') }}
+                    <span *ngIf="!eventData.eventoEnLinea && eventData.ciudad"> • {{ eventData.ciudad }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Online URL -->
+              <div class="preview-info-item" *ngIf="eventData.eventoEnLinea && eventData.urlVirtual">
+                <span class="preview-info-icon">🔗</span>
+                <div class="info-value">{{ eventData.urlVirtual }}</div>
+              </div>
+            </div>
+
+            <!-- Create Button -->
+            <button class="preview-btn-register" type="button" (click)="createEvent()">
+              ✓ Crear Evento
+            </button>
+
+            <p class="preview-terms-text">Tu evento será visible en la plataforma.</p>
+
+            <!-- Organizer Info -->
+            <div class="preview-organizer-section">
+              <h3 class="preview-organizer-title">Información de Contacto</h3>
+              <div class="preview-organizer-contact">
+                <div class="preview-contact-item" *ngIf="eventData.emailContacto">
+                  <span>📧</span> {{ eventData.emailContacto }}
+                </div>
+                <div class="preview-contact-item" *ngIf="eventData.telefonoContacto">
+                  <span>📱</span> {{ eventData.telefonoContacto }}
+                </div>
+                <div class="preview-contact-item" *ngIf="eventData.sitioWeb">
+                  <span>🌐</span> <a [href]="eventData.sitioWeb" target="_blank" rel="noopener noreferrer">{{ eventData.sitioWeb }}</a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </aside>
+      </div>
+
+      <!-- Close button -->
+      <button class="preview-close-btn" type="button" aria-label="Cerrar vista previa" (click)="togglePreview()">✕</button>
+    </div>
+  </div>
+
   <div class="form-card">
 
     <!-- =========================
