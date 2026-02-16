@@ -63,6 +63,9 @@ export class CreateEventComponent {
 
   newTag = '';
 
+  // Preview modal
+  showPreview = false;
+
   steps = [
     { id: 1, title: 'Información Básica', description: 'Título, descripción y categoría', icon: '' },
     { id: 2, title: 'Fecha y Lugar', description: 'Cuándo y dónde será tu evento', icon: '' },
@@ -88,6 +91,46 @@ export class CreateEventComponent {
 
   removeTag(tag: string) {
     this.eventData.tags = this.eventData.tags.filter((t: string) => t !== tag);
+  }
+
+  // =========================
+  // BORRADOR / VISTA PREVIA
+  // =========================
+  saveDraft() {
+    try {
+      const errors = this.validateCurrentStep();
+      if (errors.length) {
+        alert('Por favor completa los campos faltantes:\n' + errors.join('\n'));
+        return;
+      }
+
+      const formData = this.buildFormData();
+
+      this.eventoService.guardarBorrador(formData).subscribe({
+        next: (evento) => {
+          alert(`✓ Borrador guardado exitosamente (ID: ${evento.idEvento})`);
+          console.log('Evento borrador guardado:', evento);
+        },
+        error: err => {
+          console.error('Error guardando borrador', err);
+          if (err.status === 401) {
+            alert('❌ Debes estar autenticado para guardar un borrador.');
+          } else if (err.status === 400) {
+            alert('❌ Datos incompletos o inválidos. Revisa los campos obligatorios.');
+          } else {
+            alert('❌ No se pudo guardar el borrador en el servidor. Intenta nuevamente.');
+          }
+        }
+      });
+    } catch (err) {
+      console.error('Error guardando borrador (sin enviar)', err);
+      alert('❌ Error inesperado al guardar el borrador.');
+    }
+  }
+
+  togglePreview() {
+    this.showPreview = !this.showPreview;
+    if (this.showPreview) window.scrollTo(0, 0);
   }
 
   // =========================
@@ -304,10 +347,22 @@ export class CreateEventComponent {
     const formData = this.buildFormData();
 
     this.eventoService.crearEvento(formData).subscribe({
-      next: () => this.router.navigate(['/eventos']),
+      next: (evento) => {
+        alert(`✓ ¡Evento "${evento.titulo}" creado exitosamente!`);
+        // Redirigir a explore después de 1 segundo para ver el evento nuevo
+        setTimeout(() => {
+          this.router.navigate(['/explore']);
+        }, 1000);
+      },
       error: err => {
         console.error('Error creando evento', err);
-        alert('No se pudo crear el evento. Revisa la consola para ver el error.');
+        if (err.status === 401) {
+          alert('❌ Debes estar autenticado para crear un evento.');
+        } else if (err.status === 400) {
+          alert('❌ Datos incompletos o inválidos. Revisa los campos obligatorios.');
+        } else {
+          alert('❌ No se pudo crear el evento. Revisa la consola para más detalles.');
+        }
       }
     });
   }

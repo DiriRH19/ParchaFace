@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, throwError } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 
 @Injectable({
   providedIn: 'root'
@@ -59,6 +60,27 @@ export class EventoService {
     return this.http.post(this.apiUrl, payload, {
       headers: this.getAuthHeaders(isFormData)
     });
+  }
+
+  /**
+   * Guarda un borrador en el backend. Se espera que el endpoint acepte multipart/form-data
+   * y guarde el evento en estado borrador. Si tu backend usa otra ruta, ajusta aquí.
+   */
+  guardarBorrador(payload: any): Observable<any> {
+    const isFormData = payload instanceof FormData;
+    const headers = this.getAuthHeaders(isFormData);
+
+    // Intentamos la ruta explícita /eventos/borrador primero.
+    // Si el backend no la soporta (404/405), reintentamos con query param ?borrador=true.
+    return this.http.post<any>(`${this.apiUrl}/borrador`, payload, { headers }).pipe(
+      catchError(err => {
+        const status = (err && err.status) || 0;
+        if (status === 404 || status === 405) {
+          return this.http.post<any>(`${this.apiUrl}?borrador=true`, payload, { headers });
+        }
+        return throwError(() => err);
+      })
+    );
   }
 
   // =========================
