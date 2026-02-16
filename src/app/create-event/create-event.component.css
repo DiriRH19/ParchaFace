@@ -494,4 +494,80 @@
   .summary-grid {
     grid-template-columns: 1fr;
   }
+
+}
+
+.error-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  z-index: 999999;
+}
+
+.error-modal {
+  background: #ffffff;
+  width: 420px;
+  max-width: 90%;
+  padding: 30px;
+  border-radius: 16px;
+  text-align: center;
+
+  box-shadow: 0 25px 70px rgba(0, 0, 0, 0.35);
+  border-top: 6px solid #e53935;
+
+  animation: modalFadeIn 0.25s ease-out;
+}
+
+.error-icon {
+  font-size: 48px;
+  margin-bottom: 10px;
+}
+
+.error-modal h3 {
+  color: #e53935;
+  margin-bottom: 18px;
+  font-weight: 600;
+}
+
+.error-modal ul {
+  text-align: left;
+  margin-bottom: 25px;
+  padding-left: 22px;
+}
+
+.error-modal li {
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.error-btn {
+  background: #e53935;
+  color: #ffffff;
+  border: none;
+  padding: 12px 26px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.error-btn:hover {
+  background: #c62828;
+  transform: scale(1.05);
+}
+
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }

@@ -14,6 +14,8 @@ import { EventoService } from '../services/evento';
 export class CreateEventComponent {
 
   currentStep = 1;
+  showErrorModal: boolean = false;
+  errorMessages: string[] = [];
   totalSteps = 4;
 
   // ✅ archivo real seleccionado (para multipart)
@@ -56,6 +58,8 @@ export class CreateEventComponent {
     // (solo front)
     collectFeedback: false
   };
+
+
 
   newTag = '';
 
@@ -128,17 +132,34 @@ export class CreateEventComponent {
   // STEPS
   // =========================
   nextStep() {
-    const errors = this.validateCurrentStep();
-    if (errors.length) {
-      alert(errors.join('\n'));
+    const e: string[] = [];
+
+    if (this.currentStep === 1) {
+      if (!this.eventData.titulo?.trim()) e.push('El título es obligatorio.');
+      if (!this.eventData.descripcion?.trim()) e.push('La descripción es obligatoria.');
+      if (!this.eventData.categoria?.trim()) e.push('La categoría es obligatoria.');
+    }
+
+    if (e.length > 0) {
+      this.errorMessages = e;
+      this.showErrorModal = true;
       return;
     }
-    if (this.currentStep < this.totalSteps) this.currentStep++;
+
+    if (this.currentStep < 3) this.currentStep++;
   }
+
 
   previousStep() {
     if (this.currentStep > 1) this.currentStep--;
   }
+
+  closeErrorModal() {
+    this.showErrorModal = false;
+    this.errorMessages = [];
+  }
+
+
 
   isStepComplete(step: number): boolean {
     return step < this.currentStep;

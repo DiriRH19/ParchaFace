@@ -407,4 +407,24 @@
       </button>
     </div>
   </div>
+
+  <div *ngIf="showErrorModal" class="error-overlay">
+    <div class="error-modal">
+      <div class="error-icon">❌</div>
+      <h3>Error en el formulario</h3>
+
+      <ul>
+        <li *ngFor="let error of errorMessages">
+          {{ error }}
+        </li>
+      </ul>
+
+      <button (click)="closeErrorModal()" class="error-btn">
+        Aceptar
+      </button>
+    </div>
+  </div>
 </div>
+
+
+
