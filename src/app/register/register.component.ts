@@ -69,7 +69,7 @@ export class RegisterComponent {
       },
       error: (error) => {
         this.isLoading = false;
-        console.error('Error completo de registro:', error);
+        console.error('Error completo de registro:', error && error.message ? error.message : error.status || error);
 
         // Verificar si el token se guardó a pesar del error (registro exitoso pero respuesta del servidor problemática)
         const token = localStorage.getItem('token');

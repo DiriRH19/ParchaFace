@@ -15,6 +15,7 @@ export class EventDetailComponent implements OnInit {
   event: any = null;
   showSuccessMessage: boolean = false;
   isOrganizer = false;
+  loading = true;
 
   constructor(
     private authService: AuthService,
@@ -28,13 +29,17 @@ export class EventDetailComponent implements OnInit {
     const id = idParam ? Number(idParam) : null;
     if (id) {
       this.eventoService.obtenerEventoPorId(id).subscribe({
-        next: (e: any) => {
-          this.event = this.mapEvent(e);
-          const me = this.authService.getUserData();
-          this.isOrganizer = !!(me && this.event && this.event.organizer && (me.id === this.event.organizer.id || me.usuario === this.event.organizer.usuario));
-        },
+          next: (e: any) => {
+            // Log raw response to help debugging mapping issues
+            console.log('RAW EVENT', e);
+            this.event = this.mapEvent(e);
+            const me = this.authService.getUserData();
+            this.isOrganizer = !!(me && this.event && this.event.organizer && (me.id === this.event.organizer.id || me.usuario === this.event.organizer.usuario));
+            this.loading = false;
+          },
         error: err => {
-          console.error('Error cargando evento', err);
+          console.error('Error cargando evento:', err && err.message ? err.message : err);
+          this.loading = false;
         }
       });
     }
@@ -43,6 +48,7 @@ export class EventDetailComponent implements OnInit {
   private mapEvent(e: any) {
     return {
       id: e.id,
+      imageUrl: this.eventoService.getFullImageUrl(e.imagenPortadaUrl || e.imagenUrl || e.portada || ''),
       title: e.titulo || e.title,
       category: e.categoria || e.category,
       description: e.descripcion || e.description,

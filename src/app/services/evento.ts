@@ -13,13 +13,71 @@ export class EventoService {
 
   constructor(private http: HttpClient) {}
 
+  /**
+   * Dev: lista de eventos locales para desarrollo cuando la API requiere autenticación.
+   * Devuelve eventos ya mapeados al formato usado por `EventCardComponent`.
+   */
+  getSeedEvents(): any[] {
+    const seed = [
+      {
+        title: 'Parcha Nocturno',
+        description: 'Noche de beats y buena vibra en la terraza.',
+        date: '2026-03-10 21:00',
+        location: 'La Terraza, Centro',
+        attendees: '50 asistentes',
+        category: 'Música',
+        tags: ['música','fiesta'],
+        price: 'Gratis',
+        rating: 4.5,
+        imageUrl: this.getFullImageUrl('/uploads/sample1.jpg')
+      },
+      {
+        title: 'Demo Tech Meetup',
+        description: 'Charlas cortas sobre desarrollo y herramientas.',
+        date: '2026-03-15 18:00',
+        location: 'Cowork CDMX',
+        attendees: '120 asistentes',
+        category: 'Networking',
+        tags: ['tech','meetup'],
+        price: '$10',
+        rating: 4,
+        imageUrl: this.getFullImageUrl('/uploads/sample2.jpg')
+      }
+    ];
+
+    return seed;
+  }
+
+  /**
+   * Normaliza rutas de imagen que provienen del backend.
+   * - Si la URL ya es absoluta (`http(s)://`) la devuelve tal cual.
+   * - Si es una ruta relativa (p. ej. `/uploads/x.jpg`) la prefija con el host del API.
+   */
+  getFullImageUrl(path: string): string {
+    if (!path) return '';
+    if (/^https?:\/\//i.test(path)) return path;
+
+    // base = http://localhost:8080  (quita el sufijo /eventos)
+    const base = this.apiUrl.replace(/\/eventos\/?$/i, '');
+
+    if (path.startsWith('/')) {
+      return `${base}${path}`;
+    }
+
+    return `${base}/${path}`;
+  }
+
   // Busca el token en varias keys típicas (por si tu login lo guarda distinto)
   private getToken(): string | null {
+    // En entornos sin `window` (SSR / server) evitar acceder a localStorage
+    if (typeof window === 'undefined' || !window?.localStorage) return null;
+
     return (
       localStorage.getItem('token') ||
       localStorage.getItem('jwt') ||
       localStorage.getItem('access_token') ||
-      localStorage.getItem('accessToken')
+      localStorage.getItem('accessToken') ||
+      null
     );
   }
 
@@ -90,6 +148,26 @@ export class EventoService {
     return this.http.get<any[]>(this.apiUrl, {
       headers: this.getAuthHeaders(false)
     });
+  }
+
+  /**
+   * Obtiene eventos que no requieren autenticación. Intenta `/eventos/public` y
+   * si no existe, reintenta `/eventos?public=true`.
+   */
+  obtenerEventosPublicos(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/public`, {
+      headers: this.getAuthHeaders(false)
+    }).pipe(
+      catchError(err => {
+        const status = (err && err.status) || 0;
+        if (status === 404 || status === 405) {
+          return this.http.get<any[]>(`${this.apiUrl}?public=true`, {
+            headers: this.getAuthHeaders(false)
+          });
+        }
+        return throwError(() => err);
+      })
+    );
   }
 
   obtenerEventoPorId(id: number): Observable<any> {

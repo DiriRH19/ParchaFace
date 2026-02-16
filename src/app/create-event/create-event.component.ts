@@ -112,8 +112,8 @@ export class CreateEventComponent {
           console.log('Evento borrador guardado:', evento);
         },
         error: err => {
-          console.error('Error guardando borrador', err);
-          if (err.status === 401) {
+          console.error('Error guardando borrador:', err && err.message ? err.message : err);
+          if (err && err.status === 401) {
             alert('❌ Debes estar autenticado para guardar un borrador.');
           } else if (err.status === 400) {
             alert('❌ Datos incompletos o inválidos. Revisa los campos obligatorios.');
@@ -123,7 +123,7 @@ export class CreateEventComponent {
         }
       });
     } catch (err) {
-      console.error('Error guardando borrador (sin enviar)', err);
+      console.error('Error guardando borrador (sin enviar):', err && (err as any).message ? (err as any).message : err);
       alert('❌ Error inesperado al guardar el borrador.');
     }
   }
@@ -175,21 +175,16 @@ export class CreateEventComponent {
   // STEPS
   // =========================
   nextStep() {
-    const e: string[] = [];
-
-    if (this.currentStep === 1) {
-      if (!this.eventData.titulo?.trim()) e.push('El título es obligatorio.');
-      if (!this.eventData.descripcion?.trim()) e.push('La descripción es obligatoria.');
-      if (!this.eventData.categoria?.trim()) e.push('La categoría es obligatoria.');
-    }
-
-    if (e.length > 0) {
-      this.errorMessages = e;
+    const errors = this.validateCurrentStep();
+    if (errors.length) {
+      this.errorMessages = errors;
       this.showErrorModal = true;
       return;
     }
 
-    if (this.currentStep < 3) this.currentStep++;
+    if (this.currentStep < this.totalSteps) {
+      this.currentStep++;
+    }
   }
 
 
@@ -355,8 +350,8 @@ export class CreateEventComponent {
         }, 1000);
       },
       error: err => {
-        console.error('Error creando evento', err);
-        if (err.status === 401) {
+        console.error('Error creando evento:', err && err.message ? err.message : err);
+        if (err && err.status === 401) {
           alert('❌ Debes estar autenticado para crear un evento.');
         } else if (err.status === 400) {
           alert('❌ Datos incompletos o inválidos. Revisa los campos obligatorios.');

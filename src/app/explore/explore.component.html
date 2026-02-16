@@ -48,7 +48,10 @@
     </div>
     <div class="events-section">
       <div class="events-header">
-        <h2 class="events-count">6 eventos encontrados</h2>
+          <h2 class="events-count">{{ events.length }} eventos</h2>
+          <div *ngIf="authRequired" class="auth-warning">
+            Para ver los eventos necesitas iniciar sesión. <a routerLink="/login">Iniciar sesión</a>
+          </div>
       </div>
       <div class="events-grid">
         <app-event-card *ngFor="let event of events" [event]="event"></app-event-card>

@@ -56,7 +56,7 @@ export class LoginComponent {
       },
       error: (error) => {
         this.isLoading = false;
-        console.error('Error completo de login:', error);
+        console.error('Error completo de login:', error && error.message ? error.message : error.status || error);
         
         if (error.status === 0) {
           this.errorMessage = 'No se puede conectar con el servidor. Verifica que el backend esté corriendo en http://localhost:8080';

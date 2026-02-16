@@ -1,6 +1,7 @@
 <div class="event-card">
   <div class="event-image">
     <span class="category-tag">{{ event.category }}</span>
+    <img *ngIf="event.imageUrl" [src]="event.imageUrl" alt="Portada" class="event-img">
     <div class="action-icons">
       <button class="icon-btn heart"></button>
       <button class="icon-btn share"></button>

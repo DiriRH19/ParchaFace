@@ -14,6 +14,8 @@ import { EventoService } from '../services/evento';
 export class ExploreComponent implements OnInit {
   events: Event[] = [];
   isLoading = false;
+  authRequired = false;
+  private authWarned = false;
 
   constructor(private eventoService: EventoService) {}
 
@@ -39,12 +41,32 @@ export class ExploreComponent implements OnInit {
           category: e.categoria || '',
           tags: e.tags || [],
           price: e.precio ? (typeof e.precio === 'number' ? `$${e.precio}` : String(e.precio)) : (e.eventoGratuito ? 'Gratis' : ''),
-          rating: e.rating || 0
+          rating: e.rating || 0,
+          imageUrl: this.eventoService.getFullImageUrl(e.imagenPortadaUrl || e.imagenUrl || e.portada || '')
         } as Event));
         this.isLoading = false;
       },
       error: err => {
-        console.error('No se pudieron cargar los eventos', err);
+        // Mostrar un mensaje conciso en consola y en UI cuando la API requiere autenticación.
+        if (err && err.status === 401) {
+          this.authRequired = true;
+          this.isLoading = false;
+          if (!this.authWarned) {
+            console.warn('API requiere autenticación para cargar eventos (401).');
+            this.authWarned = true;
+          }
+          // Usar seed local para desarrollo en vez de dejar la lista vacía
+          try {
+            this.events = this.eventoService.getSeedEvents() || [];
+            console.info('Mostrando eventos de desarrollo (seed) porque la API requirió autenticación.');
+          } catch (e) {
+            // fallback: dejar lista vacía
+            this.events = [];
+          }
+          return;
+        }
+
+        console.error('Error cargando eventos', err && err.message ? err.message : err);
         this.isLoading = false;
       }
     });
