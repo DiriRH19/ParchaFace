@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -11,7 +11,7 @@ import { EventoService } from '../services/evento';
   templateUrl: './create-event.component.html',
   styleUrls: ['./create-event.component.css']
 })
-export class CreateEventComponent {
+export class CreateEventComponent implements OnDestroy {
 
   currentStep = 1;
   showErrorModal: boolean = false;
@@ -20,6 +20,13 @@ export class CreateEventComponent {
 
   // ✅ archivo real seleccionado (para multipart)
   private selectedCoverFile: File | null = null;
+
+  // ✅ NUEVO: modal bonito de éxito
+  showSuccessModal: boolean = false;
+  createdEvent: any = null;
+
+  // ✅ NUEVO: preview local (objectURL) para mostrar imagen en el modal (mejor que base64)
+  localCoverPreviewUrl: string | null = null;
 
   eventData: any = {
     // Paso 1
@@ -59,8 +66,6 @@ export class CreateEventComponent {
     collectFeedback: false
   };
 
-
-
   newTag = '';
 
   // Preview modal
@@ -77,6 +82,13 @@ export class CreateEventComponent {
     private eventoService: EventoService,
     private router: Router
   ) {}
+
+  ngOnDestroy(): void {
+    if (this.localCoverPreviewUrl) {
+      URL.revokeObjectURL(this.localCoverPreviewUrl);
+      this.localCoverPreviewUrl = null;
+    }
+  }
 
   // =========================
   // TAGS (SOLO FRONT)
@@ -100,6 +112,7 @@ export class CreateEventComponent {
     try {
       const errors = this.validateCurrentStep();
       if (errors.length) {
+        // Mantengo tu comportamiento actual (luego si quieres lo migramos a modal/toast)
         alert('Por favor completa los campos faltantes:\n' + errors.join('\n'));
         return;
       }
@@ -156,6 +169,11 @@ export class CreateEventComponent {
       this.selectedCoverFile = null;
       this.eventData.imagenPortadaUrl = '';
       this.eventData.imagenPortadaContentType = '';
+
+      if (this.localCoverPreviewUrl) {
+        URL.revokeObjectURL(this.localCoverPreviewUrl);
+        this.localCoverPreviewUrl = null;
+      }
       return;
     }
 
@@ -163,12 +181,18 @@ export class CreateEventComponent {
     this.selectedCoverFile = file;
     this.eventData.imagenPortadaContentType = ct;
 
-    // ✅ Preview (solo UI)
+    // ✅ Preview (base64) para tu vista previa existente (HTML usa imagenPortadaUrl)
     const reader = new FileReader();
     reader.onload = () => {
       this.eventData.imagenPortadaUrl = String(reader.result || '');
     };
     reader.readAsDataURL(file);
+
+    // ✅ Preview local (objectURL) para el modal de éxito (más rápido y estable)
+    if (this.localCoverPreviewUrl) {
+      URL.revokeObjectURL(this.localCoverPreviewUrl);
+    }
+    this.localCoverPreviewUrl = URL.createObjectURL(file);
   }
 
   // =========================
@@ -187,7 +211,6 @@ export class CreateEventComponent {
     }
   }
 
-
   previousStep() {
     if (this.currentStep > 1) this.currentStep--;
   }
@@ -196,8 +219,6 @@ export class CreateEventComponent {
     this.showErrorModal = false;
     this.errorMessages = [];
   }
-
-
 
   isStepComplete(step: number): boolean {
     return step < this.currentStep;
@@ -221,6 +242,14 @@ export class CreateEventComponent {
 
   private toBooleanString(v: any): string {
     return v ? 'true' : 'false';
+  }
+
+
+  private resolveBackendImageUrl(url: string): string {
+    if (!url) return '';
+    if (/^https?:\/\//i.test(url)) return url;
+    // backend base: http://localhost:8080
+    return `http://localhost:8080${url.startsWith('/') ? '' : '/'}${url}`;
   }
 
   // =========================
@@ -330,11 +359,29 @@ export class CreateEventComponent {
   }
 
   // =========================
+  // ✅ MODAL ÉXITO: acciones
+  // =========================
+  onModifyFromModal() {
+    // Cierra modal y deja al usuario editando (no pierde datos)
+    this.showSuccessModal = false;
+  }
+  onAcceptFromModal() {
+    this.showSuccessModal = false;
+
+    // ✅ Ruta real del listado (tu ExploreComponent)
+    this.router.navigate(['/explore'], {
+      state: { newlyCreatedEvent: this.createdEvent }
+    });
+  }
+
+
+  // =========================
   // CREAR EVENTO (multipart)
   // =========================
   createEvent() {
     const errors = this.validateCurrentStep();
     if (errors.length) {
+      // Mantengo tu comportamiento para este caso (si quieres lo pasamos al error modal)
       alert(errors.join('\n'));
       return;
     }
@@ -343,17 +390,24 @@ export class CreateEventComponent {
 
     this.eventoService.crearEvento(formData).subscribe({
       next: (evento) => {
-        alert(`✓ ¡Evento "${evento.titulo}" creado exitosamente!`);
-        // Redirigir a explore después de 1 segundo para ver el evento nuevo
-        setTimeout(() => {
-          this.router.navigate(['/explore']);
-        }, 1000);
+        // ✅ Guardamos respuesta para el modal
+        this.createdEvent = {
+          ...evento,
+          // normaliza imagen si viene como ruta relativa
+          imagenPortadaUrl: evento?.imagenPortadaUrl ? this.resolveBackendImageUrl(evento.imagenPortadaUrl) : evento?.imagenPortadaUrl
+        };
+
+        // ✅ cierra preview modal si estaba abierto
+        if (this.showPreview) this.showPreview = false;
+
+        // ✅ abre modal bonito
+        this.showSuccessModal = true;
       },
       error: err => {
         console.error('Error creando evento:', err && err.message ? err.message : err);
         if (err && err.status === 401) {
           alert('❌ Debes estar autenticado para crear un evento.');
-        } else if (err.status === 400) {
+        } else if (err && err.status === 400) {
           alert('❌ Datos incompletos o inválidos. Revisa los campos obligatorios.');
         } else {
           alert('❌ No se pudo crear el evento. Revisa la consola para más detalles.');

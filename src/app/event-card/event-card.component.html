@@ -1,35 +1,61 @@
 <div class="event-card">
   <div class="event-image">
-    <span class="category-tag">{{ event.category }}</span>
-    <img *ngIf="event.imageUrl" [src]="event.imageUrl" alt="Portada" class="event-img">
-    <div class="action-icons">
-      <button class="icon-btn heart"></button>
-      <button class="icon-btn share"></button>
+    <!-- Imagen real -->
+    <img
+      *ngIf="imageOk && normalizedEvent.imageUrl"
+      [src]="normalizedEvent.imageUrl"
+      alt="Portada"
+      loading="lazy"
+      class="event-img"
+      (error)="onImgError()"
+    >
+
+    <!-- Placeholder cuando no hay imagen o falla -->
+    <div *ngIf="!imageOk || !normalizedEvent.imageUrl" class="event-img-placeholder">
+      🖼️ Portada
     </div>
+
+    <span class="category-tag">{{ normalizedEvent.category || 'Sin categoría' }}</span>
+
+    <div class="action-icons">
+      <button type="button" class="icon-btn heart" aria-label="Me gusta"></button>
+      <button type="button" class="icon-btn share" aria-label="Compartir"></button>
+    </div>
+
     <div class="rating-badge">
-      {{ event.rating }}
+      {{ normalizedEvent.rating }}
     </div>
   </div>
+
   <div class="event-content">
-    <h3 class="event-title">{{ event.title }}</h3>
-    <p class="event-description">{{ event.description }}</p>
+    <h3 class="event-title">{{ normalizedEvent.title }}</h3>
+    <p class="event-description">{{ normalizedEvent.description }}</p>
+
     <div class="event-details">
       <div class="detail-item">
         <span class="icon"></span>
-        <span>{{ event.date }}</span>
+        <span>{{ normalizedEvent.date }}</span>
       </div>
       <div class="detail-item">
         <span class="icon"></span>
-        <span>{{ event.location }}</span>
+        <span>{{ normalizedEvent.location }}</span>
       </div>
       <div class="detail-item">
         <span class="icon"></span>
-        <span>{{ event.attendees }}</span>
+        <span>{{ normalizedEvent.attendees }}</span>
       </div>
     </div>
+
     <div class="event-footer">
-      <div class="price">{{ event.price }}</div>
-      <button class="btn-details" routerLink="/event/1">Ver Detalles</button>
+      <div class="price">{{ normalizedEvent.price }}</div>
+
+      <button
+        class="btn-details"
+        [routerLink]="['/event', normalizedEvent.id ?? 1]"
+        type="button"
+      >
+        Ver Detalles
+      </button>
     </div>
   </div>
 </div>

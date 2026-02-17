@@ -13,10 +13,7 @@ export class EventoService {
 
   constructor(private http: HttpClient) {}
 
-  /**
-   * Dev: lista de eventos locales para desarrollo cuando la API requiere autenticación.
-   * Devuelve eventos ya mapeados al formato usado por `EventCardComponent`.
-   */
+
   getSeedEvents(): any[] {
     const seed = [
       {
@@ -48,11 +45,7 @@ export class EventoService {
     return seed;
   }
 
-  /**
-   * Normaliza rutas de imagen que provienen del backend.
-   * - Si la URL ya es absoluta (`http(s)://`) la devuelve tal cual.
-   * - Si es una ruta relativa (p. ej. `/uploads/x.jpg`) la prefija con el host del API.
-   */
+
   getFullImageUrl(path: string): string {
     if (!path) return '';
     if (/^https?:\/\//i.test(path)) return path;
@@ -83,16 +76,15 @@ export class EventoService {
 
   /**
    * ✅ Headers con Authorization.
-   * - Si el body es FormData, NO seteamos Content-Type.
-   * - Si el body es JSON, usamos application/json.
+   * - Por defecto NO forzamos Content-Type (mejor para GET y multipart).
+   * - Si necesitas JSON, pasa { contentTypeJson: true }.
    */
-  private getAuthHeaders(isFormData: boolean = false): HttpHeaders {
+  private getAuthHeaders(options?: { contentTypeJson?: boolean }): HttpHeaders {
     const token = this.getToken();
 
     let headers = new HttpHeaders();
 
-    // Solo forzamos JSON cuando NO es FormData
-    if (!isFormData) {
+    if (options?.contentTypeJson) {
       headers = headers.set('Content-Type', 'application/json');
     }
 
@@ -108,16 +100,33 @@ export class EventoService {
   // =========================
 
   /**
-   * ✅ Crea evento:
-   * - Si mandas FormData (multipart): crea con imagen real
-   * - Si mandas objeto normal: JSON
+   * ✅ Crea evento con multipart/form-data (imagen real).
+   * NO seteamos Content-Type manualmente (el browser define boundary).
+   */
+  crearEventoMultipart(formData: FormData): Observable<any> {
+    return this.http.post(this.apiUrl, formData, {
+      headers: this.getAuthHeaders()
+    });
+  }
+
+  /**
+   * ✅ Crea evento con JSON (legacy).
+   */
+  crearEventoJson(dto: any): Observable<any> {
+    return this.http.post(this.apiUrl, dto, {
+      headers: this.getAuthHeaders({ contentTypeJson: true })
+    });
+  }
+
+  /**
+   * ✅ Crea evento (auto-detecta FormData vs JSON).
+   * Se deja por compatibilidad con tu código actual.
    */
   crearEvento(payload: any): Observable<any> {
-    const isFormData = payload instanceof FormData;
-
-    return this.http.post(this.apiUrl, payload, {
-      headers: this.getAuthHeaders(isFormData)
-    });
+    if (payload instanceof FormData) {
+      return this.crearEventoMultipart(payload);
+    }
+    return this.crearEventoJson(payload);
   }
 
   /**
@@ -126,7 +135,9 @@ export class EventoService {
    */
   guardarBorrador(payload: any): Observable<any> {
     const isFormData = payload instanceof FormData;
-    const headers = this.getAuthHeaders(isFormData);
+    const headers = isFormData
+      ? this.getAuthHeaders()
+      : this.getAuthHeaders({ contentTypeJson: true });
 
     // Intentamos la ruta explícita /eventos/borrador primero.
     // Si el backend no la soporta (404/405), reintentamos con query param ?borrador=true.
@@ -146,7 +157,7 @@ export class EventoService {
   // =========================
   obtenerEventos(): Observable<any[]> {
     return this.http.get<any[]>(this.apiUrl, {
-      headers: this.getAuthHeaders(false)
+      headers: this.getAuthHeaders()
     });
   }
 
@@ -156,13 +167,13 @@ export class EventoService {
    */
   obtenerEventosPublicos(): Observable<any[]> {
     return this.http.get<any[]>(`${this.apiUrl}/public`, {
-      headers: this.getAuthHeaders(false)
+      headers: this.getAuthHeaders()
     }).pipe(
       catchError(err => {
         const status = (err && err.status) || 0;
         if (status === 404 || status === 405) {
           return this.http.get<any[]>(`${this.apiUrl}?public=true`, {
-            headers: this.getAuthHeaders(false)
+            headers: this.getAuthHeaders()
           });
         }
         return throwError(() => err);
@@ -172,13 +183,13 @@ export class EventoService {
 
   obtenerEventoPorId(id: number): Observable<any> {
     return this.http.get<any>(`${this.apiUrl}/${id}`, {
-      headers: this.getAuthHeaders(false)
+      headers: this.getAuthHeaders()
     });
   }
 
   obtenerEventosPorEstado(estado: string): Observable<any[]> {
     return this.http.get<any[]>(`${this.apiUrl}/estado/${estado}`, {
-      headers: this.getAuthHeaders(false)
+      headers: this.getAuthHeaders()
     });
   }
 
@@ -186,17 +197,17 @@ export class EventoService {
   // PUT / DELETE (admin)
   // =========================
   actualizarEvento(id: number, payload: any): Observable<any> {
-    // si algún día actualizas con FormData, también lo soporta:
     const isFormData = payload instanceof FormData;
+    const headers = isFormData
+      ? this.getAuthHeaders()
+      : this.getAuthHeaders({ contentTypeJson: true });
 
-    return this.http.put<any>(`${this.apiUrl}/${id}`, payload, {
-      headers: this.getAuthHeaders(isFormData)
-    });
+    return this.http.put<any>(`${this.apiUrl}/${id}`, payload, { headers });
   }
 
   eliminarEvento(id: number): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/${id}`, {
-      headers: this.getAuthHeaders(false)
+      headers: this.getAuthHeaders()
     });
   }
 }
