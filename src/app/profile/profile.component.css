@@ -360,3 +360,18 @@
     grid-template-columns: 1fr;
   }
 }
+
+.cover-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;   /* recorta sin deformar */
+  display: block;
+}
+
+.profile-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;   /* recorta a círculo sin deformar */
+  border-radius: 50%;
+  display: block;
+}

@@ -1,6 +1,6 @@
 import { Injectable, inject, PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
-import { HttpClient } from '@angular/common/http';
+import {HttpClient, HttpHeaders} from '@angular/common/http';
 import { BehaviorSubject, Observable, tap, catchError, throwError, map, of } from 'rxjs';
 import { Router } from '@angular/router';
 import { API_CONFIG } from '../config/api.config';
@@ -18,10 +18,14 @@ export interface RegisterRequest {
 }
 
 export interface UserData {
-  usuario?: string;
-  correo?: string;
   id?: number;
   nombre?: string;
+  usuario?: string;
+  correo?: string;
+
+  fotoPerfil?: string;
+  fotoPortada?: string;
+
   [key: string]: any;
 }
 
@@ -46,7 +50,7 @@ export class AuthService {
     if (!isPlatformBrowser(this.platformId)) {
       return;
     }
-    
+
     const token = localStorage.getItem('token');
     if (token && this.isTokenValid(token)) {
       this.isLoggedIn.next(true);
@@ -89,7 +93,7 @@ export class AuthService {
 
   login(correo: string, contrasena: string): Observable<string> {
     const loginData: LoginRequest = { correo, contrasena };
-    
+
     return this.http.post(
       `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.auth.login}`,
       loginData,
@@ -98,7 +102,7 @@ export class AuthService {
       map((response: string) => {
         let token = response.trim();
         console.log('Respuesta cruda del backend:', response);
-        
+
         try {
           if (token.startsWith('"') && token.endsWith('"')) {
             token = JSON.parse(token);
@@ -124,7 +128,7 @@ export class AuthService {
             }
           }
         }
-        
+
         console.log('Token procesado:', token);
         return token;
       }),
@@ -141,7 +145,7 @@ export class AuthService {
       }),
       catchError((error) => {
         console.error('Error en login:', error);
-        
+
         let errorMessage = 'Error al iniciar sesión';
         if (error.error) {
           try {
@@ -157,12 +161,12 @@ export class AuthService {
             }
           }
         }
-        
+
         const customError = {
           ...error,
           error: { error: errorMessage, message: errorMessage }
         };
-        
+
         return throwError(() => customError);
       })
     );
@@ -170,7 +174,7 @@ export class AuthService {
 
   register(usuario: string, correo: string, contrasena: string, confirmarContrasena: string): Observable<string> {
     const registerData: RegisterRequest = { usuario, correo, contrasena, confirmarContrasena };
-    
+
     return this.http.post(
       `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.auth.register}`,
       registerData,
@@ -179,29 +183,29 @@ export class AuthService {
       map((response: string) => {
         const raw = (response || '').trim();
         console.log('Respuesta cruda de registro:', raw);
-        
+
         if (raw.startsWith('<')) {
           throw new Error('El servidor devolvió una página. Arranca el backend (puerto 8080) y usa ng serve para el front.');
         }
-        
+
         let data: { token?: string; error?: string; mensaje?: string };
         try {
           data = JSON.parse(raw);
         } catch {
           throw new Error('El servidor no respondió con JSON. ¿Está el backend en marcha en el puerto 8080?');
         }
-        
+
         let token = data?.token;
-        
+
         // Si no está en .token, intentar otros formatos comunes
         if (!token && typeof data === 'string') {
           token = data;
         }
-        
+
         console.log('Token extraído:', token);
         console.log('Datos parseados:', data);
-        
-        // Si no hay token pero el registro fue exitoso (tiene mensaje o correo), 
+
+        // Si no hay token pero el registro fue exitoso (tiene mensaje o correo),
         // se hará login automático para obtener el token
         if (!token && data?.mensaje) {
           console.log('Registro exitoso pero sin token. Se requiere login automático.');
@@ -210,11 +214,11 @@ export class AuthService {
           error.credentials = { correo, contrasena };
           throw error;
         }
-        
+
         if (!token || typeof token !== 'string') {
           throw new Error(data?.error || 'El servidor no devolvió un token válido.');
         }
-        
+
         return token;
       }),
       tap((token: string) => {
@@ -236,19 +240,19 @@ export class AuthService {
           headers: error.headers,
           message: error.message
         });
-        
+
         // Si el error es NEED_AUTO_LOGIN, hacer login automático
         if (error.message === 'NEED_AUTO_LOGIN' && error.credentials) {
           const { correo: loginCorreo, contrasena: loginContrasena } = error.credentials;
           console.log('Haciendo login automático con:', loginCorreo);
-          
+
           return this.login(loginCorreo, loginContrasena);
         }
-        
+
         // Intentar extraer el token incluso del error para casos donde el servidor devuelve error HTTP
         // pero sin embargo registra el usuario
         let token: string | null = null;
-        
+
         if (error.error) {
           try {
             const errorResponse = typeof error.error === 'string' ? JSON.parse(error.error) : error.error;
@@ -259,7 +263,7 @@ export class AuthService {
             console.log('No se pudo extraer token de la respuesta de error', e);
           }
         }
-        
+
         // Si encontramos un token en el error, guardarlo y considerar el registro exitoso
         if (token && typeof token === 'string') {
           console.log('Usando token de respuesta de error, registro considerado exitoso');
@@ -274,7 +278,7 @@ export class AuthService {
           console.log('Token guardado en localStorage exitosamente');
           return of(token);
         }
-        
+
         let errorMessage = 'Error al registrar usuario';
         if (error.error) {
           try {
@@ -290,12 +294,12 @@ export class AuthService {
             }
           }
         }
-        
+
         const customError = {
           ...error,
           error: { error: errorMessage, message: errorMessage }
         };
-        
+
         return throwError(() => customError);
       })
     );
@@ -324,4 +328,28 @@ export class AuthService {
   getUserData(): UserData | null {
     return this.userData.value;
   }
+
+  uploadPerfil(id: number, formData: FormData) {
+    const token = this.getToken();
+    return this.http.post(
+      `http://localhost:8080/usuarios/${id}/foto-perfil`,
+      formData,
+      { headers: token ? { Authorization: `Bearer ${token}` } : {} }
+    );
+  }
+
+  uploadPortada(id: number, formData: FormData) {
+    const token = this.getToken();
+    return this.http.post(
+      `http://localhost:8080/usuarios/${id}/foto-portada`,
+      formData,
+      { headers: token ? { Authorization: `Bearer ${token}` } : {} }
+    );
+  }
+
+  getUsuarioById(id: number) {
+    return this.http.get<UserData>(`http://localhost:8080/usuarios/${id}`);
+  }
+
+
 }
