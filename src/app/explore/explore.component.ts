@@ -147,6 +147,9 @@ export class ExploreComponent implements OnInit {
       description: descripcion,
       date,
       location,
+
+      ciudad: (!enLinea ? (e?.ciudad ?? '') : ''),
+
       attendees,
       category,
       tags,

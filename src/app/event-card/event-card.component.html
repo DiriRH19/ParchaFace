@@ -30,10 +30,26 @@
         <span class="icon"></span>
         <span>{{ event.date }}</span>
       </div>
+
       <div class="detail-item">
         <span class="icon"></span>
         <span>{{ event.location }}</span>
       </div>
+
+      <div class="detail-item" *ngIf="event.ciudad">
+        <span class="icon">🌤️</span>
+
+        <span *ngIf="climaLoading">Clima...</span>
+
+        <span *ngIf="!climaLoading && clima">
+          {{ clima.temperaturaC }} °C • 💨 {{ clima.vientoKmh }} km/h
+        </span>
+
+        <span *ngIf="!climaLoading && !clima && climaError">
+          Clima no disponible
+        </span>
+      </div>
+
       <div class="detail-item">
         <span class="icon"></span>
         <span>{{ event.attendees }}</span>

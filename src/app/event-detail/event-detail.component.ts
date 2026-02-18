@@ -3,6 +3,7 @@ import { CommonModule, NgIf } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { EventoService } from '../services/evento';
 import { NavbarComponent } from '../shared/navbar/navbar.component';
+import { WeatherService, ClimaResponse } from '../services/weather.service'; // ✅ NUEVO
 
 type EventoVM = {
   id?: number;
@@ -51,10 +52,15 @@ export class EventDetailComponent implements OnInit {
 
   evento: EventoVM | null = null;
 
+  clima: ClimaResponse | null = null;
+  climaLoading = false;
+  climaError = false;
+
   constructor(
     private route: ActivatedRoute,
     private router: Router,
-    private eventoService: EventoService
+    private eventoService: EventoService,
+    private weatherService: WeatherService
   ) {}
 
   ngOnInit(): void {
@@ -78,10 +84,16 @@ export class EventDetailComponent implements OnInit {
     this.isLoading = true;
     this.errorMsg = '';
 
+    this.clima = null;
+    this.climaLoading = false;
+    this.climaError = false;
+
     this.eventoService.obtenerEventoPorId(id).subscribe({
       next: (e: any) => {
         this.evento = this.mapToVM(e);
         this.isLoading = false;
+
+        this.loadClimaForEvento();
       },
       error: (err) => {
         this.isLoading = false;
@@ -100,6 +112,46 @@ export class EventDetailComponent implements OnInit {
         console.error('Error cargando evento por id:', err);
       }
     });
+  }
+
+  private loadClimaForEvento(): void {
+    if (!this.evento) return;
+
+    if (this.evento.eventoEnLinea) {
+      this.clima = null;
+      this.climaLoading = false;
+      this.climaError = false;
+      return;
+    }
+
+    const ciudad = (this.evento.ciudad || '').trim();
+    if (!ciudad) {
+      this.clima = null;
+      this.climaLoading = false;
+      this.climaError = false;
+      return;
+    }
+
+    this.climaLoading = true;
+    this.climaError = false;
+
+    try {
+      this.weatherService.getClima(ciudad).subscribe({
+        next: (c) => {
+          this.clima = c;
+          this.climaLoading = false;
+        },
+        error: () => {
+          this.clima = null;
+          this.climaLoading = false;
+          this.climaError = true;
+        }
+      });
+    } catch (_) {
+      this.clima = null;
+      this.climaLoading = false;
+      this.climaError = true;
+    }
   }
 
   private mapToVM(e: any): EventoVM {
