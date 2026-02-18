@@ -4,57 +4,89 @@
     <div class="filters-sidebar">
       <div class="filters-card">
         <h3 class="filters-title">Filtros</h3>
+
         <div class="filter-group">
-          <input type="text" placeholder="Buscar eventos..." class="filter-input">
+          <input
+            type="text"
+            placeholder="Buscar eventos..."
+            class="filter-input"
+            [(ngModel)]="searchText"
+          >
         </div>
+
         <div class="filter-group">
           <label class="filter-label">Categoría</label>
-          <select class="filter-select">
-            <option>Todos</option>
-            <option>Música</option>
-            <option>Gaming</option>
-            <option>Fiestas</option>
-            <option>Networking</option>
-            <option>Deportes</option>
+          <select class="filter-select" [(ngModel)]="categoriaFiltro">
+            <option value="">Todos</option>
+            <option value="MUSICA">Música</option>
+            <option value="GASTRONOMIA">Gastronomía</option>
+            <option value="GAMING">Gaming</option>
+            <option value="FIESTAS">Fiestas</option>
+            <option value="NETWORKING">Networking</option>
+            <option value="ARTE">Arte</option>
+            <option value="TECNO">Tecno</option>
+            <option value="DEPORTE">Deportes</option>
           </select>
         </div>
+
         <div class="filter-group">
           <label class="filter-label">Ciudad</label>
-          <select class="filter-select">
-            <option>Todas las ciudades</option>
-            <option>Ciudad de México</option>
-            <option>Guadalajara</option>
-            <option>Monterrey</option>
-          </select>
+
+          <input
+            type="text"
+            class="filter-input"
+            placeholder="Todas las ciudades"
+            [value]="ciudadFiltro"
+            (input)="ciudadFiltro = $any($event.target).value; onCiudadInput($any($event.target).value)"
+            list="ciudades-list"
+          >
+
+          <datalist id="ciudades-list">
+            <option *ngFor="let c of ciudadesSugeridas" [value]="c.nombre">
+              {{ c.nombre }} - {{ c.departamento }}
+            </option>
+          </datalist>
         </div>
+
         <div class="filter-group">
           <label class="filter-label">Rango de Precio</label>
-          <div class="price-range">
-            <span>$0</span>
-            <input type="range" min="0" max="100" value="100" class="price-slider">
-            <span>$100</span>
-          </div>
+          <select class="filter-select" [(ngModel)]="priceRange">
+            <option value="">Todos</option>
+            <option value="free">Gratis</option>
+            <option value="0-50000">$0 - $50.000</option>
+            <option value="50000-100000">$50.000 - $100.000</option>
+            <option value="100000-200000">$100.000 - $200.000</option>
+            <option value="200000-300000">$200.000 - $300.000</option>
+            <option value="300000-500000">$300.000 - $500.000</option>
+            <option value="500000-1000000">$500.000 - $1.000.000</option>
+            <option value="1000000-2000000">$1.000.000 - $2.000.000</option>
+            <option value="2000000-999999999">$2.00.000+</option>
+          </select>
         </div>
+
         <div class="filter-group">
           <label class="filter-label">Ordenar por</label>
-          <select class="filter-select">
-            <option>Fecha</option>
-            <option>Precio</option>
-            <option>Popularidad</option>
-            <option>Rating</option>
+          <select class="filter-select" [(ngModel)]="sortBy">
+            <option value="fecha">Fecha</option>
+            <option value="precio">Precio</option>
+            <option value="popularidad">Popularidad</option>
+            <option value="rating">Rating</option>
           </select>
         </div>
       </div>
     </div>
+
     <div class="events-section">
       <div class="events-header">
-          <h2 class="events-count">{{ events.length }} eventos</h2>
-          <div *ngIf="authRequired" class="auth-warning">
-            Para ver los eventos necesitas iniciar sesión. <a routerLink="/login">Iniciar sesión</a>
-          </div>
+        <h2 class="events-count">{{ eventsFiltrados.length }} eventos</h2>
+
+        <div *ngIf="authRequired" class="auth-warning">
+          Para ver los eventos necesitas iniciar sesión. <a routerLink="/login">Iniciar sesión</a>
+        </div>
       </div>
+
       <div class="events-grid">
-        <app-event-card *ngFor="let event of events" [event]="event"></app-event-card>
+        <app-event-card *ngFor="let event of eventsFiltrados" [event]="event"></app-event-card>
       </div>
     </div>
   </div>

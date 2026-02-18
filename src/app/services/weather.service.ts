@@ -37,4 +37,10 @@ export class WeatherService {
     this.cache.set(key, req$);
     return req$;
   }
+
+  getCiudades(query: string) {
+    return this.http.get<{ nombre: string; departamento: string }[]>(
+      `http://localhost:8080/api/clima/ciudades?query=${encodeURIComponent(query)}`
+    );
+  }
 }
