@@ -139,8 +139,10 @@ export class ExploreComponent implements OnInit {
       '';
 
     const imageUrl = this.eventoService.getFullImageUrl(String(rawImg || ''));
+    const id = e?.idEvento ?? e?.id ?? e?.id_evento ?? null;
 
     return {
+      id: id ?? undefined,
       title: titulo,
       description: descripcion,
       date,

@@ -1,98 +1,180 @@
 import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { RouterLink, Router, ActivatedRoute } from '@angular/router';
-import { AuthService } from '../services/auth.service';
+import { CommonModule, NgIf } from '@angular/common';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { EventoService } from '../services/evento';
+import { NavbarComponent } from '../shared/navbar/navbar.component';
+
+type EventoVM = {
+  id?: number;
+  titulo: string;
+  descripcion: string;
+  categoria: string;
+  imagenUrl: string;
+
+  fecha: string;
+  horaInicio: string;
+  horaFin: string;
+
+  eventoEnLinea: boolean;
+  urlVirtual: string;
+
+  ubicacion: string;
+  nombreLugar: string;
+  direccionCompleta: string;
+  ciudad: string;
+
+  cupo: number | null;
+  eventoGratuito: boolean;
+  precio: number | null;
+
+  emailContacto: string;
+  telefonoContacto: string;
+  sitioWeb: string;
+
+  eventoPublico: boolean;
+  detallePrivado: string;
+
+  permitirComentarios: boolean;
+  recordatoriosAutomaticos: boolean;
+};
 
 @Component({
   selector: 'app-event-detail',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, NgIf, RouterLink, NavbarComponent],
   templateUrl: './event-detail.component.html',
   styleUrls: ['./event-detail.component.css']
 })
 export class EventDetailComponent implements OnInit {
-  event: any = null;
-  showSuccessMessage: boolean = false;
-  isOrganizer = false;
-  loading = true;
+  isLoading = true;
+  errorMsg = '';
+
+  evento: EventoVM | null = null;
 
   constructor(
-    private authService: AuthService,
-    private router: Router,
     private route: ActivatedRoute,
+    private router: Router,
     private eventoService: EventoService
   ) {}
 
   ngOnInit(): void {
     const idParam = this.route.snapshot.paramMap.get('id');
-    const id = idParam ? Number(idParam) : null;
-    if (id) {
-      this.eventoService.obtenerEventoPorId(id).subscribe({
-          next: (e: any) => {
-            // Log raw response to help debugging mapping issues
-            console.log('RAW EVENT', e);
-            this.event = this.mapEvent(e);
-            const me = this.authService.getUserData();
-            this.isOrganizer = !!(me && this.event && this.event.organizer && (me.id === this.event.organizer.id || me.usuario === this.event.organizer.usuario));
-            this.loading = false;
-          },
-        error: err => {
-          console.error('Error cargando evento:', err && err.message ? err.message : err);
-          this.loading = false;
-        }
-      });
+    const id = Number(idParam);
+
+    if (!idParam || Number.isNaN(id) || id <= 0) {
+      this.isLoading = false;
+      this.errorMsg = 'ID de evento inválido.';
+      return;
     }
+
+    this.loadEvento(id);
   }
 
-  private mapEvent(e: any) {
-    return {
-      id: e.id,
-      imageUrl: this.eventoService.getFullImageUrl(e.imagenPortadaUrl || e.imagenUrl || e.portada || ''),
-      title: e.titulo || e.title,
-      category: e.categoria || e.category,
-      description: e.descripcion || e.description,
-      tags: e.tags || e.etiquetas || [],
-      price: e.precio ? (typeof e.precio === 'number' ? `$${e.precio}` : String(e.precio)) : (e.eventoGratuito ? 'Gratis' : '—'),
-      attendees: e.cupo ? `${e.cupo} cupo` : '',
-      date: e.fecha || '',
-      time: (e.horaInicio || '') + (e.horaFin ? ` - ${e.horaFin}` : ''),
-      location: e.nombreLugar || e.ubicacion || '',
-      address: e.direccionCompleta || '',
-      attending: e.asistentes || '',
-      rating: e.rating || 0,
-      lineup: e.lineup || e.artistas || [],
-      experiences: e.experiencias || [],
-      includes: e.includes || e.incluye || [],
-      organizer: e.organizador || e.organizer || {
-        id: e.organizadorId || e.organizerId,
-        name: (e.organizador && e.organizador.nombre) || (e.organizer && e.organizer.name) || '',
-        rating: (e.organizador && e.organizador.rating) || (e.organizer && e.organizer.rating) || 0,
-        followers: (e.organizador && e.organizador.followers) || (e.organizer && e.organizer.followers) || 0,
-        events: (e.organizador && e.organizador.events) || (e.organizer && e.organizer.events) || 0,
-        email: (e.organizador && e.organizador.email) || (e.organizer && e.organizer.email) || '',
-        phone: (e.organizador && e.organizador.phone) || (e.organizer && e.organizer.phone) || '',
-        website: (e.organizador && e.organizador.website) || (e.organizer && e.organizer.website) || ''
+  volver(): void {
+    this.router.navigate(['/explore']);
+  }
+
+  private loadEvento(id: number): void {
+    this.isLoading = true;
+    this.errorMsg = '';
+
+    this.eventoService.obtenerEventoPorId(id).subscribe({
+      next: (e: any) => {
+        this.evento = this.mapToVM(e);
+        this.isLoading = false;
+      },
+      error: (err) => {
+        this.isLoading = false;
+
+        if (err?.status === 404) {
+          this.errorMsg = 'No se encontró el evento.';
+          return;
+        }
+
+        if (err?.status === 401) {
+          this.errorMsg = 'Necesitas iniciar sesión para ver este evento.';
+          return;
+        }
+
+        this.errorMsg = 'No se pudo cargar el evento. Revisa la consola.';
+        console.error('Error cargando evento por id:', err);
       }
+    });
+  }
+
+  private mapToVM(e: any): EventoVM {
+    const rawImg =
+      e?.imagenPortadaUrl ||
+      e?.imagenPortadaURL ||
+      e?.imagenPortada ||
+      e?.portada ||
+      e?.portadaUrl ||
+      e?.imagenUrl ||
+      e?.imageUrl ||
+      e?.image ||
+      '';
+
+    const imagenUrl = this.eventoService.getFullImageUrl(String(rawImg || ''));
+
+    return {
+      id: e?.idEvento ?? e?.id ?? e?.id_evento ?? undefined,
+      titulo: e?.titulo ?? 'Evento',
+      descripcion: e?.descripcion ?? '',
+      categoria: e?.categoria ?? '',
+      imagenUrl,
+
+      fecha: e?.fecha ? String(e.fecha) : '',
+      horaInicio: e?.horaInicio ? String(e.horaInicio) : '',
+      horaFin: e?.horaFin ? String(e.horaFin) : '',
+
+      eventoEnLinea: Boolean(e?.eventoEnLinea),
+      urlVirtual: e?.urlVirtual ?? '',
+
+      ubicacion: e?.ubicacion ?? '',
+      nombreLugar: e?.nombreLugar ?? '',
+      direccionCompleta: e?.direccionCompleta ?? '',
+      ciudad: e?.ciudad ?? '',
+
+      cupo: e?.cupo != null ? Number(e.cupo) : null,
+      eventoGratuito: Boolean(e?.eventoGratuito),
+      precio: e?.precio != null ? Number(e.precio) : null,
+
+      emailContacto: e?.emailContacto ?? '',
+      telefonoContacto: e?.telefonoContacto ?? '',
+      sitioWeb: e?.sitioWeb ?? '',
+
+      eventoPublico: e?.eventoPublico !== false, // default true
+      detallePrivado: e?.detallePrivado ?? '',
+
+      permitirComentarios: e?.permitirComentarios !== false,
+      recordatoriosAutomaticos: Boolean(e?.recordatoriosAutomaticos)
     };
   }
 
-  onRegisterClick(): void {
-    if (this.isOrganizer) return;
-
-    if (this.authService.getIsLoggedIn()) {
-      this.registerToEvent();
-    } else {
-      this.router.navigate(['/login']);
-    }
+  // Helpers para UI
+  get fechaHoraLabel(): string {
+    if (!this.evento) return '';
+    const f = this.evento.fecha || '—';
+    const hi = this.evento.horaInicio || '—';
+    const hf = this.evento.horaFin ? ` - ${this.evento.horaFin}` : '';
+    return `${f} • ${hi}${hf}`;
   }
 
-  private registerToEvent(): void {
-    this.showSuccessMessage = true;
+  get precioLabel(): string {
+    if (!this.evento) return '';
+    if (this.evento.eventoGratuito) return 'Gratis';
+    if (this.evento.precio != null && !Number.isNaN(this.evento.precio)) return `$${this.evento.precio}`;
+    return 'Pago';
+  }
 
-    setTimeout(() => {
-      this.showSuccessMessage = false;
-    }, 5000);
+  get ubicacionLabel(): string {
+    if (!this.evento) return '';
+    if (this.evento.eventoEnLinea) return this.evento.urlVirtual || 'En línea';
+    return (
+      this.evento.nombreLugar ||
+      this.evento.ubicacion ||
+      this.evento.ciudad ||
+      'Presencial'
+    );
   }
 }
-
