@@ -43,6 +43,27 @@
           <span class="chip" *ngIf="!evento.eventoPublico">🔒 Privado</span>
           <span class="chip" *ngIf="evento.eventoPublico">🌍 Público</span>
         </div>
+
+        <!-- ✅ NUEVO: Botón de inscripción -->
+        <div class="join-wrapper">
+          <button
+            class="btn-join"
+            type="button"
+            (click)="onJoin()"
+            [disabled]="isJoining || !isLoggedIn || isRegistered || isOrganizer"
+          >
+            <span *ngIf="isJoining">Inscribiendo...</span>
+            <span *ngIf="!isJoining && isOrganizer">Eres el organizador</span>
+            <span *ngIf="!isJoining && !isOrganizer && !isRegistered">Inscribirme</span>
+            <span *ngIf="!isJoining && isRegistered">Inscrito ✅</span>
+          </button>
+
+          <!-- Mensajito pequeño cuando no está logueado -->
+          <span class="join-hint" *ngIf="!isLoggedIn">
+            Inicia sesión para inscribirte.
+          </span>
+        </div>
+
       </div>
     </section>
 

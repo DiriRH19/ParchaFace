@@ -313,3 +313,46 @@
   .top-actions { flex-direction: column; align-items: stretch; }
   .btn-back, .btn-back-alt { justify-content: center; }
 }
+
+/* =========================
+   ✅ NUEVO: Botón Inscribirme
+========================= */
+.join-wrapper {
+  margin-top: 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.btn-join {
+  border-radius: 12px;
+  padding: 10px 16px;
+  font-weight: 900;
+  cursor: pointer;
+  transition: all .2s ease;
+  border: none;
+  background: #E8A92F;
+  color: #333;
+  box-shadow: 0 6px 16px rgba(232, 169, 47, 0.25);
+}
+
+.btn-join:hover {
+  background: #D8991F;
+  box-shadow: 0 8px 20px rgba(232, 169, 47, 0.35);
+  transform: translateY(-1px);
+}
+
+.btn-join:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.join-hint {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--text-secondary);
+  opacity: 0.9;
+}

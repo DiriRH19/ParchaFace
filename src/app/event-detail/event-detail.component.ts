@@ -3,7 +3,12 @@ import { CommonModule, NgIf } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { EventoService } from '../services/evento';
 import { NavbarComponent } from '../shared/navbar/navbar.component';
-import { WeatherService, ClimaResponse } from '../services/weather.service'; // ✅ NUEVO
+import { WeatherService, ClimaResponse } from '../services/weather.service';
+
+// ✅ NUEVO
+import Swal from 'sweetalert2';
+import { AuthService, UserData } from '../services/auth.service';
+import { InscripcionService } from '../services/inscripcion.service';
 
 type EventoVM = {
   id?: number;
@@ -37,6 +42,9 @@ type EventoVM = {
 
   permitirComentarios: boolean;
   recordatoriosAutomaticos: boolean;
+
+  // ✅ NUEVO: para bloquear en UI si soy organizador
+  idOrganizador?: number | null;
 };
 
 @Component({
@@ -56,14 +64,35 @@ export class EventDetailComponent implements OnInit {
   climaLoading = false;
   climaError = false;
 
+  // ✅ NUEVO: estado de auth + inscripción
+  isLoggedIn = false;
+  user: UserData | null = null;
+  isRegistered = false;
+  isJoining = false;
+
   constructor(
     private route: ActivatedRoute,
     private router: Router,
     private eventoService: EventoService,
-    private weatherService: WeatherService
+    private weatherService: WeatherService,
+
+    // ✅ NUEVO
+    private auth: AuthService,
+    private inscripcionService: InscripcionService
   ) {}
 
   ngOnInit(): void {
+    // ✅ NUEVO: escuchar auth
+    this.auth.isLoggedIn$.subscribe(v => {
+      this.isLoggedIn = v;
+      // si se desloguea, resetea estado visual
+      if (!v) this.isRegistered = false;
+    });
+
+    this.auth.userData$.subscribe(u => {
+      this.user = u;
+    });
+
     const idParam = this.route.snapshot.paramMap.get('id');
     const id = Number(idParam);
 
@@ -88,12 +117,18 @@ export class EventDetailComponent implements OnInit {
     this.climaLoading = false;
     this.climaError = false;
 
+    // ✅ NUEVO: al cargar evento, resetea registro (luego se recalcula)
+    this.isRegistered = false;
+
     this.eventoService.obtenerEventoPorId(id).subscribe({
       next: (e: any) => {
         this.evento = this.mapToVM(e);
         this.isLoading = false;
 
         this.loadClimaForEvento();
+
+        // ✅ NUEVO: si estoy logueado, revisa si ya estaba inscrito
+        this.loadIsRegistered();
       },
       error: (err) => {
         this.isLoading = false;
@@ -168,8 +203,17 @@ export class EventDetailComponent implements OnInit {
 
     const imagenUrl = this.eventoService.getFullImageUrl(String(rawImg || ''));
 
+    const idEvento = e?.idEvento ?? e?.id ?? e?.id_evento ?? undefined;
+
+    // ✅ NUEVO: sacar idOrganizador si viene del backend
+    const idOrganizador =
+      e?.organizador?.idUsuario ??
+      e?.idOrganizador ??
+      e?.organizadorId ??
+      null;
+
     return {
-      id: e?.idEvento ?? e?.id ?? e?.id_evento ?? undefined,
+      id: idEvento,
       titulo: e?.titulo ?? 'Evento',
       descripcion: e?.descripcion ?? '',
       categoria: e?.categoria ?? '',
@@ -195,15 +239,121 @@ export class EventDetailComponent implements OnInit {
       telefonoContacto: e?.telefonoContacto ?? '',
       sitioWeb: e?.sitioWeb ?? '',
 
-      eventoPublico: e?.eventoPublico !== false, // default true
+      eventoPublico: e?.eventoPublico !== false,
       detallePrivado: e?.detallePrivado ?? '',
 
       permitirComentarios: e?.permitirComentarios !== false,
-      recordatoriosAutomaticos: Boolean(e?.recordatoriosAutomaticos)
+      recordatoriosAutomaticos: Boolean(e?.recordatoriosAutomaticos),
+
+      idOrganizador: idOrganizador != null ? Number(idOrganizador) : null
     };
   }
 
-  // Helpers para UI
+  // =========================
+  // ✅ NUEVO: helpers del botón
+  // =========================
+  get isOrganizer(): boolean {
+    const myId = this.user?.id;
+    const orgId = this.evento?.idOrganizador;
+    return myId != null && orgId != null && Number(myId) === Number(orgId);
+  }
+
+  // Si cupo es null -> no bloqueamos por cupo en UI
+  // (el backend igual valida si aplica)
+  get cupoLleno(): boolean {
+    if (!this.evento) return false;
+    if (this.evento.cupo == null) return false;
+    if (this.evento.cupo <= 0) return false; // cupo 0 lo tratamos como "sin cupo fijo" visualmente
+    // Como no tienes "asistentesCount" en VM, no podemos calcular exacto en UI.
+    // El backend es quien manda aquí.
+    return false;
+  }
+
+  private loadIsRegistered(): void {
+    if (!this.evento?.id) return;
+    if (!this.isLoggedIn) return;
+    if (!this.user?.id) return;
+
+    this.inscripcionService.getMisInscripciones().subscribe({
+      next: (list) => {
+        const eventoId = Number(this.evento?.id);
+        const userId = Number(this.user?.id);
+
+        this.isRegistered = Array.isArray(list) && list.some(i =>
+          Number(i?.evento?.idEvento) === eventoId &&
+          Number(i?.usuario?.idUsuario) === userId
+        );
+      },
+      error: () => {
+        // si falla, no bloqueamos
+        this.isRegistered = false;
+      }
+    });
+  }
+
+  onJoin(): void {
+    if (!this.evento?.id) return;
+
+    if (!this.isLoggedIn) {
+      Swal.fire({
+        icon: 'info',
+        title: 'Inicia sesión',
+        text: 'Debes iniciar sesión para inscribirte.',
+        confirmButtonText: 'Ok'
+      });
+      return;
+    }
+
+    if (this.isOrganizer) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Eres el organizador',
+        text: 'No puedes inscribirte a tu propio evento.',
+        confirmButtonText: 'Entendido'
+      });
+      return;
+    }
+
+    if (this.isRegistered || this.isJoining) return;
+
+    this.isJoining = true;
+
+    this.inscripcionService.inscribirme(Number(this.evento.id)).subscribe({
+      next: () => {
+        this.isRegistered = true;
+
+        Swal.fire({
+          icon: 'success',
+          title: '¡Inscripción exitosa!',
+          text: 'Ya quedaste inscrito al evento.',
+          timer: 1600,
+          showConfirmButton: false
+        });
+      },
+      error: (err) => {
+        const msg =
+          err?.error?.message ||
+          err?.error?.error ||
+          err?.error ||
+          'No se pudo inscribir. Intenta de nuevo.';
+
+        Swal.fire({
+          icon: 'error',
+          title: 'No se pudo inscribir',
+          text: msg,
+          confirmButtonText: 'Ok'
+        });
+
+        // si backend devuelve 409 porque ya estaba inscrito, reflejamos estado:
+        if (err?.status === 409) this.isRegistered = true;
+      },
+      complete: () => {
+        this.isJoining = false;
+      }
+    });
+  }
+
+  // Helpers para UI existentes
   get fechaHoraLabel(): string {
     if (!this.evento) return '';
     const f = this.evento.fecha || '—';
