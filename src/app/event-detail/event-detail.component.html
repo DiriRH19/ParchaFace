@@ -57,9 +57,16 @@
       <div class="info-item">
         <div class="info-label">{{ evento.eventoEnLinea ? '🌐 En línea' : '📍 Ubicación' }}</div>
         <div class="info-value">{{ ubicacionLabel }}</div>
+
         <div class="info-sub" *ngIf="!evento.eventoEnLinea && (evento.direccionCompleta || evento.ciudad)">
           <span *ngIf="evento.direccionCompleta">{{ evento.direccionCompleta }}</span>
           <span *ngIf="evento.ciudad"> • {{ evento.ciudad }}</span>
+        </div>
+
+        <div class="info-sub" *ngIf="!evento.eventoEnLinea && evento.ciudad">
+          <span *ngIf="climaLoading">🌤️ Clima...</span>
+          <span *ngIf="!climaLoading && clima">🌡️ {{ clima.temperaturaC }} °C • 💨 {{ clima.vientoKmh }} km/h</span>
+          <span *ngIf="!climaLoading && !clima && climaError">🌤️ Clima no disponible</span>
         </div>
       </div>
 
