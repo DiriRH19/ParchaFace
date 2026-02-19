@@ -4,11 +4,13 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { EventoService } from '../services/evento';
 import { NavbarComponent } from '../shared/navbar/navbar.component';
 import { WeatherService, ClimaResponse } from '../services/weather.service';
+import {ToastService} from '../shared/toast/toast.service';
 
 // ✅ NUEVO
 import Swal from 'sweetalert2';
 import { AuthService, UserData } from '../services/auth.service';
 import { InscripcionService } from '../services/inscripcion.service';
+import {FormsModule} from '@angular/forms';
 
 type EventoVM = {
   id?: number;
@@ -50,7 +52,7 @@ type EventoVM = {
 @Component({
   selector: 'app-event-detail',
   standalone: true,
-  imports: [CommonModule, NgIf, RouterLink, NavbarComponent],
+  imports: [CommonModule, NgIf, RouterLink, NavbarComponent, FormsModule],
   templateUrl: './event-detail.component.html',
   styleUrls: ['./event-detail.component.css']
 })
@@ -70,11 +72,56 @@ export class EventDetailComponent implements OnInit {
   isRegistered = false;
   isJoining = false;
 
+  // ✅ NUEVO: edición/eliminación
+  canManage = false;     // botones solo para el creador
+  editMode = false;      // modo edición
+  form: EventoVM = this.getEmptyForm();
+
+  private getEmptyForm(): EventoVM {
+    return {
+      id: undefined,
+      titulo: '',
+      descripcion: '',
+      categoria: '',
+      imagenUrl: '',
+
+      fecha: '',
+      horaInicio: '',
+      horaFin: '',
+
+      eventoEnLinea: false,
+      urlVirtual: '',
+
+      ubicacion: '',
+      nombreLugar: '',
+      direccionCompleta: '',
+      ciudad: '',
+
+      cupo: null,
+      eventoGratuito: false,
+      precio: null,
+
+      emailContacto: '',
+      telefonoContacto: '',
+      sitioWeb: '',
+
+      eventoPublico: true,
+      detallePrivado: '',
+
+      permitirComentarios: true,
+      recordatoriosAutomaticos: false,
+
+      idOrganizador: null
+    };
+  }  // copia editable
+
+
   constructor(
     private route: ActivatedRoute,
     private router: Router,
     private eventoService: EventoService,
     private weatherService: WeatherService,
+    private toast: ToastService,
 
     // ✅ NUEVO
     private auth: AuthService,
@@ -123,6 +170,8 @@ export class EventDetailComponent implements OnInit {
     this.eventoService.obtenerEventoPorId(id).subscribe({
       next: (e: any) => {
         this.evento = this.mapToVM(e);
+        this.canManage = this.isOrganizer;  // ya tienes el getter isOrganizer
+        this.form = { ...this.getEmptyForm(), ...this.evento };
         this.isLoading = false;
 
         this.loadClimaForEvento();
@@ -378,5 +427,130 @@ export class EventDetailComponent implements OnInit {
       this.evento.ciudad ||
       'Presencial'
     );
+  }
+
+  // =========================
+// ✅ NUEVO: Editar / Eliminar
+// =========================
+  empezarEditar(): void {
+    if (!this.evento) return;
+
+    this.editMode = true;
+    this.form = { ...this.evento };
+
+    // ✅ Para que <input type="date"> muestre valor
+    if (this.form.fecha) {
+      this.form.fecha = String(this.form.fecha).slice(0, 10) as any; // "YYYY-MM-DD"
+    }
+
+    // ✅ Para que <input type="time"> muestre valor (si viene con segundos)
+    if (this.form.horaInicio) {
+      this.form.horaInicio = String(this.form.horaInicio).slice(0, 5) as any; // "HH:mm"
+    }
+    if (this.form.horaFin) {
+      this.form.horaFin = String(this.form.horaFin).slice(0, 5) as any;
+    }
+  }
+
+
+  cancelarEditar(): void {
+    this.editMode = false;
+    this.form = this.evento ? { ...this.getEmptyForm(), ...this.evento } : this.getEmptyForm();
+  }
+
+  guardarCambios(): void {
+    if (!this.evento?.id) return;
+
+    // ✅ Trabajamos con un payload (no modificamos this.form directo)
+    const payload: any = { ...this.form };
+
+    // =========================
+    // ✅ 1) Normalizar fecha/hora para backend (LocalDateTime)
+    // =========================
+    const fRaw = (payload.fecha || '').toString().trim();        // "YYYY-MM-DD" o "YYYY-MM-DDTHH:mm:ss"
+    const hiRaw = (payload.horaInicio || '').toString().trim();  // "HH:mm" o "HH:mm:ss"
+    const hfRaw = (payload.horaFin || '').toString().trim();     // "HH:mm" o "HH:mm:ss"
+
+    const hi = hiRaw ? hiRaw.slice(0, 5) : ''; // "HH:mm"
+    const hf = hfRaw ? hfRaw.slice(0, 5) : ''; // "HH:mm"
+
+    // ✅ Si fecha viene como "YYYY-MM-DD", convertirla a LocalDateTime usando horaInicio
+    if (fRaw && fRaw.length === 10) {
+      payload.fecha = `${fRaw}T${hi || '00:00'}:00`;             // "YYYY-MM-DDTHH:mm:ss"
+    }
+
+    // ✅ Mantener horas como HH:mm (si tu backend las maneja así)
+    payload.horaInicio = hi;
+    payload.horaFin = hf;
+
+    // =========================
+    // ✅ 2) Reglas de negocio
+    // =========================
+    if (payload.eventoGratuito) payload.precio = null;
+
+    if (payload.eventoEnLinea) {
+      // si es online, ubicación presencial no aplica
+      payload.ubicacion = payload.ubicacion ?? '';
+      payload.nombreLugar = payload.nombreLugar ?? '';
+      payload.direccionCompleta = payload.direccionCompleta ?? '';
+      payload.ciudad = payload.ciudad ?? '';
+    } else {
+      // si es presencial, urlVirtual no aplica
+      payload.urlVirtual = '';
+    }
+
+
+    // =========================
+    // ✅ 3) Enviar actualización
+    // =========================
+    this.eventoService.actualizarEvento(Number(this.evento.id), payload).subscribe({
+      next: (actualizado: any) => {
+        this.evento = this.mapToVM(actualizado);
+        this.editMode = false;
+        this.form = { ...this.evento };
+        this.toast.show('¡Editado exitosamente! ✨', 'success');
+      },
+      error: (err) => {
+        const msg =
+          err?.error?.message ||
+          err?.error?.error ||
+          err?.error ||
+          'No se pudo editar el evento.';
+        this.toast.show(msg, 'error');
+        console.error('Error editando evento:', err);
+      }
+    });
+  }
+
+
+  eliminarEvento(): void {
+    if (!this.evento?.id) return;
+
+    Swal.fire({
+      icon: 'warning',
+      title: '¿Eliminar evento?',
+      text: 'Esta acción no se puede deshacer.',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar'
+    }).then((result) => {
+      if (!result.isConfirmed) return;
+
+      this.eventoService.eliminarEvento(Number(this.evento!.id)).subscribe({
+        next: () => {
+          this.toast.show('¡Eliminado exitosamente! 🗑️', 'success');
+          this.router.navigate(['/explore']);
+        },
+        error: (err) => {
+          const msg =
+            err?.error?.message ||
+            err?.error?.error ||
+            err?.error ||
+            'No se pudo eliminar el evento.';
+          this.toast.show(msg, 'error');
+          console.error('Error eliminando evento:', err);
+        }
+      });
+    });
   }
 }

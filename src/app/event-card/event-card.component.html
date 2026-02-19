@@ -61,11 +61,12 @@
 
       <a
         class="btn-details"
-        [routerLink]="event.id ? ['/event', event.id] : ['/explore']"
-        [class.disabled]="!event.id"
+        [routerLink]="event.id != null ? ['/event', event.id] : ['/explore']"
+        [class.disabled]="event.id == null"
       >
         Ver Detalles
       </a>
+
     </div>
   </div>
 </div>

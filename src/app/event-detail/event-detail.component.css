@@ -356,3 +356,112 @@
   color: var(--text-secondary);
   opacity: 0.9;
 }
+
+.manage-actions{
+  display:flex;
+  gap:10px;
+  margin-top:12px;
+  flex-wrap: wrap;
+}
+
+.btn-manage{
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid #ddd;
+  background: #fff;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.btn-manage.danger{
+  border-color: #f5c2c7;
+}
+
+.edit-input, .edit-textarea {
+  width: 100%;
+  margin: 8px 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #ddd;
+  font-size: 16px;
+}
+.edit-textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+.manage-actions{
+  display:flex;
+  gap:10px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+}
+
+/* Base */
+.btn-manage{
+  appearance: none;
+  border: 1px solid rgba(0,0,0,0.10);
+  background: #fff;
+  color: #111;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform .12s ease, box-shadow .12s ease, background .12s ease, border-color .12s ease, opacity .12s ease;
+  box-shadow: 0 10px 22px rgba(0,0,0,0.10);
+}
+
+.btn-manage:hover{
+  transform: translateY(-1px);
+  box-shadow: 0 14px 28px rgba(0,0,0,0.14);
+}
+
+.btn-manage:active{
+  transform: translateY(0);
+  box-shadow: 0 8px 18px rgba(0,0,0,0.12);
+}
+
+.btn-manage:disabled{
+  opacity: .6;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* Editar (neutral) */
+.btn-edit{
+  background: #ffffff;
+}
+
+/* Guardar (amarillo como tu marca) */
+.btn-save{
+  background: var(--accent-yellow, #F3B24A);
+  border-color: rgba(0,0,0,0.08);
+  color: #fff;
+}
+
+.btn-save:hover{
+  filter: brightness(0.95);
+}
+
+/* Cancelar (gris suave) */
+.btn-cancel{
+  background: #f6f7f9;
+  border-color: rgba(0,0,0,0.08);
+}
+
+.btn-cancel:hover{
+  background: #eef1f5;
+}
+
+/* Eliminar (rojo suave) */
+.btn-delete{
+  background: #fff5f5;
+  border-color: rgba(180, 35, 24, 0.25);
+  color: #b42318;
+}
+
+.btn-delete:hover{
+  background: #ffe8e8;
+  border-color: rgba(180, 35, 24, 0.35);
+}
+

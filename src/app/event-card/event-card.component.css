@@ -5,8 +5,8 @@
   box-shadow: var(--shadow);
   transition: all 0.3s ease;
   height: calc(100vh - 160px);
-  min-height: unset;
-  width: 100%;
+  height: auto;
+  min-height: 620px;
   display: flex;
   flex-direction: column;
 }
