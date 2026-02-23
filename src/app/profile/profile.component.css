@@ -375,3 +375,169 @@
   border-radius: 50%;
   display: block;
 }
+
+/* =========================================================
+   ✅ AÑADIDO: modo edición + modal descartar cambios
+   ========================================================= */
+
+.btn-save[disabled],
+.btn-cancel[disabled] {
+  opacity: 0.7;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Botón peligro (Descartar cambios) usando el estilo del sitio */
+.btn-danger {
+  padding: 10px 20px;
+  background: var(--accent-yellow);
+  border-radius: 8px;
+  color: white;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.btn-danger:hover {
+  filter: brightness(0.95);
+}
+
+/* Inputs en modo edición */
+.edit-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 12px;
+  max-width: 640px;
+}
+
+.edit-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.edit-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.edit-input {
+  padding: 12px 14px;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background: white;
+  color: var(--text-primary);
+  box-shadow: var(--shadow);
+  transition: border-color 0.2s ease;
+}
+
+.edit-input:focus {
+  outline: none;
+  border-color: var(--accent-yellow);
+}
+
+.edit-error {
+  margin-top: 8px;
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 112, 67, 0.4);
+  background: rgba(255, 112, 67, 0.12);
+  border-radius: 10px;
+  color: var(--text-primary);
+  font-size: 13px;
+  max-width: 640px;
+}
+
+/* Modal */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(44, 44, 44, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 1000;
+}
+
+.modal {
+  width: 100%;
+  max-width: 460px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  box-shadow: var(--shadow-hover);
+  padding: 22px;
+}
+
+.modal-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+
+.modal-text {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin-bottom: 18px;
+  line-height: 1.5;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 768px) {
+  .edit-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.section-title-row{
+  display:flex;
+  justify-content: space-between;
+  align-items:center;
+  gap:12px;
+}
+
+.btn-small{
+  padding: 8px 14px;
+  border-radius: 8px;
+}
+
+.btn-icon{
+  padding: 10px 12px;
+}
+
+.edit-textarea{
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background: white;
+  color: var(--text-primary);
+  box-shadow: var(--shadow);
+  resize: vertical;
+}
+
+.social-edit-list{
+  display:flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.social-edit-row{
+  display:grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 10px;
+}
+
+@media (max-width: 768px){
+  .social-edit-row{
+    grid-template-columns: 1fr;
+  }
+}

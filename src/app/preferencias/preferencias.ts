@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { PreferencesService } from '../services/preferences.service';
 
 @Component({
@@ -16,38 +16,34 @@ export class PreferenciasComponent implements OnInit {
   saving = false;
   errorMessage = '';
 
+  private returnTo: string | null = null;
+
   constructor(
     public preferencesService: PreferencesService,
-    private router: Router
+    private router: Router,
+    private route: ActivatedRoute
   ) {}
 
   ngOnInit(): void {
+    this.returnTo = this.route.snapshot.queryParamMap.get('returnTo');
+
     this.preferencesService.getPreferencesFromApi().subscribe({
       next: (prefs) => {
         this.loading = false;
-        if (prefs.completed && prefs.categories?.length) {
-          this.router.navigate(['/']);
-          return;
-        }
         if (prefs.categories?.length) {
-          this.selectedCategories = new Set(prefs.categories);
+          this.selectedCategories = new Set(prefs.categories); // ✅ pinta las que ya tenía
         }
       },
       error: () => {
         this.loading = false;
-        if (this.preferencesService.hasCompletedPreferences()) {
-          this.router.navigate(['/']);
-        }
       }
     });
   }
 
   toggle(category: string): void {
-    if (this.selectedCategories.has(category)) {
-      this.selectedCategories.delete(category);
-    } else {
-      this.selectedCategories.add(category);
-    }
+    if (this.selectedCategories.has(category)) this.selectedCategories.delete(category);
+    else this.selectedCategories.add(category);
+
     this.selectedCategories = new Set(this.selectedCategories);
   }
 
@@ -58,27 +54,26 @@ export class PreferenciasComponent implements OnInit {
   continue(): void {
     const list = Array.from(this.selectedCategories);
     if (list.length === 0) return;
+
     this.errorMessage = '';
     this.saving = true;
+
     this.preferencesService.savePreferences(list).subscribe({
       next: () => {
         this.saving = false;
-        this.router.navigate(['/']);
+
+        // ✅ si vienes del perfil, vuelve al perfil
+        if (this.returnTo === 'profile') {
+          this.router.navigate(['/profile']);
+        } else {
+          // ✅ flujo normal (registro) -> home
+          this.router.navigate(['/']);
+        }
       },
       error: (err) => {
         this.saving = false;
         const msg = err?.error?.error ?? err?.error?.message ?? err?.message ?? '';
-        const rawBody = typeof err?.error === 'string' ? err.error : '';
-        const isHtmlResponse = rawBody.startsWith('<') || (typeof msg === 'string' && (msg.includes('<!DOCTYPE') || msg.includes('Unexpected token') || msg.includes('is not valid JSON')));
-        if (err?.status === 401) {
-          this.errorMessage = 'Sesión no válida. Cierra sesión e inicia de nuevo (o regístrate).';
-        } else if (err?.status === 0 || msg?.includes('Unknown')) {
-          this.errorMessage = 'No se pudo conectar con el servidor. ¿Está el backend en marcha en el puerto 8080?';
-        } else if (isHtmlResponse) {
-          this.errorMessage = 'El servidor devolvió una página en lugar de datos. Arranca el backend (puerto 8080) y abre el front con: ng serve';
-        } else {
-          this.errorMessage = msg ? String(msg) : 'No se pudieron guardar las preferencias. Intenta de nuevo.';
-        }
+        this.errorMessage = msg ? String(msg) : 'No se pudieron guardar las preferencias.';
       }
     });
   }
