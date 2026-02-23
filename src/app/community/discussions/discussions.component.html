@@ -1,0 +1,93 @@
+<section class="discussions container">
+  <header class="header">
+    <div class="header__left">
+      <h1 class="title">Discusiones</h1>
+      <p class="subtitle muted">Explora temas generales o ligados a un evento (opcional).</p>
+    </div>
+
+    <div class="header__right">
+      <button type="button" class="btn btn--primary" (click)="goCreate()">Crear publicación</button>
+    </div>
+  </header>
+
+  <div class="panel card">
+    <div class="panel__head">
+      <div>
+        <h2 class="panel__title">Explorar</h2>
+        <p class="panel__sub muted">Filtra por ciudad, categoría o busca un tema.</p>
+      </div>
+    </div>
+
+    <div class="filters">
+      <div class="search">
+        <span class="search__icon" aria-hidden="true">🔎</span>
+        <input
+          class="search__input"
+          type="text"
+          placeholder="Buscar por título, contenido, ciudad o evento..."
+          [ngModel]="q()"
+          (ngModelChange)="q.set($event); load()"
+        />
+      </div>
+
+      <div class="row">
+        <label class="field">
+          <span class="field__label">Ciudad</span>
+          <select class="field__control" [ngModel]="city()" (ngModelChange)="city.set($event); load()">
+            <option *ngFor="let c of cities" [value]="c">{{ c }}</option>
+          </select>
+        </label>
+
+        <div class="field">
+          <span class="field__label">Categoría</span>
+          <div class="chips">
+            <button
+              type="button"
+              class="chip"
+              [class.chip--active]="category() === cat"
+              *ngFor="let cat of categories"
+              (click)="category.set(cat); load()"
+            >
+              {{ cat }}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="sort">
+        <button type="button" class="chip" [class.chip--active]="sort()==='recent'" (click)="setSort('recent')">Recientes</button>
+        <button type="button" class="chip" [class.chip--active]="sort()==='trending'" (click)="setSort('trending')">Tendencia</button>
+        <button type="button" class="chip" [class.chip--active]="sort()==='unanswered'" (click)="setSort('unanswered')">Sin respuesta</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="list">
+    <div class="card empty" *ngIf="!loading() && posts().length === 0">
+      No hay publicaciones con esos filtros.
+    </div>
+
+    <button type="button" class="post" *ngFor="let p of posts()" (click)="openPost(p.id)">
+      <div class="post__main">
+        <div class="post__title">{{ p.title }}</div>
+
+        <div class="post__meta">
+          <span class="chip chip--sm" *ngIf="p.city">{{ p.city }}</span>
+          <span class="chip chip--sm" *ngIf="p.category">{{ p.category }}</span>
+          <span class="muted">• {{ p.authorName }}</span>
+        </div>
+
+        <div class="post__event" *ngIf="p.eventTitle">
+          <span class="dot"></span>
+          <span class="muted">Ligado a:</span>
+          <span class="event">{{ p.eventTitle }}</span>
+        </div>
+      </div>
+
+      <div class="post__side">
+        <div class="count">{{ p.commentsCount }}</div>
+        <div class="muted">comentarios</div>
+      </div>
+    </button>
+  </div>
+</section>
