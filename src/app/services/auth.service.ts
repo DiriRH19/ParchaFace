@@ -1,6 +1,6 @@
 import { Injectable, inject, PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
-import {HttpClient, HttpHeaders} from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { BehaviorSubject, Observable, tap, catchError, throwError, map, of } from 'rxjs';
 import { Router } from '@angular/router';
 import { API_CONFIG } from '../config/api.config';
@@ -17,6 +17,9 @@ export interface RegisterRequest {
   usuario: string;
 }
 
+/** ✅ NUEVO: tipo para redes sociales */
+export type SocialLink = { platform: string; handle: string };
+
 export interface UserData {
   id?: number;
   nombre?: string;
@@ -26,6 +29,16 @@ export interface UserData {
   fotoPerfil?: string;
   fotoPortada?: string;
 
+  /** ✅ NUEVO: perfil extendido */
+  acercaDe?: string;
+
+  /** ✅ NUEVO: redes sociales */
+  redesSociales?: SocialLink[];
+
+  /** ✅ NUEVO: intereses (categorías preferidas) */
+  categoriasPreferidas?: string[];
+
+  /** mantener compatibilidad con cualquier campo extra del backend */
   [key: string]: any;
 }
 
@@ -35,8 +48,10 @@ export interface UserData {
 export class AuthService {
   private isLoggedIn = new BehaviorSubject<boolean>(false);
   public isLoggedIn$ = this.isLoggedIn.asObservable();
+
   private userData = new BehaviorSubject<UserData | null>(null);
   public userData$ = this.userData.asObservable();
+
   private platformId = inject(PLATFORM_ID);
 
   constructor(
@@ -69,12 +84,17 @@ export class AuthService {
     try {
       const payload = token.split('.')[1];
       if (!payload) return null;
+
       const decoded: Record<string, unknown> = JSON.parse(atob(payload));
+
       const correo = (decoded['sub'] ?? decoded['correo']) as string | undefined;
       const nombreFromToken = (decoded['nombre'] ?? decoded['usuario']) as string | undefined;
-      const fallbackNombre = typeof correo === 'string' && correo.includes('@') ? correo.split('@')[0] : undefined;
+      const fallbackNombre =
+        typeof correo === 'string' && correo.includes('@') ? correo.split('@')[0] : undefined;
+
       const nombre = nombreFromToken ?? fallbackNombre;
       const usuario = (decoded['usuario'] ?? decoded['nombre'] ?? fallbackNombre) as string | undefined;
+
       return {
         ...decoded,
         correo: correo ?? undefined,
@@ -110,10 +130,10 @@ export class AuthService {
             const parsed = JSON.parse(token);
             if (typeof parsed === 'string') {
               token = parsed;
-            } else if (parsed.error) {
-              throw new Error(parsed.error);
-            } else if (parsed.token) {
-              token = parsed.token;
+            } else if ((parsed as any).error) {
+              throw new Error((parsed as any).error);
+            } else if ((parsed as any).token) {
+              token = (parsed as any).token;
             }
           }
         } catch (e) {
@@ -123,7 +143,7 @@ export class AuthService {
               if (errorObj.error) {
                 throw new Error(errorObj.error);
               }
-            } catch (parseError) {
+            } catch {
               throw new Error('Error al procesar respuesta del servidor');
             }
           }
@@ -155,7 +175,7 @@ export class AuthService {
             } else if (errorObj.message) {
               errorMessage = errorObj.message;
             }
-          } catch (e) {
+          } catch {
             if (typeof error.error === 'string') {
               errorMessage = error.error;
             }
@@ -197,7 +217,6 @@ export class AuthService {
 
         let token = data?.token;
 
-        // Si no está en .token, intentar otros formatos comunes
         if (!token && typeof data === 'string') {
           token = data;
         }
@@ -205,11 +224,8 @@ export class AuthService {
         console.log('Token extraído:', token);
         console.log('Datos parseados:', data);
 
-        // Si no hay token pero el registro fue exitoso (tiene mensaje o correo),
-        // se hará login automático para obtener el token
         if (!token && data?.mensaje) {
           console.log('Registro exitoso pero sin token. Se requiere login automático.');
-          // Lanzar error especial que será capturado en el catchError
           const error: any = new Error('NEED_AUTO_LOGIN');
           error.credentials = { correo, contrasena };
           throw error;
@@ -241,7 +257,6 @@ export class AuthService {
           message: error.message
         });
 
-        // Si el error es NEED_AUTO_LOGIN, hacer login automático
         if (error.message === 'NEED_AUTO_LOGIN' && error.credentials) {
           const { correo: loginCorreo, contrasena: loginContrasena } = error.credentials;
           console.log('Haciendo login automático con:', loginCorreo);
@@ -249,8 +264,6 @@ export class AuthService {
           return this.login(loginCorreo, loginContrasena);
         }
 
-        // Intentar extraer el token incluso del error para casos donde el servidor devuelve error HTTP
-        // pero sin embargo registra el usuario
         let token: string | null = null;
 
         if (error.error) {
@@ -264,7 +277,6 @@ export class AuthService {
           }
         }
 
-        // Si encontramos un token en el error, guardarlo y considerar el registro exitoso
         if (token && typeof token === 'string') {
           console.log('Usando token de respuesta de error, registro considerado exitoso');
           if (isPlatformBrowser(this.platformId)) {
@@ -288,7 +300,7 @@ export class AuthService {
             } else if (errorObj.message) {
               errorMessage = errorObj.message;
             }
-          } catch (e) {
+          } catch {
             if (typeof error.error === 'string') {
               errorMessage = error.error;
             }
@@ -348,8 +360,20 @@ export class AuthService {
   }
 
   getUsuarioById(id: number) {
-    return this.http.get<UserData>(`http://localhost:8080/usuarios/${id}`);
+    const token = this.getToken();
+    const headers = token ? new HttpHeaders({ Authorization: `Bearer ${token}` }) : undefined;
+    return this.http.get<UserData>(`http://localhost:8080/usuarios/${id}`, { headers });
   }
 
+  updateUsuario(id: number, payload: Partial<UserData>): Observable<UserData> {
+    const token = this.getToken();
+    const headers = token ? new HttpHeaders({ Authorization: `Bearer ${token}` }) : undefined;
 
+    return this.http.put<UserData>(`http://localhost:8080/usuarios/${id}`, payload, { headers }).pipe(
+      tap((u) => {
+        const current = this.userData.value;
+        this.userData.next({ ...(current || {}), ...(u || {}) });
+      })
+    );
+  }
 }
