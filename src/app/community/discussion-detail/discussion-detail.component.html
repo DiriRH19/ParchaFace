@@ -1,0 +1,106 @@
+<section class="detail container">
+  <!-- Top bar -->
+  <div class="top">
+    <button type="button" class="btn btn--ghost" (click)="back()">← Volver</button>
+    <div class="top__right">
+      <span class="muted" *ngIf="post()">Comentarios: {{ post()?.commentsCount }}</span>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div class="card state" *ngIf="loading()">
+    Cargando discusión...
+  </div>
+
+  <!-- Error -->
+  <div class="card state state--error" *ngIf="!loading() && error()">
+    {{ error() }}
+  </div>
+
+  <ng-container *ngIf="!loading() && post() as p">
+    <!-- Post card -->
+    <article class="card post">
+      <div class="post__header">
+        <div class="post__title">{{ p.title }}</div>
+        <div class="post__meta">
+          <span class="chip chip--sm" *ngIf="p.city">{{ p.city }}</span>
+          <span class="chip chip--sm" *ngIf="p.category">{{ p.category }}</span>
+          <span class="muted">• {{ p.authorName }}</span>
+          <span class="muted">• {{ p.createdAt | date:'medium' }}</span>
+        </div>
+      </div>
+
+      <p class="post__content">{{ p.content }}</p>
+
+      <!-- Event preview (opcional) -->
+      <div class="event card" *ngIf="p.eventId && p.eventTitle">
+        <div class="event__left">
+          <div class="event__thumb" *ngIf="p.eventImage"></div>
+          <div class="event__info">
+            <div class="event__label">Ligado a evento</div>
+            <div class="event__title">{{ p.eventTitle }}</div>
+          </div>
+        </div>
+
+        <button type="button" class="btn btn--primary" (click)="goToEvent(p.eventId!)">
+          Ver evento
+        </button>
+      </div>
+    </article>
+
+    <!-- Comment box -->
+    <div class="card composer">
+      <div class="composer__title">Escribe un comentario</div>
+
+      <textarea
+        class="textarea"
+        rows="4"
+        placeholder="Comparte tu opinión, recomendación o pregunta..."
+        [ngModel]="commentText()"
+        (ngModelChange)="commentText.set($event)"
+      ></textarea>
+
+      <div class="composer__actions">
+        <span class="muted">Sé respetuoso y aporta valor 🙂</span>
+        <button type="button" class="btn btn--primary" (click)="submitComment()">Publicar</button>
+      </div>
+    </div>
+
+    <!-- Comments list -->
+    <div class="comments">
+      <div class="comments__title">
+        Comentarios ({{ comments().length }})
+      </div>
+
+      <div class="card comment" *ngFor="let c of comments()">
+        <div class="comment__top">
+          <div class="comment__author">{{ c.authorName }}</div>
+
+          <div class="comment__right">
+            <!-- ⭐ Stars -->
+            <div class="stars" aria-label="Puntuar comentario">
+              <button
+                type="button"
+                class="star"
+                *ngFor="let s of [1,2,3,4,5]"
+                [class.star--on]="(c.rating || 0) >= s"
+                (click)="rate(c.id, s)"
+                [attr.aria-label]="'Puntuar ' + s + ' estrellas'"
+              >
+                ★
+              </button>
+            </div>
+
+            <div class="muted">{{ c.createdAt | date:'short' }}</div>
+          </div>
+        </div>
+
+        <div class="comment__content">{{ c.content }}</div>
+      </div>
+
+      <div class="card state" *ngIf="comments().length === 0">
+        Aún no hay comentarios. ¡Sé el primero en responder!
+      </div>
+    </div>
+  </ng-container>
+</section>

@@ -1,57 +1,169 @@
-import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Component, computed, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
+
 import { NavbarComponent } from '../shared/navbar/navbar.component';
+import { FooterComponent } from '../shared/footer/footer.component';
+
+type TabKey = 'organizers' | 'activity';
+
+interface Organizer {
+  id: string;
+  name: string;
+  city: string;
+  rating: number;
+  bio: string;
+  tags: string[];
+  isFollowing: boolean;
+}
+
+interface ActivityItem {
+  id: string;
+  title: string;
+  city: string;
+  category: string;
+  replies: number;
+  timeAgo: string;
+}
 
 @Component({
   selector: 'app-community',
   standalone: true,
-  imports: [CommonModule, NavbarComponent],
+  imports: [CommonModule, FormsModule, NavbarComponent, FooterComponent],
   templateUrl: './community.component.html',
-  styleUrls: ['./community.component.css']
+  styleUrls: ['./community.component.css'],
 })
 export class CommunityComponent {
-  stats = [
-    { value: '25,430', label: 'Usuarios Activos', color: 'yellow' },
-    { value: '1,250', label: 'Eventos Totales', color: 'purple' },
-    { value: '340', label: 'Organizadores', color: 'red' },
-    { value: '89', label: 'Este Mes', color: 'yellow' }
-  ];
+  constructor(private router: Router) {}
 
-  organizers = [
+  // ✅ Welcome modal
+  showWelcome = signal(true);
+  dismissWelcome() {
+    this.showWelcome.set(false);
+  }
+
+  // UI state
+  search = signal<string>('');
+  activeTab = signal<TabKey>('organizers');
+
+  selectedCity = signal<string>('Todas');
+  selectedCategory = signal<string>('Todas');
+
+  stats = signal([
+    { value: '25,430', label: 'Usuarios Activos' },
+    { value: '1,250', label: 'Eventos Totales' },
+    { value: '340', label: 'Organizadores' },
+    { value: '89', label: 'Este Mes' },
+  ]);
+
+  cities = ['Todas', 'Ciudad de México', 'Guadalajara', 'Monterrey', 'Bogotá', 'Medellín'];
+  categories = ['Todas', 'Música', 'Tech', 'Networking', 'Deportes', 'Arte', 'Gaming'];
+
+  organizers = signal<Organizer[]>([
     {
+      id: 'org-1',
       name: 'EventPro',
-      location: 'Ciudad de México',
+      city: 'Ciudad de México',
       rating: 4.8,
-      description: 'Organizamos los mejores eventos de música electrónica en México',
-      tags: ['Música', 'Festivales', 'Conciertos'],
-      followers: '15,420',
-      events: '87',
-      recentEvent: 'Festival de Música Electrónica 2024',
-      isFollowing: false
+      bio: 'Organizamos los mejores eventos de música y experiencias inmersivas.',
+      tags: ['Música', 'Presencial', 'Nocturno'],
+      isFollowing: false,
     },
     {
+      id: 'org-2',
       name: 'GameMasters',
-      location: 'Guadalajara',
+      city: 'Guadalajara',
       rating: 4.9,
-      description: 'La comunidad gaming más grande de México',
-      tags: ['Gaming', 'Esports', 'Torneos'],
-      followers: '8,930',
-      events: '45',
-      recentEvent: 'Torneo Gaming Championship',
-      isFollowing: true
+      bio: 'La comunidad gaming más grande, torneos y meetups semanales.',
+      tags: ['Gaming', 'Comunidad', 'Torneos'],
+      isFollowing: true,
     },
     {
+      id: 'org-3',
       name: 'TechMeetups',
-      location: 'Monterrey',
+      city: 'Monterrey',
       rating: 4.7,
-      description: 'Conectando desarrolladores y emprendedores',
-      tags: ['Tecnología', 'Networking', 'Startups'],
-      followers: '5,200',
-      events: '32',
-      recentEvent: 'Startup Pitch Night',
-      isFollowing: false
-    }
-  ];
+      bio: 'Conectando desarrolladores y emprendedores con charlas prácticas.',
+      tags: ['Tech', 'Networking', 'Charlas'],
+      isFollowing: false,
+    },
+  ]);
 
-  activeFilter = 'popular';
+  activity = signal<ActivityItem[]>([
+    {
+      id: 'act-1',
+      title: '¿Recomendaciones para eventos de networking esta semana?',
+      city: 'Ciudad de México',
+      category: 'Networking',
+      replies: 18,
+      timeAgo: 'hace 2h',
+    },
+    {
+      id: 'act-2',
+      title: 'Mejor lugar para un meetup tech (proyector + sonido)',
+      city: 'Monterrey',
+      category: 'Tech',
+      replies: 7,
+      timeAgo: 'hace 6h',
+    },
+    {
+      id: 'act-3',
+      title: 'Busco gente para ir a un concierto (grupo)',
+      city: 'Bogotá',
+      category: 'Música',
+      replies: 22,
+      timeAgo: 'ayer',
+    },
+  ]);
+
+  filteredOrganizers = computed(() => {
+    const q = this.search().trim().toLowerCase();
+    if (!q) return this.organizers();
+    return this.organizers().filter((o) =>
+      [o.name, o.city, o.bio, o.tags.join(' ')].join(' ').toLowerCase().includes(q)
+    );
+  });
+
+  filteredActivity = computed(() => {
+    const q = this.search().trim().toLowerCase();
+    const city = this.selectedCity();
+    const cat = this.selectedCategory();
+
+    return this.activity().filter((a) => {
+      const byQuery = !q || [a.title, a.city, a.category].join(' ').toLowerCase().includes(q);
+      const byCity = city === 'Todas' || a.city === city;
+      const byCat = cat === 'Todas' || a.category === cat;
+      return byQuery && byCity && byCat;
+    });
+  });
+
+  setTab(tab: TabKey) {
+    this.activeTab.set(tab);
+  }
+
+  toggleFollow(id: string) {
+    this.organizers.update((list) =>
+      list.map((o) => (o.id === id ? { ...o, isFollowing: !o.isFollowing } : o))
+    );
+  }
+
+  // ✅ Navegación
+  goToDiscussions() {
+    this.router.navigateByUrl('/community/discussions');
+  }
+
+  openDiscussion(id: string) {
+    // Lleva al detail. Si luego cambias IDs reales, queda igual.
+    this.router.navigate(['/community/discussions', id]);
+  }
+
+  createPost() {
+    this.router.navigateByUrl('/community/create-post');
+  }
+
+  viewRules() {
+    // Si luego creas una ruta /community/rules, la conectamos aquí.
+    console.log('View rules');
+  }
 }
