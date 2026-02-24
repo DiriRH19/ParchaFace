@@ -11,9 +11,11 @@
     <h1 class="register-title">¡Únete a ParchaFace!</h1>
     <p class="register-subtitle">Crea tu cuenta y comienza a descubrir eventos increíbles</p>
     <form class="register-form" [formGroup]="registerForm" (ngSubmit)="onSubmit()">
-      <div *ngIf="errorMessage" class="error-message">
-        {{ errorMessage }}
-      </div>
+      @if (errorMessage) {
+        <div class="error-message">
+          {{ errorMessage }}
+        </div>
+      }
       <div class="form-group">
         <label class="form-label">Usuario</label>
         <input type="text" placeholder="Tu nombre de usuario" class="form-input" formControlName="usuario">

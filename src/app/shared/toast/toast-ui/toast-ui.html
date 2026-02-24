@@ -1,3 +1,5 @@
-<div class="toast" *ngIf="(toast.toast$ | async) as t" [class.show]="t.show" [class.success]="t.type==='success'" [class.error]="t.type==='error'">
-  <span>{{ t.message }}</span>
-</div>
+@if (toast.toast$ | async) {
+  <div class="toast" [class.show]="(toast.toast$ | async)?.show" [class.success]="(toast.toast$ | async)?.type==='success'" [class.error]="(toast.toast$ | async)?.type==='error'">
+    <span>{{ (toast.toast$ | async)?.message }}</span>
+  </div>
+}

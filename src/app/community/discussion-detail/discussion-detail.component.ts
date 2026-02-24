@@ -2,17 +2,23 @@ import { CommonModule } from '@angular/common';
 import { Component, OnDestroy, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Subscription } from 'rxjs';
+import { Subscription, forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
+
 import {
   CommunityComment,
   CommunityPost,
   CommunityService,
+  LikeSummary,
+  RatingSummary
 } from '../../services/community.service';
+
+import { NavbarComponent } from '../../shared/navbar/navbar.component';
 
 @Component({
   selector: 'app-discussion-detail',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, NavbarComponent],
   templateUrl: './discussion-detail.component.html',
   styleUrls: ['./discussion-detail.component.css'],
 })
@@ -26,6 +32,12 @@ export class DiscussionDetailComponent implements OnInit, OnDestroy {
 
   // new comment
   commentText = signal('');
+
+  // ⭐ rating del post
+  ratingSummary = signal<RatingSummary | null>(null);
+
+  // 👍 likes por comentario (map por id)
+  likesMap = signal<Record<string, LikeSummary>>({});
 
   constructor(
     private route: ActivatedRoute,
@@ -45,14 +57,6 @@ export class DiscussionDetailComponent implements OnInit, OnDestroy {
     });
   }
 
-  rate(commentId: string, value: number) {
-    this.community.rateComment(commentId, value).subscribe((updated) => {
-      if (!updated) return;
-      this.comments.set(this.comments().map(c => c.id === commentId ? updated : c));
-    });
-  }
-
-
   ngOnDestroy(): void {
     this.sub?.unsubscribe();
   }
@@ -61,21 +65,41 @@ export class DiscussionDetailComponent implements OnInit, OnDestroy {
     this.loading.set(true);
     this.error.set(null);
 
-    this.community.getPostById(id).subscribe((p) => {
-      if (!p) {
+    // cargamos post + comments + rating summary en paralelo (si se puede)
+    forkJoin({
+      post: this.community.getPostById(id).pipe(catchError(() => of(null))),
+      comments: this.community.getComments(id).pipe(catchError(() => of([]))),
+      rating: this.community.getPostRatingSummary(id).pipe(catchError(() => of(null))),
+    }).subscribe(({ post, comments, rating }) => {
+      if (!post) {
         this.post.set(null);
         this.comments.set([]);
+        this.ratingSummary.set(null);
+        this.likesMap.set({});
         this.error.set('No encontramos esta discusión.');
         this.loading.set(false);
         return;
       }
 
-      this.post.set(p);
+      this.post.set(post);
+      this.comments.set(comments);
+      this.ratingSummary.set(rating);
 
-      this.community.getComments(id).subscribe((list) => {
-        this.comments.set(list);
-        this.loading.set(false);
+      // cargar likes para cada comentario
+      const map: Record<string, LikeSummary> = {};
+      this.likesMap.set(map);
+
+      comments.forEach((c) => {
+        this.community.getCommentLikes(c.id)
+          .pipe(catchError(() => of({ likes: 0, likedByMe: null } as LikeSummary)))
+          .subscribe((res) => {
+            const current = { ...this.likesMap() };
+            current[c.id] = res;
+            this.likesMap.set(current);
+          });
       });
+
+      this.loading.set(false);
     });
   }
 
@@ -83,7 +107,6 @@ export class DiscussionDetailComponent implements OnInit, OnDestroy {
     this.router.navigate(['/community/discussions']);
   }
 
-  // Si tienes ruta de evento, aquí lo ajustas (ej: /event/:id)
   goToEvent(eventId: string) {
     this.router.navigate(['/event', eventId]);
   }
@@ -103,8 +126,38 @@ export class DiscussionDetailComponent implements OnInit, OnDestroy {
     this.community.addComment(p.id, { content: text }).subscribe((newC) => {
       this.comments.set([...this.comments(), newC]);
       this.commentText.set('');
-      // actualizar contador del post en pantalla
       this.post.set({ ...p, commentsCount: p.commentsCount + 1 });
+
+      // cargar likes inicial para ese nuevo comentario
+      const current = { ...this.likesMap() };
+      current[newC.id] = { likes: 0, likedByMe: null };
+      this.likesMap.set(current);
     });
+  }
+
+  // ⭐ rate del post (solo cambia tu propio rating)
+  ratePost(stars: number) {
+    const p = this.post();
+    if (!p) return;
+
+    this.community.ratePost(p.id, stars).subscribe(() => {
+      // refrescar summary para ver promedio + myRating actualizado
+      this.community.getPostRatingSummary(p.id)
+        .pipe(catchError(() => of(null)))
+        .subscribe((res) => this.ratingSummary.set(res));
+    });
+  }
+
+  // 👍 toggle like del comentario (solo afecta tu like)
+  toggleLike(commentId: string) {
+    this.community.toggleCommentLike(commentId).subscribe((res) => {
+      const current = { ...this.likesMap() };
+      current[commentId] = res;
+      this.likesMap.set(current);
+    });
+  }
+
+  likesFor(commentId: string): LikeSummary {
+    return this.likesMap()[commentId] ?? { likes: 0, likedByMe: null };
   }
 }

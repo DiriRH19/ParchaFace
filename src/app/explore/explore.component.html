@@ -42,9 +42,11 @@
           >
 
           <datalist id="ciudades-list">
-            <option *ngFor="let c of ciudadesSugeridas" [value]="c.nombre">
-              {{ c.nombre }} - {{ c.departamento }}
-            </option>
+            @for (c of ciudadesSugeridas(); track c.nombre) {
+              <option [value]="c.nombre">
+                {{ c.nombre }} - {{ c.departamento }}
+              </option>
+            }
           </datalist>
         </div>
 
@@ -80,13 +82,17 @@
       <div class="events-header">
         <h2 class="events-count">{{ eventsFiltrados.length }} eventos</h2>
 
-        <div *ngIf="authRequired" class="auth-warning">
-          Para ver los eventos necesitas iniciar sesión. <a routerLink="/login">Iniciar sesión</a>
-        </div>
+        @if (authRequired) {
+          <div class="auth-warning">
+            Para ver los eventos necesitas iniciar sesión. <a routerLink="/login">Iniciar sesión</a>
+          </div>
+        }
       </div>
 
       <div class="events-grid">
-        <app-event-card *ngFor="let event of eventsFiltrados" [event]="event"></app-event-card>
+        @for (event of eventsFiltrados; track event.id) {
+          <app-event-card [event]="event"></app-event-card>
+        }
       </div>
     </div>
   </div>

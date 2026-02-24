@@ -24,17 +24,27 @@
         />
       </div>
 
-      <div class="hint error" *ngIf="form.get('codigo')?.touched && form.get('codigo')?.invalid">
-        <span *ngIf="form.get('codigo')?.errors?.['required']">El código es obligatorio.</span>
-        <span *ngIf="form.get('codigo')?.errors?.['minlength']">Código muy corto.</span>
-      </div>
+      @if (form.get('codigo')?.touched && form.get('codigo')?.invalid) {
+        <div class="hint error">
+          @if (form.get('codigo')?.errors?.['required']) {
+            <span>El código es obligatorio.</span>
+          }
+          @if (form.get('codigo')?.errors?.['minlength']) {
+            <span>Código muy corto.</span>
+          }
+        </div>
+      }
 
       <button class="btn" type="submit" [disabled]="loading || form.invalid">
         {{ loading ? 'Validando...' : 'Continuar' }}
       </button>
 
-      <div class="alert ok" *ngIf="msg">{{ msg }}</div>
-      <div class="alert err" *ngIf="error">{{ error }}</div>
+      @if (msg) {
+        <div class="alert ok">{{ msg }}</div>
+      }
+      @if (error) {
+        <div class="alert err">{{ error }}</div>
+      }
 
       <div class="links">
         <a routerLink="/forgot-password">Volver a correo</a>

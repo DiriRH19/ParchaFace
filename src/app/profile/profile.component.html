@@ -7,11 +7,9 @@
     <div class="logo">ParchaFace</div>
 
     <div class="header-actions">
-      <ng-container *ngIf="!isEditing; else editActions">
+      @if (!isEditing) {
         <button class="btn-save" type="button" (click)="startEdit()">Editar</button>
-      </ng-container>
-
-      <ng-template #editActions>
+      } @else {
         <button class="btn-save" type="button" [disabled]="isSaving" (click)="saveProfile()">
           {{ isSaving ? 'Guardando…' : 'Guardar' }}
         </button>
@@ -19,23 +17,22 @@
         <button class="btn-cancel" type="button" [disabled]="isSaving" (click)="cancelEdit()">
           Cancelar
         </button>
-      </ng-template>
+      }
     </div>
   </div>
 
   <div class="profile-card">
     <div class="cover-section">
       <div class="cover-image">
-        <img
-          *ngIf="userData?.fotoPortada as portada; else defaultCover"
-          [src]="'http://localhost:8080' + portada"
-          alt="Foto de portada"
-          class="cover-img"
-        />
-
-        <ng-template #defaultCover>
+        @if (userData?.fotoPortada) {
+          <img
+            [src]="'http://localhost:8080' + (userData?.fotoPortada || '')"
+            alt="Foto de portada"
+            class="cover-img"
+          />
+        } @else {
           <div class="cover-placeholder">Sin portada</div>
-        </ng-template>
+        }
 
         <input
           type="file"
@@ -52,17 +49,15 @@
 
       <div class="profile-picture-wrapper">
         <div class="profile-picture">
-          <img
-            *ngIf="userData?.fotoPerfil as perfil; else defaultProfile"
-            [src]="'http://localhost:8080' + perfil"
-            alt="Foto de perfil"
-            class="profile-img"
-          />
-
-          <ng-template #defaultProfile>
+          @if (userData?.fotoPerfil) {
+            <img
+              [src]="'http://localhost:8080' + (userData?.fotoPerfil || '')"
+              alt="Foto de perfil"
+              class="profile-img"
+            />
+          } @else {
             <div class="profile-placeholder">:)</div>
-          </ng-template>
-        </div>
+          }
 
         <input
           type="file"
@@ -81,12 +76,10 @@
 
   <div class="profile-info">
     <div class="user-details">
-      <ng-container *ngIf="!isEditing; else editUserFields">
+      @if (!isEditing) {
         <h1 class="user-name">{{ getUserName() }}</h1>
         <p class="user-username">{{ getDisplayHandle() }}</p>
-      </ng-container>
-
-      <ng-template #editUserFields>
+      } @else {
         <div class="edit-grid">
           <div class="edit-field">
             <label class="edit-label">Nombre</label>
@@ -99,8 +92,10 @@
           </div>
         </div>
 
-        <div *ngIf="saveError" class="edit-error">{{ saveError }}</div>
-      </ng-template>
+        @if (saveError) {
+          <div class="edit-error">{{ saveError }}</div>
+        }
+      }
 
       <div class="user-meta">
         <span class="meta-item">
@@ -112,14 +107,15 @@
   </div>
 
   <div class="profile-tabs">
-    <button
-      *ngFor="let tab of tabs"
-      class="tab-btn"
-      [class.active]="activeTab === tab.id"
-      type="button"
-      (click)="setActiveTab(tab.id)">
-      {{ tab.label }}
-    </button>
+    @for (tab of tabs; track tab.id) {
+      <button
+        class="tab-btn"
+        [class.active]="activeTab === tab.id"
+        type="button"
+        (click)="setActiveTab(tab.id)">
+        {{ tab.label }}
+      </button>
+    }
   </div>
 
   <div class="profile-content">
@@ -127,13 +123,11 @@
       <div class="section-card">
         <h2 class="section-title">Acerca de</h2>
 
-        <ng-container *ngIf="!isEditing; else editAbout">
+        @if (!isEditing) {
           <p class="section-text">
             {{ userData?.acercaDe?.trim() ? userData?.acercaDe : 'Aún no has agregado información.' }}
           </p>
-        </ng-container>
-
-        <ng-template #editAbout>
+        } @else {
           <label class="edit-label">Descripción</label>
           <textarea
             class="edit-textarea"
@@ -141,7 +135,7 @@
             [(ngModel)]="editForm.acercaDe"
             [ngModelOptions]="{ standalone: true }"
             placeholder="Escribe algo sobre ti…"></textarea>
-        </ng-template>
+        }
 
         <div class="contact-info">
           <div class="contact-item">
@@ -166,15 +160,17 @@
           </button>
         </div>
 
-        <div class="interests-list" *ngIf="(userData?.categoriasPreferidas?.length || 0) > 0; else noInterests">
-          <span class="interest-tag" *ngFor="let interest of userData?.categoriasPreferidas">
-            {{ interest }}
-          </span>
+        <div class="interests-list">
+          @for (interest of userData?.categoriasPreferidas; track interest) {
+            <span class="interest-tag">
+              {{ interest }}
+            </span>
+          }
         </div>
 
-        <ng-template #noInterests>
+        @if (!((userData?.categoriasPreferidas?.length || 0) > 0)) {
           <p class="section-text">No tienes intereses seleccionados todavía.</p>
-        </ng-template>
+        }
       </div>
     </div>
   </div>
@@ -183,61 +179,62 @@
     <div class="section-card">
       <h2 class="section-title">Redes Sociales</h2>
 
-      <ng-container *ngIf="!isEditing; else editSocial">
-        <div class="social-list" *ngIf="(userData?.redesSociales?.length || 0) > 0; else noSocials">
-          <div class="social-item" *ngFor="let social of userData?.redesSociales">
-            <span class="social-icon"></span>
-            <span><b>{{ social.platform }}</b>: {{ social.handle }}</span>
+      @if (!isEditing) {
+        @if ((userData?.redesSociales?.length || 0) > 0) {
+          <div class="social-list">
+            @for (social of userData?.redesSociales; track social) {
+              <div class="social-item">
+                <span class="social-icon"></span>
+                <span><b>{{ social.platform }}</b>: {{ social.handle }}</span>
+              </div>
+            }
           </div>
-        </div>
-
-        <ng-template #noSocials>
+        } @else {
           <p class="section-text">Aún no has agregado redes sociales.</p>
-        </ng-template>
-      </ng-container>
-
-      <ng-template #editSocial>
+        }
+      } @else {
         <div class="social-edit-list">
-          <div
-            class="social-edit-row"
-            *ngFor="let social of editForm.redesSociales; let i = index; trackBy: trackByIndex">
+          @for (social of editForm.redesSociales; let i = $index; track i) {
+            <div class="social-edit-row">
+              <input
+                class="edit-input"
+                type="text"
+                placeholder="Plataforma (Instagram, X, Facebook...)"
+                [(ngModel)]="social.platform"
+                [ngModelOptions]="{ standalone: true }"
+              />
 
-            <input
-              class="edit-input"
-              type="text"
-              placeholder="Plataforma (Instagram, X, Facebook...)"
-              [(ngModel)]="social.platform"
-              [ngModelOptions]="{ standalone: true }"
-            />
+              <input
+                class="edit-input"
+                type="text"
+                placeholder="Usuario o link"
+                [(ngModel)]="social.handle"
+                [ngModelOptions]="{ standalone: true }"
+              />
 
-            <input
-              class="edit-input"
-              type="text"
-              placeholder="Usuario o link"
-              [(ngModel)]="social.handle"
-              [ngModelOptions]="{ standalone: true }"
-            />
-
-            <button type="button" class="btn-cancel btn-icon" (click)="removeSocial(i)">✕</button>
-          </div>
+              <button type="button" class="btn-cancel btn-icon" (click)="removeSocial(i)">✕</button>
+            </div>
+          }
 
           <button type="button" class="btn-cancel btn-small" (click)="addSocial()">
             + Añadir red
           </button>
         </div>
-      </ng-template>
+      }
     </div>
   </div>
 </div>
 
-<div class="modal-overlay" *ngIf="showDiscardModal" (click)="closeDiscardModal()">
-  <div class="modal" (click)="$event.stopPropagation()">
-    <h3 class="modal-title">¿Descartar cambios?</h3>
-    <p class="modal-text">Tienes cambios sin guardar. ¿Quieres descartarlos o seguir editando?</p>
+@if (showDiscardModal) {
+  <div class="modal-overlay" (click)="closeDiscardModal()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <h3 class="modal-title">¿Descartar cambios?</h3>
+      <p class="modal-text">Tienes cambios sin guardar. ¿Quieres descartarlos o seguir editando?</p>
 
-    <div class="modal-actions">
-      <button class="btn-cancel" type="button" (click)="closeDiscardModal()">Seguir editando</button>
-      <button class="btn-danger" type="button" (click)="discardChanges()">Descartar cambios</button>
+      <div class="modal-actions">
+        <button class="btn-cancel" type="button" (click)="closeDiscardModal()">Seguir editando</button>
+        <button class="btn-danger" type="button" (click)="discardChanges()">Descartar cambios</button>
+      </div>
     </div>
   </div>
-</div>
+}

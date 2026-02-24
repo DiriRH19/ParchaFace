@@ -2,14 +2,15 @@
   <div class="event-image">
     <span class="category-tag">{{ event.category }}</span>
 
-    <img
-      *ngIf="event.imageUrl"
-      [src]="event.imageUrl"
-      alt="Portada"
-      class="event-img"
-      loading="lazy"
-      (error)="onImgError()"
-    >
+    @if (event.imageUrl) {
+      <img
+        [src]="event.imageUrl"
+        alt="Portada"
+        class="event-img"
+        loading="lazy"
+        (error)="onImgError()"
+      >
+    }
 
     <div class="action-icons">
       <button class="icon-btn heart" type="button"></button>
@@ -36,19 +37,27 @@
         <span>{{ event.location }}</span>
       </div>
 
-      <div class="detail-item" *ngIf="event.ciudad">
-        <span class="icon">🌤️</span>
+      @if (event.ciudad) {
+        <div class="detail-item">
+          <span class="icon">🌤️</span>
 
-        <span *ngIf="climaLoading">Clima...</span>
+          @if (climaLoading) {
+            <span>Clima...</span>
+          }
 
-        <span *ngIf="!climaLoading && clima">
-          {{ clima.temperaturaC }} °C • 💨 {{ clima.vientoKmh }} km/h
-        </span>
+          @if (!climaLoading && clima) {
+            <span>
+              {{ clima.temperaturaC }} °C • 💨 {{ clima.vientoKmh }} km/h
+            </span>
+          }
 
-        <span *ngIf="!climaLoading && !clima && climaError">
-          Clima no disponible
-        </span>
-      </div>
+          @if (!climaLoading && !clima && climaError) {
+            <span>
+              Clima no disponible
+            </span>
+          }
+        </div>
+      }
 
       <div class="detail-item">
         <span class="icon"></span>

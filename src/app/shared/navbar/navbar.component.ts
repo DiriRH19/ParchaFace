@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, signal } from '@angular/core';
 import { RouterLink, RouterLinkActive, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AuthService, UserData } from '../../services/auth.service';
@@ -31,20 +31,20 @@ export class NavbarComponent implements OnInit, OnDestroy {
   showEmergencyModal = false;
   readonly year = new Date().getFullYear();
 
-  readonly colombia: EmergencyItem[] = [
+  readonly colombia = signal<EmergencyItem[]>([
     { icon: '🚨', name: 'Línea Única', number: '123', tel: '123', desc: 'Policía, Bomberos, Ambulancia', primary: true },
     { icon: '🚒', name: 'Bomberos', number: '119', tel: '119', desc: 'Incendios / rescate' },
     { icon: '🛟', name: 'Defensa Civil', number: '132', tel: '132', desc: 'Gestión del riesgo' },
     { icon: '👮', name: 'Policía', number: '112', tel: '112', desc: 'Seguridad / apoyo' }
-  ];
+  ]);
 
-  readonly armenia: EmergencyItem[] = [
+  readonly armenia = signal<EmergencyItem[]>([
     { icon: '🚨', name: 'Línea Única', number: '123', tel: '123', desc: 'Atención inmediata', primary: true },
     // Armenia/Quindío indicativo 606 — en tel usamos internacional +57
     { icon: '🛟', name: 'Defensa Civil Quindío', number: '(606) 735 9733', tel: '+576067359733', desc: 'Apoyo y emergencias' },
     { icon: '🚒', name: 'Bomberos', number: '119', tel: '119', desc: 'Incendios / rescate' },
     { icon: '⛑️', name: 'Cruz Roja / Emergencias', number: '132', tel: '132', desc: 'Asistencia humanitaria' }
-  ];
+  ]);
 
   constructor(
     private authService: AuthService,

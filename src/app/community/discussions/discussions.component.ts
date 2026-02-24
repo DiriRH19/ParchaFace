@@ -3,11 +3,12 @@ import { Component, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { CommunityPost, CommunityService, SortKey } from '../../services/community.service';
+import { NavbarComponent } from '../../shared/navbar/navbar.component';
 
 @Component({
   selector: 'app-discussions',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, NavbarComponent],
   templateUrl: './discussions.component.html',
   styleUrls: ['./discussions.component.css'],
 })
@@ -17,8 +18,8 @@ export class DiscussionsComponent implements OnInit {
   category = signal('Todas');
   sort = signal<SortKey>('recent');
 
-  cities = ['Todas', 'Ciudad de México', 'Guadalajara', 'Monterrey', 'Bogotá', 'Medellín'];
-  categories = ['Todas', 'Música', 'Tech', 'Networking', 'Deportes', 'Arte', 'Gaming'];
+  cities = signal(['Todas', 'Ciudad de México', 'Guadalajara', 'Monterrey', 'Bogotá', 'Medellín']);
+  categories = signal(['Todas', 'Música', 'Tech', 'Networking', 'Deportes', 'Arte', 'Gaming']);
 
   loading = signal(false);
   posts = signal<CommunityPost[]>([]);
@@ -42,12 +43,17 @@ export class DiscussionsComponent implements OnInit {
     });
   }
 
+  back() {
+    this.router.navigateByUrl('/community');
+  }
+
   setSort(v: SortKey) {
     this.sort.set(v);
     this.load();
   }
 
   openPost(id: string) {
+    console.log('openPost() id:', id);
     this.router.navigate(['/community/discussions', id]);
   }
 

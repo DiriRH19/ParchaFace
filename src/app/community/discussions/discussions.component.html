@@ -1,6 +1,8 @@
+<app-navbar></app-navbar>
 <section class="discussions container">
   <header class="header">
     <div class="header__left">
+      <button type="button" class="btn btn--ghost" (click)="back()">← Volver</button>
       <h1 class="title">Discusiones</h1>
       <p class="subtitle muted">Explora temas generales o ligados a un evento (opcional).</p>
     </div>
@@ -34,22 +36,25 @@
         <label class="field">
           <span class="field__label">Ciudad</span>
           <select class="field__control" [ngModel]="city()" (ngModelChange)="city.set($event); load()">
-            <option *ngFor="let c of cities" [value]="c">{{ c }}</option>
+            @for (c of cities(); track c) {
+              <option [value]="c">{{ c }}</option>
+            }
           </select>
         </label>
 
         <div class="field">
           <span class="field__label">Categoría</span>
           <div class="chips">
-            <button
-              type="button"
-              class="chip"
-              [class.chip--active]="category() === cat"
-              *ngFor="let cat of categories"
-              (click)="category.set(cat); load()"
-            >
-              {{ cat }}
-            </button>
+            @for (cat of categories(); track cat) {
+              <button
+                type="button"
+                class="chip"
+                [class.chip--active]="category() === cat"
+                (click)="category.set(cat); load()"
+              >
+                {{ cat }}
+              </button>
+            }
           </div>
         </div>
       </div>
@@ -63,31 +68,41 @@
   </div>
 
   <div class="list">
-    <div class="card empty" *ngIf="!loading() && posts().length === 0">
-      No hay publicaciones con esos filtros.
-    </div>
+    @if (!loading() && posts().length === 0) {
+      <div class="card empty">
+        No hay publicaciones con esos filtros.
+      </div>
+    }
 
-    <button type="button" class="post" *ngFor="let p of posts()" (click)="openPost(p.id)">
-      <div class="post__main">
-        <div class="post__title">{{ p.title }}</div>
+    @for (p of posts(); track p.id) {
+      <button type="button" class="post" (click)="openPost(p.id)">
+        <div class="post__main">
+          <div class="post__title">{{ p.title }}</div>
 
-        <div class="post__meta">
-          <span class="chip chip--sm" *ngIf="p.city">{{ p.city }}</span>
-          <span class="chip chip--sm" *ngIf="p.category">{{ p.category }}</span>
-          <span class="muted">• {{ p.authorName }}</span>
+          <div class="post__meta">
+            @if (p.city) {
+              <span class="chip chip--sm">{{ p.city }}</span>
+            }
+            @if (p.category) {
+              <span class="chip chip--sm">{{ p.category }}</span>
+            }
+            <span class="muted">• {{ p.authorName }}</span>
+          </div>
+
+          @if (p.eventTitle) {
+            <div class="post__event">
+              <span class="dot"></span>
+              <span class="muted">Ligado a:</span>
+              <span class="event">{{ p.eventTitle }}</span>
+            </div>
+          }
         </div>
 
-        <div class="post__event" *ngIf="p.eventTitle">
-          <span class="dot"></span>
-          <span class="muted">Ligado a:</span>
-          <span class="event">{{ p.eventTitle }}</span>
+        <div class="post__side">
+          <div class="count">{{ p.commentsCount }}</div>
+          <div class="muted">comentarios</div>
         </div>
-      </div>
-
-      <div class="post__side">
-        <div class="count">{{ p.commentsCount }}</div>
-        <div class="muted">comentarios</div>
-      </div>
-    </button>
+      </button>
+    }
   </div>
 </section>

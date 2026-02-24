@@ -1,5 +1,5 @@
 import { Component, Input, OnChanges, SimpleChanges } from '@angular/core';
-import { CommonModule, NgIf } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { WeatherService, ClimaResponse } from '../services/weather.service';
 
@@ -21,7 +21,7 @@ export interface Event {
 @Component({
   selector: 'app-event-card',
   standalone: true,
-  imports: [CommonModule, NgIf, RouterLink],
+  imports: [CommonModule, RouterLink],
   templateUrl: './event-card.component.html',
   styleUrls: ['./event-card.component.css']
 })

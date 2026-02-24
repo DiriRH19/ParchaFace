@@ -16,133 +16,141 @@
   </div>
 
   <div class="progress-bar">
-    <div
-      class="step"
-      *ngFor="let step of steps"
-      [class.completed]="isStepComplete(step.id)"
-      [class.active]="currentStep === step.id"
-    >
-      <div class="step-circle">
-        <span *ngIf="isStepComplete(step.id)">✓</span>
-        <span *ngIf="!isStepComplete(step.id)">{{ step.icon }}</span>
-      </div>
-      <div class="step-info">
-        <div class="step-title">Paso {{ step.id }} {{ step.title }}</div>
-        <div class="step-description">{{ step.description }}</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- =========================
-       ✅ MODAL ÉXITO (NUEVO)
-  ========================== -->
-  <div class="success-backdrop" *ngIf="showSuccessModal">
-    <div class="success-modal" role="dialog" aria-modal="true" aria-label="Evento creado exitosamente">
-      <div class="success-header">
-        <div class="success-title">
-          <span class="success-badge">✓</span>
-          <div>
-            <h3>Evento creado</h3>
-            <p>Revisa la vista previa antes de continuar.</p>
-          </div>
+    @for (step of steps; track step.id) {
+      <div
+        class="step"
+        [class.completed]="isStepComplete(step.id)"
+        [class.active]="currentStep === step.id"
+      >
+        <div class="step-circle">
+          @if (isStepComplete(step.id)) {
+            <span>✓</span>
+          }
+          @if (!isStepComplete(step.id)) {
+            <span>{{ step.icon }}</span>
+          }
         </div>
-        <button type="button" class="success-close" (click)="onModifyFromModal()" aria-label="Cerrar">✕</button>
-      </div>
-
-      <div class="success-body">
-        <div class="success-preview-grid">
-          <!-- Portada -->
-          <div class="success-cover">
-            <img
-              *ngIf="localCoverPreviewUrl || createdEvent?.imagenPortadaUrl"
-              [src]="localCoverPreviewUrl || createdEvent?.imagenPortadaUrl"
-              alt="Portada del evento"
-            />
-            <div *ngIf="!(localCoverPreviewUrl || createdEvent?.imagenPortadaUrl)" class="success-cover-placeholder">
-              🖼️ Sin portada
-            </div>
-            <span class="success-category">
-              {{ createdEvent?.categoria || eventData.categoria || 'Sin categoría' }}
-            </span>
-          </div>
-
-          <!-- Info -->
-          <div class="success-info">
-            <h2 class="success-event-title">{{ createdEvent?.titulo || eventData.titulo || 'Sin título' }}</h2>
-            <p class="success-event-desc">{{ createdEvent?.descripcion || eventData.descripcion }}</p>
-
-            <div class="success-meta">
-              <div class="success-meta-item">
-                <span>📅</span>
-                <div>
-                  <div class="meta-label">Fecha</div>
-                  <div class="meta-value">{{ createdEvent?.fecha || eventData.fecha || '—' }}</div>
-                </div>
-              </div>
-
-              <div class="success-meta-item">
-                <span>🕐</span>
-                <div>
-                  <div class="meta-label">Hora</div>
-                  <div class="meta-value">
-                    {{ createdEvent?.horaInicio || eventData.horaInicio || '—' }}
-                    <span *ngIf="createdEvent?.horaFin || eventData.horaFin">
-                      - {{ createdEvent?.horaFin || eventData.horaFin }}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <div class="success-meta-item">
-                <span>{{ (createdEvent?.eventoEnLinea ?? eventData.eventoEnLinea) ? '🌐' : '📍' }}</span>
-                <div>
-                  <div class="meta-label">
-                    {{ (createdEvent?.eventoEnLinea ?? eventData.eventoEnLinea) ? 'En línea' : 'Presencial' }}
-                  </div>
-                  <div class="meta-value">
-                    <ng-container *ngIf="(createdEvent?.eventoEnLinea ?? eventData.eventoEnLinea); else presencialOk">
-                      {{ createdEvent?.urlVirtual || eventData.urlVirtual || '—' }}
-                    </ng-container>
-                    <ng-template #presencialOk>
-                      {{ createdEvent?.ubicacion || eventData.ubicacion || '—' }}
-                      <span *ngIf="createdEvent?.ciudad || eventData.ciudad"> • {{ createdEvent?.ciudad || eventData.ciudad }}</span>
-                    </ng-template>
-                  </div>
-                </div>
-              </div>
-
-              <div class="success-meta-item">
-                <span>🎟️</span>
-                <div>
-                  <div class="meta-label">Cupo / Precio</div>
-                  <div class="meta-value">
-                    {{ createdEvent?.cupo || eventData.cupo || '—' }} cupos •
-                    {{
-                      (createdEvent?.eventoGratuito ?? eventData.eventoGratuito)
-                        ? 'Gratis'
-                        : ('$' + (createdEvent?.precio || eventData.precio || '—'))
-                    }}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div class="success-actions">
-              <button type="button" class="btn-secondary" (click)="onModifyFromModal()">
-                Modificar
-              </button>
-              <button type="button" class="btn-primary" (click)="onAcceptFromModal()">
-                Aceptar y ver en eventos
-              </button>
-            </div>
-          </div>
+        <div class="step-info">
+          <div class="step-title">Paso {{ step.id }} {{ step.title }}</div>
+          <div class="step-description">{{ step.description }}</div>
         </div>
       </div>
-    </div>
-
-    <!-- click afuera cierra como "Modificar" -->
-    <button class="success-backdrop-click" type="button" (click)="onModifyFromModal()" aria-label="Cerrar"></button>
+    }
   </div>
+
+  @if (showSuccessModal) {
+    <div class="success-backdrop">
+      <div class="success-modal" role="dialog" aria-modal="true" aria-label="Evento creado exitosamente">
+        <div class="success-header">
+          <div class="success-title">
+            <span class="success-badge">✓</span>
+            <div>
+              <h3>Evento creado</h3>
+              <p>Revisa la vista previa antes de continuar.</p>
+            </div>
+          </div>
+          <button type="button" class="success-close" (click)="onModifyFromModal()" aria-label="Cerrar">✕</button>
+        </div>
+
+        <div class="success-body">
+          <div class="success-preview-grid">
+            <!-- Portada -->
+            <div class="success-cover">
+              @if (localCoverPreviewUrl || createdEvent?.imagenPortadaUrl) {
+                <img
+                  [src]="localCoverPreviewUrl || createdEvent?.imagenPortadaUrl"
+                  alt="Portada del evento"
+                />
+              }
+              @if (!(localCoverPreviewUrl || createdEvent?.imagenPortadaUrl)) {
+                <div class="success-cover-placeholder">
+                  🖼️ Sin portada
+                </div>
+              }
+              <span class="success-category">
+                {{ createdEvent?.categoria || eventData.categoria || 'Sin categoría' }}
+              </span>
+            </div>
+
+            <!-- Info -->
+            <div class="success-info">
+              <h2 class="success-event-title">{{ createdEvent?.titulo || eventData.titulo || 'Sin título' }}</h2>
+              <p class="success-event-desc">{{ createdEvent?.descripcion || eventData.descripcion }}</p>
+
+              <div class="success-meta">
+                <div class="success-meta-item">
+                  <span>📅</span>
+                  <div>
+                    <div class="meta-label">Fecha</div>
+                    <div class="meta-value">{{ createdEvent?.fecha || eventData.fecha || '—' }}</div>
+                  </div>
+                </div>
+
+                <div class="success-meta-item">
+                  <span>🕐</span>
+                  <div>
+                    <div class="meta-label">Hora</div>
+                    <div class="meta-value">
+                      {{ createdEvent?.horaInicio || eventData.horaInicio || '—' }}
+                      <span *ngIf="createdEvent?.horaFin || eventData.horaFin">
+                        - {{ createdEvent?.horaFin || eventData.horaFin }}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="success-meta-item">
+                  <span>{{ (createdEvent?.eventoEnLinea ?? eventData.eventoEnLinea) ? '🌐' : '📍' }}</span>
+                  <div>
+                    <div class="meta-label">
+                      {{ (createdEvent?.eventoEnLinea ?? eventData.eventoEnLinea) ? 'En línea' : 'Presencial' }}
+                    </div>
+                    <div class="meta-value">
+                      @if ((createdEvent?.eventoEnLinea ?? eventData.eventoEnLinea)) {
+                        {{ createdEvent?.urlVirtual || eventData.urlVirtual || '—' }}
+                      } @else {
+                        {{ createdEvent?.ubicacion || eventData.ubicacion || '—' }}
+                        @if (createdEvent?.ciudad || eventData.ciudad) {
+                          <span> • {{ createdEvent?.ciudad || eventData.ciudad }}</span>
+                        }
+                      }
+                    </div>
+                  </div>
+                </div>
+
+                <div class="success-meta-item">
+                  <span>🎟️</span>
+                  <div>
+                    <div class="meta-label">Cupo / Precio</div>
+                    <div class="meta-value">
+                      {{ createdEvent?.cupo || eventData.cupo || '—' }} cupos •
+                      {{
+                        (createdEvent?.eventoGratuito ?? eventData.eventoGratuito)
+                          ? 'Gratis'
+                          : ('$' + (createdEvent?.precio || eventData.precio || '—'))
+                      }}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="success-actions">
+                <button type="button" class="btn-secondary" (click)="onModifyFromModal()">
+                  Modificar
+                </button>
+                <button type="button" class="btn-primary" (click)="onAcceptFromModal()">
+                  Aceptar y ver en eventos
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- click afuera cierra como "Modificar" -->
+      <button class="success-backdrop-click" type="button" (click)="onModifyFromModal()" aria-label="Cerrar"></button>
+    </div>
+  }
 
   <!-- Preview modal -->
   <div class="preview-modal" *ngIf="showPreview">

@@ -1,51 +1,77 @@
+<app-navbar></app-navbar>
+
 <section class="detail container">
-  <!-- Top bar -->
   <div class="top">
     <button type="button" class="btn btn--ghost" (click)="back()">← Volver</button>
-    <div class="top__right">
-      <span class="muted" *ngIf="post()">Comentarios: {{ post()?.commentsCount }}</span>
-    </div>
+
+    @if (post()) {
+      <span class="muted">Comentarios: {{ post()?.commentsCount }}</span>
+    }
   </div>
 
-  <!-- Loading -->
-  <div class="card state" *ngIf="loading()">
-    Cargando discusión...
-  </div>
+  @if (loading()) {
+    <div class="card state">Cargando discusión...</div>
+  }
 
-  <!-- Error -->
-  <div class="card state state--error" *ngIf="!loading() && error()">
-    {{ error() }}
-  </div>
+  @if (!loading() && error()) {
+    <div class="card state state--error">{{ error() }}</div>
+  }
 
-  <ng-container *ngIf="!loading() && post() as p">
-    <!-- Post card -->
+  @if (!loading() && post(); as p) {
     <article class="card post">
       <div class="post__header">
         <div class="post__title">{{ p.title }}</div>
+
         <div class="post__meta">
-          <span class="chip chip--sm" *ngIf="p.city">{{ p.city }}</span>
-          <span class="chip chip--sm" *ngIf="p.category">{{ p.category }}</span>
+          @if (p.city) { <span class="chip chip--sm">{{ p.city }}</span> }
+          @if (p.category) { <span class="chip chip--sm">{{ p.category }}</span> }
           <span class="muted">• {{ p.authorName }}</span>
           <span class="muted">• {{ p.createdAt | date:'medium' }}</span>
+        </div>
+
+        <!-- ⭐ Rating del post -->
+        <div class="post__rating">
+          <div class="stars">
+            @for (s of [1,2,3,4,5]; track s) {
+              <button
+                type="button"
+                class="star"
+                [class.star--on]="(ratingSummary()?.myRating || 0) >= s"
+                (click)="ratePost(s)"
+                [attr.aria-label]="'Calificar ' + s + ' estrellas'"
+              >
+                ★
+              </button>
+            }
+          </div>
+
+          <div class="muted">
+            @if (ratingSummary()?.average != null) {
+              ⭐ {{ ratingSummary()?.average }} ({{ ratingSummary()?.count }} votos)
+            } @else {
+              Sin calificaciones aún
+            }
+          </div>
         </div>
       </div>
 
       <p class="post__content">{{ p.content }}</p>
 
-      <!-- Event preview (opcional) -->
-      <div class="event card" *ngIf="p.eventId && p.eventTitle">
-        <div class="event__left">
-          <div class="event__thumb" *ngIf="p.eventImage"></div>
-          <div class="event__info">
-            <div class="event__label">Ligado a evento</div>
-            <div class="event__title">{{ p.eventTitle }}</div>
+      @if (p.eventId && p.eventTitle) {
+        <div class="event card">
+          <div class="event__left">
+            @if (p.eventImage) { <div class="event__thumb"></div> }
+            <div class="event__info">
+              <div class="event__label">Ligado a evento</div>
+              <div class="event__title">{{ p.eventTitle }}</div>
+            </div>
           </div>
-        </div>
 
-        <button type="button" class="btn btn--primary" (click)="goToEvent(p.eventId!)">
-          Ver evento
-        </button>
-      </div>
+          <button type="button" class="btn btn--primary" (click)="goToEvent(p.eventId!)">
+            Ver evento
+          </button>
+        </div>
+      }
     </article>
 
     <!-- Comment box -->
@@ -66,41 +92,33 @@
       </div>
     </div>
 
-    <!-- Comments list -->
+    <!-- Comments -->
     <div class="comments">
-      <div class="comments__title">
-        Comentarios ({{ comments().length }})
-      </div>
+      <div class="comments__title">Comentarios ({{ comments().length }})</div>
 
-      <div class="card comment" *ngFor="let c of comments()">
-        <div class="comment__top">
-          <div class="comment__author">{{ c.authorName }}</div>
+      @for (c of comments(); track c.id) {
+        <div class="card comment">
+          <div class="comment__top">
+            <div class="comment__author">{{ c.authorName }}</div>
 
-          <div class="comment__right">
-            <!-- ⭐ Stars -->
-            <div class="stars" aria-label="Puntuar comentario">
-              <button
-                type="button"
-                class="star"
-                *ngFor="let s of [1,2,3,4,5]"
-                [class.star--on]="(c.rating || 0) >= s"
-                (click)="rate(c.id, s)"
-                [attr.aria-label]="'Puntuar ' + s + ' estrellas'"
-              >
-                ★
+            <div class="comment__right">
+              <!-- 👍 Like -->
+              <button type="button" class="like" (click)="toggleLike(c.id)">
+                <span class="like__icon" [class.like__icon--on]="likesFor(c.id).likedByMe">👍</span>
+                <span class="like__count">{{ likesFor(c.id).likes }}</span>
               </button>
+
+              <div class="muted">{{ c.createdAt | date:'short' }}</div>
             </div>
-
-            <div class="muted">{{ c.createdAt | date:'short' }}</div>
           </div>
+
+          <div class="comment__content">{{ c.content }}</div>
         </div>
+      }
 
-        <div class="comment__content">{{ c.content }}</div>
-      </div>
-
-      <div class="card state" *ngIf="comments().length === 0">
-        Aún no hay comentarios. ¡Sé el primero en responder!
-      </div>
+      @if (comments().length === 0) {
+        <div class="card state">Aún no hay comentarios. ¡Sé el primero en responder!</div>
+      }
     </div>
-  </ng-container>
+  }
 </section>

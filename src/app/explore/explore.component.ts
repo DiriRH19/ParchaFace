@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { EventCardComponent, Event } from '../event-card/event-card.component';
 import { NavbarComponent } from '../shared/navbar/navbar.component';
@@ -37,7 +37,7 @@ export class ExploreComponent implements OnInit {
 
   // ✅ CIUDAD
   ciudadFiltro = '';
-  ciudadesSugeridas: { nombre: string; departamento: string }[] = [];
+  ciudadesSugeridas = signal<{ nombre: string; departamento: string }[]>([]);
 
   ngOnInit(): void {
     if (typeof window !== 'undefined') {
@@ -99,13 +99,13 @@ export class ExploreComponent implements OnInit {
     const q = (value || '').trim();
 
     if (q.length < 2) {
-      this.ciudadesSugeridas = [];
+      this.ciudadesSugeridas.set([]);
       return;
     }
 
     this.weatherService.getCiudades(q).subscribe({
-      next: (list) => (this.ciudadesSugeridas = list || []),
-      error: () => (this.ciudadesSugeridas = [])
+      next: (list) => this.ciudadesSugeridas.set(list || []),
+      error: () => this.ciudadesSugeridas.set([])
     });
   }
 

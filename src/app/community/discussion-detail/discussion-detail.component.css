@@ -210,15 +210,23 @@
   .composer__actions .btn{ width: 100%; }
 }
 
-
 .comment__right{
   display: flex;
   align-items: center;
   gap: 10px;
 }
 
+.post__rating{
+  margin-top: 12px;
+  display:flex;
+  justify-content: space-between;
+  align-items:center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
 .stars{
-  display: flex;
+  display:flex;
   gap: 4px;
   padding: 6px 8px;
   border-radius: 999px;
@@ -238,12 +246,27 @@
   padding: 0 2px;
 }
 
-.star:hover{
-  transform: translateY(-1px);
-  opacity: .85;
+.star:hover{ transform: translateY(-1px); opacity: .85; }
+.star--on{ opacity: 1; }
+
+/* 👍 Like */
+.comment__right{
+  display:flex;
+  align-items:center;
+  gap: 10px;
 }
 
-.star--on{
-  opacity: 1;
+.like{
+  display:flex;
+  align-items:center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(0,0,0,0.06);
+  background: rgba(255,255,255,0.80);
+  cursor:pointer;
 }
 
+.like__icon{ opacity: .45; transition: opacity .12s ease, transform .12s ease; }
+.like__icon--on{ opacity: 1; transform: translateY(-1px); }
+.like__count{ font-weight: 800; color: var(--accent-hover); }

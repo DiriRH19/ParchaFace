@@ -52,7 +52,7 @@ type EventoVM = {
 @Component({
   selector: 'app-event-detail',
   standalone: true,
-  imports: [CommonModule, NgIf, RouterLink, NavbarComponent, FormsModule],
+  imports: [CommonModule, RouterLink, NavbarComponent, FormsModule],
   templateUrl: './event-detail.component.html',
   styleUrls: ['./event-detail.component.css']
 })

@@ -35,12 +35,18 @@ interface ActivityItem {
   styleUrls: ['./community.component.css'],
 })
 export class CommunityComponent {
-  constructor(private router: Router) {}
+  private readonly WELCOME_KEY = 'pf_community_welcome_seen_v1';
 
-  // ✅ Welcome modal
-  showWelcome = signal(true);
+  showWelcome = signal(false);
+
+  constructor(private router: Router) {
+    const seen = localStorage.getItem(this.WELCOME_KEY) === '1';
+    this.showWelcome.set(!seen);
+  }
+
   dismissWelcome() {
     this.showWelcome.set(false);
+    localStorage.setItem(this.WELCOME_KEY, '1');
   }
 
   // UI state
@@ -57,8 +63,8 @@ export class CommunityComponent {
     { value: '89', label: 'Este Mes' },
   ]);
 
-  cities = ['Todas', 'Ciudad de México', 'Guadalajara', 'Monterrey', 'Bogotá', 'Medellín'];
-  categories = ['Todas', 'Música', 'Tech', 'Networking', 'Deportes', 'Arte', 'Gaming'];
+  cities = signal(['Todas', 'Ciudad de México', 'Guadalajara', 'Monterrey', 'Bogotá', 'Medellín']);
+  categories = signal(['Todas', 'Música', 'Tech', 'Networking', 'Deportes', 'Arte', 'Gaming']);
 
   organizers = signal<Organizer[]>([
     {
@@ -137,6 +143,8 @@ export class CommunityComponent {
       return byQuery && byCity && byCat;
     });
   });
+
+  topActivity = computed(() => this.filteredActivity().slice(0, 3));
 
   setTab(tab: TabKey) {
     this.activeTab.set(tab);
