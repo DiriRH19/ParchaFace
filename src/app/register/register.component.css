@@ -255,3 +255,61 @@
 .login-link .link:hover {
   color: #D8991F;
 }
+
+/* evita choque entre input y botón "Mostrar" */
+.password-input-wrapper{
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.password-input-wrapper .form-input{
+  width: 100%;
+  padding-right: 96px; /* espacio para el botón */
+}
+
+/* ===== ParchaFace Alerts (reutilizable) ===== */
+.pf-alert{
+  margin-top: 10px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #fff7ea;
+  border: 1px solid #eadbbf;
+  color: #1f2937;
+}
+
+.pf-alert__title{
+  font-weight: 800;
+  color: #E8A92F;
+  margin-bottom: 6px;
+  font-size: 13.5px;
+}
+
+.pf-alert__list{
+  margin: 0;
+  padding-left: 18px;
+  color: #6b7280;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.pf-alert__list li{ margin: 4px 0; }
+
+/* variaciones */
+.pf-alert--warn{
+  background: #fff7ea;
+  border-color: #eadbbf;
+}
+
+.pf-alert--warn .pf-alert__title{
+  color: #c58b1b;
+}
+
+.pf-alert--error{
+  background: #fff2f2;
+  border-color: #f3c6c6;
+}
+
+.pf-alert--error .pf-alert__title{
+  color: #c0392b;
+}

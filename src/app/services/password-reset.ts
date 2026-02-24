@@ -21,4 +21,8 @@ export class PasswordResetService {
       nuevaContrasena,
     });
   }
+
+  verifyResetCode(correo: string, codigo: string): Observable<any> {
+  return this.http.post(`${this.baseUrl}/verify-reset-code`, { correo, codigo });
+}
 }

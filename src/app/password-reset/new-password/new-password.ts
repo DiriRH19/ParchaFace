@@ -29,7 +29,11 @@ export class NewPasswordComponent {
   ) {
     // ✅ form en constructor (evita error fb)
     this.form = this.fb.group({
-      nuevaContrasena: ['', [Validators.required, Validators.minLength(6)]],
+      nuevaContrasena: ['', [
+        Validators.required,
+        Validators.minLength(8),
+        Validators.pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/)
+      ]],
       confirmarContrasena: ['', [Validators.required]],
     });
   }
@@ -82,11 +86,9 @@ export class NewPasswordComponent {
         this.router.navigate(['/login']);
       },
       error: (err: any) => {
-        this.error =
-          err?.error?.error ||
-          err?.error?.message ||
-          'No se pudo actualizar la contraseña.';
-      },
+      localStorage.removeItem('reset_codigo'); // 👈 borra el código malo
+      this.error =err?.error?.error ||err?.error?.message ||'No se pudo actualizar la contraseña.';
+},
       complete: () => (this.loading = false),
     });
   }
