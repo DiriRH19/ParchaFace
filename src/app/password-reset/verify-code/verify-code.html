@@ -17,7 +17,7 @@
       <div class="input-wrap">
         <input
           type="text"
-          placeholder="Ej: 1234"
+          placeholder="Ej: 123456"
           formControlName="codigo"
           maxlength="6"
           autocomplete="one-time-code"
@@ -26,7 +26,7 @@
 
       <div class="hint error" *ngIf="form.get('codigo')?.touched && form.get('codigo')?.invalid">
         <span *ngIf="form.get('codigo')?.errors?.['required']">El código es obligatorio.</span>
-        <span *ngIf="form.get('codigo')?.errors?.['minlength']">Código muy corto.</span>
+        <span *ngIf="form.get('codigo')?.errors?.['pattern']">El código debe tener 6 dígitos.</span>
       </div>
 
       <button class="btn" type="submit" [disabled]="loading || form.invalid">

@@ -38,9 +38,13 @@
             [class.error]="f['contrasena'].invalid && f['contrasena'].touched">
           <button type="button" class="toggle-password" (click)="togglePassword()">{{ showPassword ? 'Ocultar' : 'Mostrar' }}</button>
         </div>
-        <div *ngIf="f['contrasena'].invalid && f['contrasena'].touched" class="error-text">
-          <div *ngIf="f['contrasena'].errors?.['required']">La contraseña es requerida</div>
-        </div>
+        <div class="pf-alert pf-alert--error"
+          *ngIf="f['contrasena'].touched && f['contrasena'].invalid">
+        <div class="pf-alert__title">Revisa tu contraseña</div>
+        <ul class="pf-alert__list">
+          <li *ngIf="f['contrasena'].errors?.['required']">La contraseña es requerida.</li>
+        </ul>
+      </div>
       </div>
       <div class="form-options">
         <label class="checkbox-label">

@@ -26,7 +26,11 @@ export class RegisterComponent {
     this.registerForm = this.fb.group({
       usuario: ['', [Validators.required]],
       correo: ['', [Validators.required, Validators.email]],
-      contrasena: ['', [Validators.required, Validators.minLength(8)]],
+      contrasena: ['', [
+      Validators.required,
+      Validators.minLength(8),
+      Validators.pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/)
+      ]],
       confirmarContrasena: ['', [Validators.required]],
       acceptTerms: [false, [Validators.requiredTrue]]
     }, { validators: [this.passwordsMatchValidator] });

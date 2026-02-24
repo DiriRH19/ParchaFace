@@ -36,22 +36,30 @@
         }
       </div>
       <div class="form-group">
-        <label class="form-label">Contraseña</label>
-        <div class="password-input-wrapper">
-          <input [type]="showPassword ? 'text' : 'password'" placeholder="Mínimo 8 caracteres" class="form-input" formControlName="contrasena">
-          <button type="button" class="toggle-password" (click)="togglePassword()">{{ showPassword ? 'Ocultar' : 'Mostrar' }}</button>
-        </div>
-        @if (f['contrasena']?.touched && f['contrasena']?.errors) {
-          <div class="error">
-            @if (f['contrasena']?.errors?.['required']) {
-              <div>La contraseña es obligatoria.</div>
-            }
-            @if (f['contrasena']?.errors?.['minlength']) {
-              <div>La contraseña debe tener al menos 8 caracteres.</div>
-            }
-          </div>
-        }
-      </div>
+  <label class="form-label">Contraseña</label>
+
+  <div class="password-input-wrapper">
+    <input
+      [type]="showPassword ? 'text' : 'password'"
+      placeholder="Mínimo 8 caracteres"
+      class="form-input"
+      formControlName="contrasena">
+    <button type="button" class="toggle-password" (click)="togglePassword()">
+      {{ showPassword ? 'Ocultar' : 'Mostrar' }}
+    </button>
+  </div>
+
+  <!-- ✅ Alert bonito y consistente -->
+  <div class="pf-alert pf-alert--warn"
+       *ngIf="f['contrasena']?.touched && f['contrasena']?.invalid">
+    <div class="pf-alert__title">Tu contraseña debe cumplir:</div>
+    <ul class="pf-alert__list">
+      <li *ngIf="f['contrasena']?.errors?.['required']">La contraseña es obligatoria.</li>
+      <li *ngIf="f['contrasena']?.errors?.['minlength']">Mínimo 8 caracteres.</li>
+      <li *ngIf="f['contrasena']?.errors?.['pattern']">Mayúscula, minúscula, número y un símbolo.</li>
+    </ul>
+  </div>
+</div>
       <div class="form-group">
         <label class="form-label">Confirmar Contraseña</label>
         <div class="password-input-wrapper">

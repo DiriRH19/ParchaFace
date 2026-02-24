@@ -2,6 +2,8 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators, FormGroup } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
+import { PasswordResetService } from '../../services/password-reset';
+import { finalize } from 'rxjs/operators';
 
 @Component({
   selector: 'app-verify-code',
@@ -15,20 +17,16 @@ export class VerifyCodeComponent {
   msg = '';
   error = '';
 
-  form!: FormGroup; // 👈 se declara, pero NO se inicializa aquí
+  form!: FormGroup;
 
   constructor(
     private fb: FormBuilder,
-    private router: Router
+    private router: Router,
+    private api: PasswordResetService
   ) {
-    // ✅ aquí sí existe this.fb
     this.form = this.fb.group({
-      codigo: ['', [Validators.required, Validators.minLength(4)]],
+      codigo: ['', [Validators.required, Validators.pattern(/^\d{6}$/)]],
     });
-  }
-
-  get codigo() {
-    return this.form.get('codigo');
   }
 
   submit() {
@@ -38,13 +36,27 @@ export class VerifyCodeComponent {
     if (this.form.invalid) return;
 
     const codigo = String(this.form.value.codigo || '').trim();
+    const correo = localStorage.getItem('reset_correo') || '';
 
-    // Guardamos el código para el siguiente paso
-    localStorage.setItem('reset_codigo', codigo);
+    if (!correo) {
+      this.error = 'Falta el correo. Vuelve a "Olvidé mi contraseña".';
+      return;
+    }
 
-    // Ir a la pantalla de nueva contraseña
-    this.router.navigate(['/new-password']);
-  }
+    this.loading = true;
+
+    this.api.verifyResetCode(correo, codigo)
+      .pipe(finalize(() => (this.loading = false)))
+      .subscribe({
+      next: () => {
+      localStorage.setItem('reset_codigo', codigo);
+        this.router.navigate(['/new-password']);
+    },
+    error: (err: any) => {
+      this.error = err?.error?.error || 'Código inválido o expirado.';
+    },
+  });
+    }
 
   volverInicio() {
     this.router.navigate(['/login']);
