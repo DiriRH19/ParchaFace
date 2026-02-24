@@ -5,7 +5,10 @@
 
   <div class="card">
     <div class="logo-wrap">
-      <img src="https://res.cloudinary.com/dgaxlowpd/image/upload/v1765764539/logoParchaFace_fzz8sh.png" alt="ParchaFace" />
+      <img
+        src="https://res.cloudinary.com/dgaxlowpd/image/upload/v1765764539/logoParchaFace_fzz8sh.png"
+        alt="ParchaFace"
+      />
     </div>
 
     <h1>Verificar código</h1>
@@ -24,10 +27,16 @@
         />
       </div>
 
-      <div class="hint error" *ngIf="form.get('codigo')?.touched && form.get('codigo')?.invalid">
-        <span *ngIf="form.get('codigo')?.errors?.['required']">El código es obligatorio.</span>
-        <span *ngIf="form.get('codigo')?.errors?.['pattern']">El código debe tener 6 dígitos.</span>
-      </div>
+      @if (form.get('codigo')?.touched && form.get('codigo')?.invalid) {
+        <div class="hint error">
+          @if (form.get('codigo')?.errors?.['required']) {
+            <span>El código es obligatorio.</span>
+          }
+          @if (form.get('codigo')?.errors?.['pattern']) {
+            <span>El código debe tener 6 dígitos.</span>
+          }
+        </div>
+      }
 
       <button class="btn" type="submit" [disabled]="loading || form.invalid">
         {{ loading ? 'Validando...' : 'Continuar' }}
