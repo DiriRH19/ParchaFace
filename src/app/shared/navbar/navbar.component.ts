@@ -71,6 +71,8 @@ export class NavbarComponent implements OnInit, OnDestroy {
 
   readonly taxisArmenia = signal<TransportItem[]>([
     // Radio Taxi del Quindío
+    { icon: '🚌', name: 'BUSES TINTO', number: '', desc: 'Pagina Web', href: 'https://tinto.com.co/ruta3.htm', primary: true },
+
     { icon: '💬', name: 'Radio Taxi del Quindío', number: '311 542 2222', desc: 'WhatsApp', href: 'https://wa.me/573115422222', primary: true },
     { icon: '📞', name: 'Radio Taxi del Quindío', number: '(606) 746 2222', desc: 'Pedidos', href: 'tel:+576067462222' },
     // Tax Páramo S.A
