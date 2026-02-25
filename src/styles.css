@@ -16,10 +16,32 @@
   --shadow-hover: 0 4px 12px rgba(0, 0, 0, 0.12);
 }
 
+html.dark {
+  --bg-primary: #1a1a1a;
+  --bg-secondary: #2d2d2d;
+  --bg-card: #262626;
+  --accent-yellow: #D4941A;
+  --accent-yellow-light: #E8A92F;
+  --accent-purple: #2d1f33;
+  --accent-pink: #C44A7B;
+  --accent-red: #D63333;
+  --accent-orange: #D97131;
+  --text-primary: #F5F5F5;
+  --text-secondary: #B0B0B0;
+  --text-light: #808080;
+  --border-color: #404040;
+  --shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  --shadow-hover: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+}
+
+html {
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 body {
@@ -29,6 +51,7 @@ body {
   background-color: var(--bg-primary);
   color: var(--text-primary);
   line-height: 1.6;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 a {

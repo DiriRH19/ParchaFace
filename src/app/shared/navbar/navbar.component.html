@@ -14,10 +14,18 @@
     </div>
 
     <div class="navbar-right">
+      <!-- ✅ Transporte: NUEVO -->
+      <button type="button" class="btn-transport-nav" (click)="toggleTransportModal()">
+        🚘 Transporte
+      </button>
+
       <!-- ✅ Emergencias: siempre visible -->
       <button type="button" class="btn-emergency-nav" (click)="toggleEmergencyModal()">
         🚨 Emergencias
       </button>
+
+      <!-- ✅ Toggle de tema -->
+      <app-theme-toggle></app-theme-toggle>
 
       @if (!isLoggedIn) {
         <a routerLink="/login" class="btn-login-nav">Iniciar Sesión</a>
@@ -94,15 +102,106 @@
               </a>
             }
 
-            <div class="em-tip">
-              💡 Si una línea está ocupada, intenta también por <b>123</b>.
-            </div>
           </section>
         </div>
 
         <div class="em-footer">
           <span>© {{ year }} ParchaFace</span>
-          <span class="em-footer-note">Información orientativa. Verifica números oficiales.</span>
+          <span class="em-footer-note"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- =========================
+     ✅ MODAL TRANSPORTE
+========================== -->
+@if (showTransportModal) {
+  <div class="em-modal">
+    <div class="em-backdrop" (click)="closeTransportModal()"></div>
+
+    <div class="em-panel" role="dialog" aria-modal="true" aria-label="Transporte">
+      <div class="em-header">
+        <div class="em-title">
+          <span class="em-badge">🚘</span>
+          Transporte
+        </div>
+
+        <button class="em-close" type="button" (click)="closeTransportModal()" aria-label="Cerrar">
+          ✕
+        </button>
+      </div>
+
+      <div class="em-content">
+        <div class="em-grid em-grid-3">
+          <!-- Apps -->
+          <section class="em-section" aria-label="Apps de movilidad">
+            <h3 class="em-section-title">Apps de movilidad</h3>
+
+            @for (item of transportApps(); track item.href) {
+              <a
+                class="em-item"
+                [class.primary]="item.primary"
+                [href]="item.href"
+                [attr.target]="isExternal(item.href) ? '_blank' : null"
+                [attr.rel]="isExternal(item.href) ? 'noopener noreferrer' : null"
+              >
+                <span class="em-icon">{{ item.icon }}</span>
+                <span class="em-main">
+          <span class="em-name">{{ item.name }}</span>
+          <span class="em-number">{{ item.number }}</span>
+        </span>
+                <span class="em-desc">{{ item.desc }}</span>
+              </a>
+            }
+          </section>
+
+          <!-- Colombia -->
+          <section class="em-section" aria-label="Taxis Colombia">
+            <h3 class="em-section-title">Colombia (Nacional)</h3>
+
+            @for (item of taxisColombia(); track item.href) {
+              <a
+                class="em-item"
+                [class.primary]="item.primary"
+                [href]="item.href"
+                [attr.target]="isExternal(item.href) ? '_blank' : null"
+                [attr.rel]="isExternal(item.href) ? 'noopener noreferrer' : null"
+              >
+                <span class="em-icon">{{ item.icon }}</span>
+                <span class="em-main">
+          <span class="em-name">{{ item.name }}</span>
+          <span class="em-number">{{ item.number }}</span>
+        </span>
+                <span class="em-desc">{{ item.desc }}</span>
+              </a>
+            }
+          </section>
+
+          <!-- Armenia -->
+          <section class="em-section" aria-label="Taxis Armenia Quindío">
+            <h3 class="em-section-title">Armenia (Quindío)</h3>
+
+            @for (item of taxisArmenia(); track item.href) {
+              <a
+                class="em-item"
+                [class.primary]="item.primary"
+                [href]="item.href"
+                [attr.target]="isExternal(item.href) ? '_blank' : null"
+                [attr.rel]="isExternal(item.href) ? 'noopener noreferrer' : null"
+              >
+                <span class="em-icon">{{ item.icon }}</span>
+                <span class="em-main">
+          <span class="em-name">{{ item.name }}</span>
+          <span class="em-number">{{ item.number }}</span>
+        </span>
+                <span class="em-desc">{{ item.desc }}</span>
+              </a>
+            }
+
+
+          </section>
         </div>
       </div>
     </div>

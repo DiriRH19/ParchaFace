@@ -221,7 +221,7 @@
   position: relative;
   z-index: 2001;
   width: 95%;
-  max-width: 980px;
+  max-width: 1200px;
   max-height: 88vh;
   overflow: auto;
   border-radius: 16px;
@@ -406,6 +406,326 @@
 /* Responsive */
 @media (max-width: 900px) {
   .em-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* =========================================================
+   ✅ ESTILOS PARA MODO OSCURO (html.dark)
+========================================================= */
+:host-context(.dark) .nav-links a {
+  color: #ffffff;
+  opacity: 1;
+}
+
+:host-context(.dark) .nav-links a:hover,
+:host-context(.dark) .nav-links a.active {
+  color: #E8A92F;
+}
+
+:host-context(.dark) .btn-emergency-nav {
+  color: #ffffff;
+  border-color: rgba(232, 169, 47, 0.65);
+}
+
+:host-context(.dark) .btn-emergency-nav:hover {
+  background: rgba(232, 169, 47, 0.14);
+  border-color: #E8A92F;
+}
+
+:host-context(.dark) .em-title,
+:host-context(.dark) .em-section-title,
+:host-context(.dark) .em-name,
+:host-context(.dark) .em-item {
+  color: #fff;
+  opacity: 1;
+}
+
+/* ✅ Textos secundarios un poquito menos intensos */
+:host-context(.dark) .em-item span,
+:host-context(.dark) .em-item small,
+:host-context(.dark) .em-item p {
+  color: rgba(255,255,255,0.78);
+  opacity: 1;
+}
+
+/* ✅ Si el modal tiene header/título */
+:host-context(.dark) .modal-title,
+:host-context(.dark) .modal-header {
+  color: #fff;
+}
+
+/* ✅ Botón de cerrar (la X) */
+:host-context(.dark) .close-btn,
+:host-context(.dark) .close-button {
+  color: #fff;
+}
+
+
+
+/* =========================================================
+   ✅ MODAL TRANSPORTE (CSS APARTE) - basado en Emergencias
+   No modifica nada existente (.em- se queda igual)
+========================================================= */
+
+/* Botón Transporte (opcional, si quieres clase propia) */
+.btn-transport-nav {
+  color: #333333;
+  background: transparent;
+  border: 2px solid rgba(232, 169, 47, 0.65);
+  padding: 8px 16px;
+  border-radius: 10px;
+  font-weight: 800;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.btn-transport-nav:hover {
+  background: rgba(232, 169, 47, 0.14);
+  border-color: #E8A92F;
+  transform: translateY(-1px);
+}
+
+/* Modal base */
+.tr-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tr-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  animation: trFade 0.2s ease;
+}
+
+@keyframes trFade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.tr-panel {
+  position: relative;
+  z-index: 2001;
+  width: 95%;
+  max-width: 980px;
+  max-height: 88vh;
+  overflow: auto;
+  border-radius: 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+  animation: trUp 0.22s cubic-bezier(.2,.8,.2,1);
+}
+
+@keyframes trUp {
+  from { transform: translateY(22px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.tr-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--border-color);
+  background: rgba(232, 169, 47, 0.10);
+}
+
+.tr-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 900;
+  color: #333333;
+  font-size: 15px;
+}
+
+.tr-badge {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(232, 169, 47, 0.18);
+  border: 1px solid rgba(232, 169, 47, 0.35);
+}
+
+.tr-close {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+  cursor: pointer;
+  font-size: 16px;
+  transition: all 0.18s ease;
+}
+
+.tr-close:hover {
+  background: #E8A92F;
+  border-color: #E8A92F;
+  color: white;
+}
+
+.tr-content {
+  padding: 18px;
+}
+
+.tr-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.tr-section {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  padding: 14px;
+  box-shadow: var(--shadow);
+}
+
+.tr-section-title {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  font-weight: 900;
+  color: #333333;
+}
+
+/* Cards */
+.tr-item {
+  display: grid;
+  grid-template-columns: 36px 1fr;
+  grid-template-rows: auto auto;
+  column-gap: 10px;
+  row-gap: 2px;
+  padding: 12px;
+  border-radius: 14px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+  text-decoration: none;
+  color: #333333;
+  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+  margin-bottom: 10px;
+}
+
+.tr-item:hover {
+  transform: translateY(-2px);
+  border-color: rgba(232, 169, 47, 0.65);
+  box-shadow: 0 10px 24px rgba(0,0,0,0.12);
+}
+
+.tr-item.primary {
+  background: linear-gradient(180deg, rgba(232,169,47,0.18), rgba(232,169,47,0.06));
+  border-color: rgba(232, 169, 47, 0.75);
+}
+
+.tr-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(232, 169, 47, 0.10);
+  border: 1px solid var(--border-color);
+  grid-row: 1 / span 2;
+}
+
+.tr-main {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.tr-name {
+  font-size: 13px;
+  font-weight: 900;
+  color: #333333;
+}
+
+.tr-number {
+  font-size: 13px;
+  font-weight: 900;
+  color: #E8A92F;
+}
+
+.tr-desc {
+  grid-column: 2;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+/* Tip */
+.tr-tip {
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(232, 169, 47, 0.10);
+  border: 1px dashed rgba(232, 169, 47, 0.55);
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.tr-tip b {
+  color: #333333;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .tr-grid { grid-template-columns: 1fr; }
+}
+
+/* =========================================================
+   ✅ DARK MODE para Transporte (sin tocar Emergencias)
+========================================================= */
+:host-context(.dark) .btn-transport-nav {
+  color: #ffffff;
+  border-color: rgba(232, 169, 47, 0.65);
+}
+
+:host-context(.dark) .btn-transport-nav:hover {
+  background: rgba(232, 169, 47, 0.14);
+  border-color: #E8A92F;
+}
+
+:host-context(.dark) .tr-title,
+:host-context(.dark) .tr-section-title,
+:host-context(.dark) .tr-name,
+:host-context(.dark) .tr-item {
+  color: #fff;
+  opacity: 1;
+}
+
+:host-context(.dark) .tr-desc,
+:host-context(.dark) .tr-tip {
+  color: rgba(255,255,255,0.78);
+}
+
+:host-context(.dark) .tr-tip b {
+  color: #fff;
+}
+
+.em-grid-3 {
+  grid-template-columns: 1fr 1fr 1fr;
+}
+
+/* Responsive */
+@media (max-width: 1100px) {
+  .em-grid-3 {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 900px) {
+  .em-grid-3 {
     grid-template-columns: 1fr;
   }
 }
