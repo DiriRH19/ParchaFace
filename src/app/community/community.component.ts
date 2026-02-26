@@ -1,5 +1,5 @@
-import { CommonModule } from '@angular/common';
-import { Component, computed, signal } from '@angular/core';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
+import { Component, computed, signal, inject, PLATFORM_ID } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 
@@ -35,18 +35,29 @@ interface ActivityItem {
   styleUrls: ['./community.component.css'],
 })
 export class CommunityComponent {
-  private readonly WELCOME_KEY = 'pf_community_welcome_seen_v1';
+  private platformId = inject(PLATFORM_ID);
 
+  private readonly WELCOME_KEY = 'pf_community_welcome_seen_v1';
   showWelcome = signal(false);
 
   constructor(private router: Router) {
-    const seen = localStorage.getItem(this.WELCOME_KEY) === '1';
-    this.showWelcome.set(!seen);
+    // ✅ SSR-safe: localStorage solo existe en el browser
+    if (isPlatformBrowser(this.platformId)) {
+      const seen = localStorage.getItem(this.WELCOME_KEY) === '1';
+      this.showWelcome.set(!seen);
+    } else {
+      // En SSR no mostramos el modal (evita mismatch/hidratación rara)
+      this.showWelcome.set(false);
+    }
   }
 
   dismissWelcome() {
     this.showWelcome.set(false);
-    localStorage.setItem(this.WELCOME_KEY, '1');
+
+    // ✅ SSR-safe
+    if (isPlatformBrowser(this.platformId)) {
+      localStorage.setItem(this.WELCOME_KEY, '1');
+    }
   }
 
   // UI state
@@ -162,7 +173,6 @@ export class CommunityComponent {
   }
 
   openDiscussion(id: string) {
-    // Lleva al detail. Si luego cambias IDs reales, queda igual.
     this.router.navigate(['/community/discussions', id]);
   }
 
@@ -171,7 +181,6 @@ export class CommunityComponent {
   }
 
   viewRules() {
-    // Si luego creas una ruta /community/rules, la conectamos aquí.
     console.log('View rules');
   }
 }
