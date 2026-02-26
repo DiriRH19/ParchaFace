@@ -1,16 +1,22 @@
 import { Component, OnInit } from '@angular/core';
-import { CommonModule, NgIf } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { EventoService } from '../services/evento';
 import { NavbarComponent } from '../shared/navbar/navbar.component';
 import { WeatherService, ClimaResponse } from '../services/weather.service';
-import {ToastService} from '../shared/toast/toast.service';
+import { ToastService } from '../shared/toast/toast.service';
 
-// ✅ NUEVO
 import Swal from 'sweetalert2';
 import { AuthService, UserData } from '../services/auth.service';
 import { InscripcionService } from '../services/inscripcion.service';
-import {FormsModule} from '@angular/forms';
+import { FormsModule } from '@angular/forms';
+
+// ✅ NUEVO: comentarios
+import {
+  EventoCommentService,
+  EventoCommentResponse,
+  PageResponse
+} from '../services/evento-comment.service';
 
 type EventoVM = {
   id?: number;
@@ -45,7 +51,6 @@ type EventoVM = {
   permitirComentarios: boolean;
   recordatoriosAutomaticos: boolean;
 
-  // ✅ NUEVO: para bloquear en UI si soy organizador
   idOrganizador?: number | null;
 };
 
@@ -66,16 +71,26 @@ export class EventDetailComponent implements OnInit {
   climaLoading = false;
   climaError = false;
 
-  // ✅ NUEVO: estado de auth + inscripción
+  // ✅ estado de auth + inscripción
   isLoggedIn = false;
   user: UserData | null = null;
   isRegistered = false;
   isJoining = false;
 
-  // ✅ NUEVO: edición/eliminación
-  canManage = false;     // botones solo para el creador
-  editMode = false;      // modo edición
+  // ✅ edición/eliminación evento
+  canManage = false;
+  editMode = false;
   form: EventoVM = this.getEmptyForm();
+
+  // ✅ NUEVO: comentarios
+  comentarios: EventoCommentResponse[] = [];
+  comentariosPage = 0;
+  comentariosSize = 10;
+  comentariosTotalPages = 0;
+  comentariosTotalElements = 0;
+  nuevoComentario = '';
+  comentariosLoading = false;
+  comentariosErrorMsg = '';
 
   private getEmptyForm(): EventoVM {
     return {
@@ -113,8 +128,7 @@ export class EventDetailComponent implements OnInit {
 
       idOrganizador: null
     };
-  }  // copia editable
-
+  }
 
   constructor(
     private route: ActivatedRoute,
@@ -123,16 +137,16 @@ export class EventDetailComponent implements OnInit {
     private weatherService: WeatherService,
     private toast: ToastService,
 
-    // ✅ NUEVO
     private auth: AuthService,
-    private inscripcionService: InscripcionService
+    private inscripcionService: InscripcionService,
+
+    // ✅ NUEVO
+    private commentService: EventoCommentService
   ) {}
 
   ngOnInit(): void {
-    // ✅ NUEVO: escuchar auth
     this.auth.isLoggedIn$.subscribe(v => {
       this.isLoggedIn = v;
-      // si se desloguea, resetea estado visual
       if (!v) this.isRegistered = false;
     });
 
@@ -164,20 +178,25 @@ export class EventDetailComponent implements OnInit {
     this.climaLoading = false;
     this.climaError = false;
 
-    // ✅ NUEVO: al cargar evento, resetea registro (luego se recalcula)
     this.isRegistered = false;
+
+    // ✅ reset comentarios al cambiar evento
+    this.resetComentarios();
 
     this.eventoService.obtenerEventoPorId(id).subscribe({
       next: (e: any) => {
         this.evento = this.mapToVM(e);
-        this.canManage = this.isOrganizer;  // ya tienes el getter isOrganizer
+        this.canManage = this.isOrganizer;
         this.form = { ...this.getEmptyForm(), ...this.evento };
         this.isLoading = false;
 
         this.loadClimaForEvento();
-
-        // ✅ NUEVO: si estoy logueado, revisa si ya estaba inscrito
         this.loadIsRegistered();
+
+        // ✅ NUEVO: cargar comentarios si el evento permite
+        if (this.evento?.permitirComentarios !== false && this.evento?.id) {
+          this.cargarComentarios();
+        }
       },
       error: (err) => {
         this.isLoading = false;
@@ -254,7 +273,6 @@ export class EventDetailComponent implements OnInit {
 
     const idEvento = e?.idEvento ?? e?.id ?? e?.id_evento ?? undefined;
 
-    // ✅ NUEVO: sacar idOrganizador si viene del backend
     const idOrganizador =
       e?.organizador?.idUsuario ??
       e?.idOrganizador ??
@@ -299,7 +317,7 @@ export class EventDetailComponent implements OnInit {
   }
 
   // =========================
-  // ✅ NUEVO: helpers del botón
+  // helpers
   // =========================
   get isOrganizer(): boolean {
     const myId = this.user?.id;
@@ -307,14 +325,10 @@ export class EventDetailComponent implements OnInit {
     return myId != null && orgId != null && Number(myId) === Number(orgId);
   }
 
-  // Si cupo es null -> no bloqueamos por cupo en UI
-  // (el backend igual valida si aplica)
   get cupoLleno(): boolean {
     if (!this.evento) return false;
     if (this.evento.cupo == null) return false;
-    if (this.evento.cupo <= 0) return false; // cupo 0 lo tratamos como "sin cupo fijo" visualmente
-    // Como no tienes "asistentesCount" en VM, no podemos calcular exacto en UI.
-    // El backend es quien manda aquí.
+    if (this.evento.cupo <= 0) return false;
     return false;
   }
 
@@ -334,7 +348,6 @@ export class EventDetailComponent implements OnInit {
         );
       },
       error: () => {
-        // si falla, no bloqueamos
         this.isRegistered = false;
       }
     });
@@ -393,7 +406,6 @@ export class EventDetailComponent implements OnInit {
           confirmButtonText: 'Ok'
         });
 
-        // si backend devuelve 409 porque ya estaba inscrito, reflejamos estado:
         if (err?.status === 409) this.isRegistered = true;
       },
       complete: () => {
@@ -402,7 +414,6 @@ export class EventDetailComponent implements OnInit {
     });
   }
 
-  // Helpers para UI existentes
   get fechaHoraLabel(): string {
     if (!this.evento) return '';
     const f = this.evento.fecha || '—';
@@ -430,28 +441,25 @@ export class EventDetailComponent implements OnInit {
   }
 
   // =========================
-// ✅ NUEVO: Editar / Eliminar
-// =========================
+  // Editar / Eliminar evento (tu código)
+  // =========================
   empezarEditar(): void {
     if (!this.evento) return;
 
     this.editMode = true;
     this.form = { ...this.evento };
 
-    // ✅ Para que <input type="date"> muestre valor
     if (this.form.fecha) {
-      this.form.fecha = String(this.form.fecha).slice(0, 10) as any; // "YYYY-MM-DD"
+      this.form.fecha = String(this.form.fecha).slice(0, 10) as any;
     }
 
-    // ✅ Para que <input type="time"> muestre valor (si viene con segundos)
     if (this.form.horaInicio) {
-      this.form.horaInicio = String(this.form.horaInicio).slice(0, 5) as any; // "HH:mm"
+      this.form.horaInicio = String(this.form.horaInicio).slice(0, 5) as any;
     }
     if (this.form.horaFin) {
       this.form.horaFin = String(this.form.horaFin).slice(0, 5) as any;
     }
   }
-
 
   cancelarEditar(): void {
     this.editMode = false;
@@ -461,48 +469,33 @@ export class EventDetailComponent implements OnInit {
   guardarCambios(): void {
     if (!this.evento?.id) return;
 
-    // ✅ Trabajamos con un payload (no modificamos this.form directo)
     const payload: any = { ...this.form };
 
-    // =========================
-    // ✅ 1) Normalizar fecha/hora para backend (LocalDateTime)
-    // =========================
-    const fRaw = (payload.fecha || '').toString().trim();        // "YYYY-MM-DD" o "YYYY-MM-DDTHH:mm:ss"
-    const hiRaw = (payload.horaInicio || '').toString().trim();  // "HH:mm" o "HH:mm:ss"
-    const hfRaw = (payload.horaFin || '').toString().trim();     // "HH:mm" o "HH:mm:ss"
+    const fRaw = (payload.fecha || '').toString().trim();
+    const hiRaw = (payload.horaInicio || '').toString().trim();
+    const hfRaw = (payload.horaFin || '').toString().trim();
 
-    const hi = hiRaw ? hiRaw.slice(0, 5) : ''; // "HH:mm"
-    const hf = hfRaw ? hfRaw.slice(0, 5) : ''; // "HH:mm"
+    const hi = hiRaw ? hiRaw.slice(0, 5) : '';
+    const hf = hfRaw ? hfRaw.slice(0, 5) : '';
 
-    // ✅ Si fecha viene como "YYYY-MM-DD", convertirla a LocalDateTime usando horaInicio
     if (fRaw && fRaw.length === 10) {
-      payload.fecha = `${fRaw}T${hi || '00:00'}:00`;             // "YYYY-MM-DDTHH:mm:ss"
+      payload.fecha = `${fRaw}T${hi || '00:00'}:00`;
     }
 
-    // ✅ Mantener horas como HH:mm (si tu backend las maneja así)
     payload.horaInicio = hi;
     payload.horaFin = hf;
 
-    // =========================
-    // ✅ 2) Reglas de negocio
-    // =========================
     if (payload.eventoGratuito) payload.precio = null;
 
     if (payload.eventoEnLinea) {
-      // si es online, ubicación presencial no aplica
       payload.ubicacion = payload.ubicacion ?? '';
       payload.nombreLugar = payload.nombreLugar ?? '';
       payload.direccionCompleta = payload.direccionCompleta ?? '';
       payload.ciudad = payload.ciudad ?? '';
     } else {
-      // si es presencial, urlVirtual no aplica
       payload.urlVirtual = '';
     }
 
-
-    // =========================
-    // ✅ 3) Enviar actualización
-    // =========================
     this.eventoService.actualizarEvento(Number(this.evento.id), payload).subscribe({
       next: (actualizado: any) => {
         this.evento = this.mapToVM(actualizado);
@@ -521,7 +514,6 @@ export class EventDetailComponent implements OnInit {
       }
     });
   }
-
 
   eliminarEvento(): void {
     if (!this.evento?.id) return;
@@ -552,5 +544,130 @@ export class EventDetailComponent implements OnInit {
         }
       });
     });
+  }
+
+  // =========================
+  // ✅ NUEVO: Comentarios (frontend)
+  // =========================
+  private resetComentarios(): void {
+    this.comentarios = [];
+    this.comentariosPage = 0;
+    this.comentariosTotalPages = 0;
+    this.comentariosTotalElements = 0;
+    this.nuevoComentario = '';
+    this.comentariosLoading = false;
+    this.comentariosErrorMsg = '';
+  }
+
+  cargarComentarios(): void {
+    const eventoId = Number(this.evento?.id);
+    if (!eventoId) return;
+
+    this.comentariosLoading = true;
+    this.comentariosErrorMsg = '';
+
+    this.commentService.listar(eventoId, this.comentariosPage, this.comentariosSize).subscribe({
+      next: (res: PageResponse<EventoCommentResponse>) => {
+        this.comentarios = res.content || [];
+        this.comentariosTotalPages = res.totalPages ?? 0;
+        this.comentariosTotalElements = res.totalElements ?? 0;
+        this.comentariosLoading = false;
+      },
+      error: (err) => {
+        this.comentariosLoading = false;
+        this.comentariosErrorMsg = err?.error?.message || 'No se pudieron cargar comentarios';
+      }
+    });
+  }
+
+  publicarComentario(): void {
+    if (!this.evento?.id) return;
+
+    if (!this.isLoggedIn) {
+      Swal.fire({
+        icon: 'info',
+        title: 'Inicia sesión',
+        text: 'Debes iniciar sesión para comentar.',
+        confirmButtonText: 'Ok'
+      });
+      return;
+    }
+
+    if (this.evento?.permitirComentarios === false) {
+      this.toast.show('Este evento no permite comentarios', 'error');
+      return;
+    }
+
+    const texto = this.nuevoComentario.trim();
+    if (!texto) return;
+
+    this.comentariosLoading = true;
+    this.comentariosErrorMsg = '';
+
+    this.commentService.crear(Number(this.evento.id), texto).subscribe({
+      next: () => {
+        this.nuevoComentario = '';
+        this.comentariosPage = 0;
+        this.cargarComentarios();
+      },
+      error: (err) => {
+        this.comentariosLoading = false;
+        this.comentariosErrorMsg = err?.error?.message || 'No se pudo publicar el comentario';
+      }
+    });
+  }
+
+  // ✅ solo dueño (por UI)
+  puedeBorrar(c: EventoCommentResponse): boolean {
+    const myId = this.user?.id;
+    return this.isLoggedIn && myId != null && Number(myId) === Number(c.usuarioId);
+  }
+
+  eliminarComentario(id: number): void {
+    if (!id) return;
+
+    if (!this.isLoggedIn) {
+      Swal.fire({
+        icon: 'info',
+        title: 'Inicia sesión',
+        text: 'Debes iniciar sesión.',
+        confirmButtonText: 'Ok'
+      });
+      return;
+    }
+
+    Swal.fire({
+      icon: 'warning',
+      title: '¿Eliminar comentario?',
+      text: 'Esta acción no se puede deshacer.',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar'
+    }).then((result) => {
+      if (!result.isConfirmed) return;
+
+      this.comentariosLoading = true;
+      this.comentariosErrorMsg = '';
+
+      this.commentService.eliminar(id).subscribe({
+        next: () => this.cargarComentarios(),
+        error: (err) => {
+          this.comentariosLoading = false;
+          this.comentariosErrorMsg = err?.error?.message || 'No se pudo eliminar';
+        }
+      });
+    });
+  }
+
+  comentariosPrev(): void {
+    if (this.comentariosPage <= 0) return;
+    this.comentariosPage--;
+    this.cargarComentarios();
+  }
+
+  comentariosNext(): void {
+    if (this.comentariosPage >= this.comentariosTotalPages - 1) return;
+    this.comentariosPage++;
+    this.cargarComentarios();
   }
 }

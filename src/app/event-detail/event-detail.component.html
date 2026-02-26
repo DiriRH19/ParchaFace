@@ -350,5 +350,119 @@
       </aside>
 
     </div>
+
+    <!-- =========================
+         ✅ Opción 1: Comentarios abajo (a lo ancho)
+    ========================= -->
+    <section class="comments-section">
+
+      <div class="comments-card">
+
+        <div class="comments-head">
+          <h3 class="comments-title">Comentarios</h3>
+          <span class="comments-count">{{ comentariosTotalElements }}</span>
+        </div>
+
+        @if (evento.permitirComentarios === false) {
+          <div class="comments-disabled">
+            <span>🔒 Este evento no permite comentarios.</span>
+          </div>
+        } @else {
+
+          @if (comentariosErrorMsg) {
+            <div class="comments-error">
+              ❌ {{ comentariosErrorMsg }}
+            </div>
+          }
+
+          <div class="comments-box">
+            <textarea
+              class="comments-textarea"
+              [(ngModel)]="nuevoComentario"
+              rows="3"
+              placeholder="Escribe un comentario..."
+            ></textarea>
+
+            <div class="comments-actions">
+              <button
+                class="btn-comment"
+                type="button"
+                (click)="publicarComentario()"
+                [disabled]="comentariosLoading || !nuevoComentario.trim()"
+              >
+                Publicar
+              </button>
+
+              @if (!isLoggedIn) {
+                <span class="comments-hint">
+                  Inicia sesión para comentar.
+                </span>
+              }
+            </div>
+          </div>
+
+          @if (comentariosLoading) {
+            <div class="comments-loading">
+              <div class="comments-spinner"></div>
+              <span>Cargando...</span>
+            </div>
+          }
+
+          @if (!comentariosLoading && comentarios.length === 0) {
+            <p class="comments-empty muted">Sé el primero en comentar ✨</p>
+          }
+
+          @for (c of comentarios; track c.id) {
+            <div class="comment-item">
+              <div class="comment-top">
+                <div class="comment-user">{{ c.nombreUsuario }}</div>
+                <div class="comment-date">{{ c.createdAt | date:'medium' }}</div>
+              </div>
+
+              <div class="comment-body">{{ c.contenido }}</div>
+
+              @if (puedeBorrar(c)) {
+                <div class="comment-buttons">
+                  <button
+                    class="btn-comment-danger"
+                    type="button"
+                    (click)="eliminarComentario(c.id)"
+                    [disabled]="comentariosLoading"
+                  >
+                    Eliminar
+                  </button>
+                </div>
+              }
+            </div>
+          }
+
+          @if (comentariosTotalPages > 1) {
+            <div class="comments-pager">
+              <button
+                class="btn-pager ghost"
+                type="button"
+                (click)="comentariosPrev()"
+                [disabled]="comentariosPage === 0 || comentariosLoading"
+              >
+                Anterior
+              </button>
+
+              <span class="pager-label">
+                Página {{ comentariosPage + 1 }} / {{ comentariosTotalPages }}
+              </span>
+
+              <button
+                class="btn-pager ghost"
+                type="button"
+                (click)="comentariosNext()"
+                [disabled]="comentariosPage >= comentariosTotalPages - 1 || comentariosLoading"
+              >
+                Siguiente
+              </button>
+            </div>
+          }
+        }
+      </div>
+    </section>
   }
 </div>

@@ -465,3 +465,252 @@
   border-color: rgba(180, 35, 24, 0.35);
 }
 
+/* =========================
+   ✅ Comentarios (Opción 1)
+========================= */
+.comments-section{
+  max-width: 1200px;
+  margin: 18px auto 0;
+}
+
+.comments-card{
+  background: var(--bg-card);
+  border-radius: 16px;
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow);
+  padding: 18px;
+}
+
+.comments-head{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.comments-title{
+  margin: 0;
+  font-weight: 900;
+  color: var(--text-primary);
+  font-size: 16px;
+}
+
+.comments-count{
+  background: rgba(232, 169, 47, 0.12);
+  border: 1px solid rgba(232, 169, 47, 0.35);
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-weight: 900;
+  font-size: 12px;
+  color: #333;
+}
+
+.comments-disabled{
+  padding: 12px;
+  border-radius: 14px;
+  background: rgba(0,0,0,0.03);
+  border: 1px dashed rgba(0,0,0,0.18);
+  font-weight: 800;
+  color: var(--text-secondary);
+}
+
+.comments-error{
+  margin: 10px 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(180, 35, 24, 0.08);
+  border: 1px solid rgba(180, 35, 24, 0.20);
+  color: #b42318;
+  font-weight: 800;
+}
+
+.comments-box{
+  display: grid;
+  gap: 10px;
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
+
+.comments-textarea{
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(0,0,0,0.12);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  resize: vertical;
+  background: #fff;
+  outline: none;
+}
+
+.comments-textarea:focus{
+  border-color: rgba(232, 169, 47, 0.55);
+  box-shadow: 0 0 0 4px rgba(232, 169, 47, 0.16);
+}
+
+.comments-actions{
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.btn-comment{
+  border-radius: 12px;
+  padding: 10px 16px;
+  font-weight: 900;
+  cursor: pointer;
+  transition: all .2s ease;
+  border: none;
+  background: #E8A92F;
+  color: #333;
+  box-shadow: 0 6px 16px rgba(232, 169, 47, 0.25);
+}
+
+.btn-comment:hover{
+  background: #D8991F;
+  box-shadow: 0 8px 20px rgba(232, 169, 47, 0.35);
+  transform: translateY(-1px);
+}
+
+.btn-comment:disabled{
+  opacity: 0.65;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.comments-hint{
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--text-secondary);
+  opacity: 0.9;
+}
+
+.comments-loading{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 10px 0;
+  color: var(--text-secondary);
+  font-weight: 800;
+}
+
+.comments-spinner{
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 3px solid rgba(0,0,0,0.10);
+  border-top-color: #E8A92F;
+  animation: spin 0.75s linear infinite;
+}
+
+/* Item */
+.comment-item{
+  padding: 12px 0;
+  border-top: 1px solid var(--border-color);
+}
+
+.comment-top{
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.comment-user{
+  font-weight: 900;
+  color: var(--text-primary);
+  font-size: 13px;
+}
+
+.comment-date{
+  font-weight: 700;
+  font-size: 12px;
+  color: var(--text-secondary);
+  opacity: 0.85;
+}
+
+.comment-body{
+  margin-top: 6px;
+  color: var(--text-secondary);
+  font-weight: 700;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.comment-buttons{
+  margin-top: 10px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.btn-comment-danger{
+  background: #fff5f5;
+  border: 1px solid rgba(180, 35, 24, 0.25);
+  color: #b42318;
+  padding: 8px 12px;
+  border-radius: 12px;
+  font-weight: 900;
+  cursor: pointer;
+  transition: all .15s ease;
+}
+
+.btn-comment-danger:hover{
+  background: #ffe8e8;
+  border-color: rgba(180, 35, 24, 0.35);
+  transform: translateY(-1px);
+}
+
+.btn-comment-danger:disabled{
+  opacity: 0.65;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Pager */
+.comments-pager{
+  margin-top: 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.btn-pager{
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-weight: 900;
+  cursor: pointer;
+  transition: all .12s ease;
+  border: 1px solid rgba(0,0,0,0.10);
+  background: #fff;
+}
+
+.btn-pager.ghost{
+  background: rgba(0,0,0,0.04);
+}
+
+.btn-pager:hover{
+  transform: translateY(-1px);
+}
+
+.btn-pager:disabled{
+  opacity: .6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.pager-label{
+  font-size: 12px;
+  font-weight: 900;
+  color: var(--text-secondary);
+}
+
+.comments-empty{
+  margin-top: 10px;
+}
