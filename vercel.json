@@ -1,0 +1,9 @@
+{
+  "rewrites": [
+    { "source": "/auth/(.*)", "destination": "https://parchaface.eastus2.cloudapp.azure.com/auth/$1" },
+    { "source": "/api/(.*)", "destination": "https://parchaface.eastus2.cloudapp.azure.com/api/$1" },
+    { "source": "/usuarios/(.*)", "destination": "https://parchaface.eastus2.cloudapp.azure.com/usuarios/$1" },
+    { "source": "/community/(.*)", "destination": "https://parchaface.eastus2.cloudapp.azure.com/community/$1" },
+    { "source": "/uploads/(.*)", "destination": "https://parchaface.eastus2.cloudapp.azure.com/uploads/$1" }
+  ]
+}
