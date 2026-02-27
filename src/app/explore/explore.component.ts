@@ -5,6 +5,7 @@ import { NavbarComponent } from '../shared/navbar/navbar.component';
 import { EventoService } from '../services/evento';
 import { WeatherService } from '../services/weather.service';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 
 @Component({
   selector: 'app-explore',
@@ -23,7 +24,8 @@ export class ExploreComponent implements OnInit {
 
   constructor(
     private eventoService: EventoService,
-    private weatherService: WeatherService
+    private weatherService: WeatherService,
+    private route: ActivatedRoute
   ) {}
 
   // ✅ FILTROS
@@ -40,6 +42,7 @@ export class ExploreComponent implements OnInit {
   ciudadesSugeridas = signal<{ nombre: string; departamento: string }[]>([]);
 
   ngOnInit(): void {
+    // 1) Captura el evento completo si viene por state (mejor UX instantánea)
     if (typeof window !== 'undefined') {
       const w = window as any;
 
@@ -53,6 +56,22 @@ export class ExploreComponent implements OnInit {
       } catch (_) {}
     }
 
+    // 2) Si viene el id por query param (?created=ID), lo traemos del backend
+    const createdId = Number(this.route.snapshot.queryParamMap.get('created') || 0);
+    if (createdId > 0) {
+      this.eventoService.obtenerEventoPorId(createdId).subscribe({
+        next: (ev) => {
+          const created = this.mapToCardEvent(ev);
+          // Inserta arriba evitando duplicados
+          this.events = [created, ...this.events.filter(e => e.id !== created.id)];
+        },
+        error: () => {
+          // si falla, no bloqueamos Explore; igual carga lista normal
+        }
+      });
+    }
+
+    // 3) Carga lista normal
     this.loadEvents();
   }
 
@@ -66,7 +85,16 @@ export class ExploreComponent implements OnInit {
     this.eventoService.obtenerEventos().subscribe({
       next: (list: any[]) => {
         const mapped = (list || []).map(e => this.mapToCardEvent(e));
-        this.events = this.insertNewlyCreatedFirst(mapped);
+
+        // Si ya insertamos por queryParam, mantenlo arriba (evita que se pierda)
+        const existingTop = (this.events && this.events.length > 0) ? this.events[0] : null;
+        let merged = mapped;
+
+        if (existingTop?.id && !mapped.some(e => e.id === existingTop.id)) {
+          merged = [existingTop, ...mapped];
+        }
+
+        this.events = this.insertNewlyCreatedFirst(merged);
         this.isLoading = false;
       },
       error: (err) => {
@@ -114,6 +142,12 @@ export class ExploreComponent implements OnInit {
 
     const created = this.mapToCardEvent(this.newlyCreatedFromNav);
     const cleaned = this.removeDuplicate(list, this.newlyCreatedFromNav);
+
+    // Si ya existe por id, no lo duplicamos
+    if (created?.id && cleaned.some(e => e.id === created.id)) {
+      this.newlyCreatedFromNav = null;
+      return cleaned;
+    }
 
     cleaned.unshift(created);
     this.newlyCreatedFromNav = null;
@@ -251,7 +285,6 @@ export class ExploreComponent implements OnInit {
       list = list.filter(ev => (ev.ciudad || '').toLowerCase().includes(qCity));
     }
 
-    // ✅ NUEVO: rango de precio
     const r = (this.priceRange || '').trim();
     if (r) {
       list = list.filter(ev => this.inPriceRange(this.parsePriceCOP(ev.price), r));
