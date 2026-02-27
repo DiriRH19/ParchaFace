@@ -26,7 +26,7 @@
       <div class="cover-image">
         @if (userData?.fotoPortada) {
           <img
-            [src]="'http://localhost:8080' + (userData?.fotoPortada || '')"
+            [src]="userData?.fotoPortada"
             alt="Foto de portada"
             class="cover-img"
           />
@@ -51,7 +51,7 @@
         <div class="profile-picture">
           @if (userData?.fotoPerfil) {
             <img
-              [src]="'http://localhost:8080' + (userData?.fotoPerfil || '')"
+              [src]="userData?.fotoPerfil"
               alt="Foto de perfil"
               class="profile-img"
             />
@@ -59,182 +59,183 @@
             <div class="profile-placeholder">:)</div>
           }
 
-        <input
-          type="file"
-          #perfilInput
-          hidden
-          accept="image/*"
-          (change)="onPerfilSelected($event)"
-        />
+          <input
+            type="file"
+            #perfilInput
+            hidden
+            accept="image/*"
+            (change)="onPerfilSelected($event)"
+          />
 
-        <button class="btn-change-photo" type="button" (click)="perfilInput.click()">
-          ✎
-        </button>
+          <button class="btn-change-photo" type="button" (click)="perfilInput.click()">
+            ✎
+          </button>
+        </div>
       </div>
     </div>
-  </div>
 
-  <div class="profile-info">
-    <div class="user-details">
-      @if (!isEditing) {
-        <h1 class="user-name">{{ getUserName() }}</h1>
-        <p class="user-username">{{ getDisplayHandle() }}</p>
-      } @else {
-        <div class="edit-grid">
-          <div class="edit-field">
-            <label class="edit-label">Nombre</label>
-            <input class="edit-input" type="text" [(ngModel)]="editForm.nombre" />
+    <div class="profile-info">
+      <div class="user-details">
+        @if (!isEditing) {
+          <h1 class="user-name">{{ getUserName() }}</h1>
+          <p class="user-username">{{ getDisplayHandle() }}</p>
+        } @else {
+          <div class="edit-grid">
+            <div class="edit-field">
+              <label class="edit-label">Nombre</label>
+              <input class="edit-input" type="text" [(ngModel)]="editForm.nombre" />
+            </div>
+
+            <div class="edit-field">
+              <label class="edit-label">Correo</label>
+              <input class="edit-input" type="email" [(ngModel)]="editForm.correo" />
+            </div>
           </div>
 
-          <div class="edit-field">
-            <label class="edit-label">Correo</label>
-            <input class="edit-input" type="email" [(ngModel)]="editForm.correo" />
-          </div>
-        </div>
-
-        @if (saveError) {
-          <div class="edit-error">{{ saveError }}</div>
+          @if (saveError) {
+            <div class="edit-error">{{ saveError }}</div>
+          }
         }
-      }
 
-      <div class="user-meta">
+        <div class="user-meta">
         <span class="meta-item">
           {{ isEditing ? editForm.correo : (userData?.correo || 'No disponible') }}
         </span>
-      </div>
-    </div>
-
-  </div>
-
-  <div class="profile-tabs">
-    @for (tab of tabs; track tab.id) {
-      <button
-        class="tab-btn"
-        [class.active]="activeTab === tab.id"
-        type="button"
-        (click)="setActiveTab(tab.id)">
-        {{ tab.label }}
-      </button>
-    }
-  </div>
-
-  <div class="profile-content">
-    <div class="content-section">
-      <div class="section-card">
-        <h2 class="section-title">Acerca de</h2>
-
-        @if (!isEditing) {
-          <p class="section-text">
-            {{ userData?.acercaDe?.trim() ? userData?.acercaDe : 'Aún no has agregado información.' }}
-          </p>
-        } @else {
-          <label class="edit-label">Descripción</label>
-          <textarea
-            class="edit-textarea"
-            rows="4"
-            [(ngModel)]="editForm.acercaDe"
-            [ngModelOptions]="{ standalone: true }"
-            placeholder="Escribe algo sobre ti…"></textarea>
-        }
-
-        <div class="contact-info">
-          <div class="contact-item">
-            <span class="contact-icon"></span>
-            <span>{{ getUserEmail() || 'No disponible' }}</span>
-          </div>
         </div>
       </div>
+
     </div>
 
-    <div class="content-section">
-      <div class="section-card">
-        <div class="section-title-row">
-          <h2 class="section-title">Intereses</h2>
-
-          <button
-            type="button"
-            class="btn-cancel btn-small"
-            [routerLink]="['/preferencias']"
-            [queryParams]="{ returnTo: 'profile' }">
-            Editar intereses
-          </button>
-        </div>
-
-        <div class="interests-list">
-          @for (interest of userData?.categoriasPreferidas; track interest) {
-            <span class="interest-tag">
-              {{ interest }}
-            </span>
-          }
-        </div>
-
-        @if (!((userData?.categoriasPreferidas?.length || 0) > 0)) {
-          <p class="section-text">No tienes intereses seleccionados todavía.</p>
-        }
-      </div>
-    </div>
-  </div>
-
-  <div class="social-section">
-    <div class="section-card">
-      <h2 class="section-title">Redes Sociales</h2>
-
-      @if (!isEditing) {
-        @if ((userData?.redesSociales?.length || 0) > 0) {
-          <div class="social-list">
-            @for (social of userData?.redesSociales; track social) {
-              <div class="social-item">
-                <span class="social-icon"></span>
-                <span><b>{{ social.platform }}</b>: {{ social.handle }}</span>
-              </div>
-            }
-          </div>
-        } @else {
-          <p class="section-text">Aún no has agregado redes sociales.</p>
-        }
-      } @else {
-        <div class="social-edit-list">
-          @for (social of editForm.redesSociales; let i = $index; track i) {
-            <div class="social-edit-row">
-              <input
-                class="edit-input"
-                type="text"
-                placeholder="Plataforma (Instagram, X, Facebook...)"
-                [(ngModel)]="social.platform"
-                [ngModelOptions]="{ standalone: true }"
-              />
-
-              <input
-                class="edit-input"
-                type="text"
-                placeholder="Usuario o link"
-                [(ngModel)]="social.handle"
-                [ngModelOptions]="{ standalone: true }"
-              />
-
-              <button type="button" class="btn-cancel btn-icon" (click)="removeSocial(i)">✕</button>
-            </div>
-          }
-
-          <button type="button" class="btn-cancel btn-small" (click)="addSocial()">
-            + Añadir red
-          </button>
-        </div>
+    <div class="profile-tabs">
+      @for (tab of tabs; track tab.id) {
+        <button
+          class="tab-btn"
+          [class.active]="activeTab === tab.id"
+          type="button"
+          (click)="setActiveTab(tab.id)">
+          {{ tab.label }}
+        </button>
       }
     </div>
-  </div>
-</div>
 
-@if (showDiscardModal) {
-  <div class="modal-overlay" (click)="closeDiscardModal()">
-    <div class="modal" (click)="$event.stopPropagation()">
-      <h3 class="modal-title">¿Descartar cambios?</h3>
-      <p class="modal-text">Tienes cambios sin guardar. ¿Quieres descartarlos o seguir editando?</p>
+    <div class="profile-content">
+      <div class="content-section">
+        <div class="section-card">
+          <h2 class="section-title">Acerca de</h2>
 
-      <div class="modal-actions">
-        <button class="btn-cancel" type="button" (click)="closeDiscardModal()">Seguir editando</button>
-        <button class="btn-danger" type="button" (click)="discardChanges()">Descartar cambios</button>
+          @if (!isEditing) {
+            <p class="section-text">
+              {{ userData?.acercaDe?.trim() ? userData?.acercaDe : 'Aún no has agregado información.' }}
+            </p>
+          } @else {
+            <label class="edit-label">Descripción</label>
+            <textarea
+              class="edit-textarea"
+              rows="4"
+              [(ngModel)]="editForm.acercaDe"
+              [ngModelOptions]="{ standalone: true }"
+              placeholder="Escribe algo sobre ti…"></textarea>
+          }
+
+          <div class="contact-info">
+            <div class="contact-item">
+              <span class="contact-icon"></span>
+              <span>{{ getUserEmail() || 'No disponible' }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="content-section">
+        <div class="section-card">
+          <div class="section-title-row">
+            <h2 class="section-title">Intereses</h2>
+
+            <button
+              type="button"
+              class="btn-cancel btn-small"
+              [routerLink]="['/preferencias']"
+              [queryParams]="{ returnTo: 'profile' }">
+              Editar intereses
+            </button>
+          </div>
+
+          <div class="interests-list">
+            @for (interest of userData?.categoriasPreferidas; track interest) {
+              <span class="interest-tag">
+              {{ interest }}
+            </span>
+            }
+          </div>
+
+          @if (!((userData?.categoriasPreferidas?.length || 0) > 0)) {
+            <p class="section-text">No tienes intereses seleccionados todavía.</p>
+          }
+        </div>
+      </div>
+    </div>
+
+    <div class="social-section">
+      <div class="section-card">
+        <h2 class="section-title">Redes Sociales</h2>
+
+        @if (!isEditing) {
+          @if ((userData?.redesSociales?.length || 0) > 0) {
+            <div class="social-list">
+              @for (social of userData?.redesSociales; track social) {
+                <div class="social-item">
+                  <span class="social-icon"></span>
+                  <span><b>{{ social.platform }}</b>: {{ social.handle }}</span>
+                </div>
+              }
+            </div>
+          } @else {
+            <p class="section-text">Aún no has agregado redes sociales.</p>
+          }
+        } @else {
+          <div class="social-edit-list">
+            @for (social of editForm.redesSociales; let i = $index; track i) {
+              <div class="social-edit-row">
+                <input
+                  class="edit-input"
+                  type="text"
+                  placeholder="Plataforma (Instagram, X, Facebook...)"
+                  [(ngModel)]="social.platform"
+                  [ngModelOptions]="{ standalone: true }"
+                />
+
+                <input
+                  class="edit-input"
+                  type="text"
+                  placeholder="Usuario o link"
+                  [(ngModel)]="social.handle"
+                  [ngModelOptions]="{ standalone: true }"
+                />
+
+                <button type="button" class="btn-cancel btn-icon" (click)="removeSocial(i)">✕</button>
+              </div>
+            }
+
+            <button type="button" class="btn-cancel btn-small" (click)="addSocial()">
+              + Añadir red
+            </button>
+          </div>
+        }
       </div>
     </div>
   </div>
-}
+
+  @if (showDiscardModal) {
+    <div class="modal-overlay" (click)="closeDiscardModal()">
+      <div class="modal" (click)="$event.stopPropagation()">
+        <h3 class="modal-title">¿Descartar cambios?</h3>
+        <p class="modal-text">Tienes cambios sin guardar. ¿Quieres descartarlos o seguir editando?</p>
+
+        <div class="modal-actions">
+          <button class="btn-cancel" type="button" (click)="closeDiscardModal()">Seguir editando</button>
+          <button class="btn-danger" type="button" (click)="discardChanges()">Descartar cambios</button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

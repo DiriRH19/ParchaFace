@@ -21,7 +21,7 @@ export interface PageResponse<T> {
 
 @Injectable({ providedIn: 'root' })
 export class EventoCommentService {
-  private baseUrl = 'http://localhost:8080';
+  private baseUrl = '';
 
   constructor(private http: HttpClient) {}
 
