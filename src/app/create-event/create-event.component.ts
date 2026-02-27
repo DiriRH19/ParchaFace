@@ -248,8 +248,8 @@ export class CreateEventComponent implements OnDestroy {
   private resolveBackendImageUrl(url: string): string {
     if (!url) return '';
     if (/^https?:\/\//i.test(url)) return url;
-    // backend base: http://localhost:8080
-    return `http://localhost:8080${url.startsWith('/') ? '' : '/'}${url}`;
+    const backend = 'https://parchaface.eastus2.cloudapp.azure.com';
+    return `${backend}${url.startsWith('/') ? '' : '/'}${url}`;
   }
 
   // =========================
