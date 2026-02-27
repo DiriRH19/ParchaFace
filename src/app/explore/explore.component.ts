@@ -5,7 +5,7 @@ import { NavbarComponent } from '../shared/navbar/navbar.component';
 import { EventoService } from '../services/evento';
 import { WeatherService } from '../services/weather.service';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 
 @Component({
   selector: 'app-explore',
@@ -25,7 +25,8 @@ export class ExploreComponent implements OnInit {
   constructor(
     private eventoService: EventoService,
     private weatherService: WeatherService,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private router: Router
   ) {}
 
   // ✅ FILTROS
@@ -33,7 +34,7 @@ export class ExploreComponent implements OnInit {
   categoriaFiltro = '';
 
   // ✅ NUEVO: rango de precio por select
-  priceRange = ''; // '' = Todos, 'free', '100000-200000', etc.
+  priceRange = '';
 
   sortBy: 'fecha' | 'precio' | 'popularidad' | 'rating' = 'fecha';
 
@@ -42,10 +43,9 @@ export class ExploreComponent implements OnInit {
   ciudadesSugeridas = signal<{ nombre: string; departamento: string }[]>([]);
 
   ngOnInit(): void {
-    // 1) Captura el evento completo si viene por state (mejor UX instantánea)
+    // 1) Captura el evento completo si viene por state
     if (typeof window !== 'undefined') {
       const w = window as any;
-
       this.newlyCreatedFromNav = w?.history?.state?.newlyCreatedEvent ?? null;
 
       try {
@@ -62,12 +62,19 @@ export class ExploreComponent implements OnInit {
       this.eventoService.obtenerEventoPorId(createdId).subscribe({
         next: (ev) => {
           const created = this.mapToCardEvent(ev);
+
           // Inserta arriba evitando duplicados
           this.events = [created, ...this.events.filter(e => e.id !== created.id)];
+
+          // Limpia el query param para que no lo repita al recargar
+          this.router.navigate([], {
+            relativeTo: this.route,
+            queryParams: { created: null },
+            queryParamsHandling: 'merge',
+            replaceUrl: true
+          });
         },
-        error: () => {
-          // si falla, no bloqueamos Explore; igual carga lista normal
-        }
+        error: () => {}
       });
     }
 
@@ -82,18 +89,20 @@ export class ExploreComponent implements OnInit {
   private loadEvents(): void {
     this.isLoading = true;
 
-    this.eventoService.obtenerEventos().subscribe({
+    // ✅ IMPORTANTE: para Explore usa eventos públicos (feed)
+    this.eventoService.obtenerEventosPublicos().subscribe({
       next: (list: any[]) => {
         const mapped = (list || []).map(e => this.mapToCardEvent(e));
 
-        // Si ya insertamos por queryParam, mantenlo arriba (evita que se pierda)
-        const existingTop = (this.events && this.events.length > 0) ? this.events[0] : null;
+        // ✅ Si ya insertamos un evento (por query/state), lo preservamos arriba
+        const existingTop = this.events?.[0] || null;
         let merged = mapped;
 
         if (existingTop?.id && !mapped.some(e => e.id === existingTop.id)) {
           merged = [existingTop, ...mapped];
         }
 
+        // ✅ Si viene también por state, lo inserta primero sin duplicar
         this.events = this.insertNewlyCreatedFirst(merged);
         this.isLoading = false;
       },
@@ -109,7 +118,15 @@ export class ExploreComponent implements OnInit {
 
           try {
             const seed = (this.eventoService.getSeedEvents() || []).map(e => e as Event);
-            this.events = this.insertNewlyCreatedFirst(seed);
+
+            // preserva evento creado si existía
+            const existingTop = this.events?.[0] || null;
+            let merged = seed;
+            if (existingTop?.id && !seed.some(e => e.id === existingTop.id)) {
+              merged = [existingTop, ...seed];
+            }
+
+            this.events = this.insertNewlyCreatedFirst(merged);
           } catch (_) {
             this.events = [];
           }
@@ -224,7 +241,6 @@ export class ExploreComponent implements OnInit {
     });
   }
 
-  // ✅ PRECIO COP
   private parsePriceCOP(price: string): number {
     const p = (price || '').toLowerCase().trim();
     if (!p) return 0;
