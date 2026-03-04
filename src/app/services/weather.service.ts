@@ -18,7 +18,7 @@ export interface ClimaResponse {
  */
 @Injectable({ providedIn: 'root' })
 export class WeatherService {
-  private readonly apiUrl = 'http://localhost:8080/api/clima';
+  private readonly apiUrl = '/api/clima';
   private cache = new Map<string, Observable<ClimaResponse>>();
 
   constructor(private http: HttpClient) {}
@@ -40,7 +40,7 @@ export class WeatherService {
 
   getCiudades(query: string) {
     return this.http.get<{ nombre: string; departamento: string }[]>(
-      `http://localhost:8080/api/clima/ciudades?query=${encodeURIComponent(query)}`
+      `/api/clima/ciudades?query=${encodeURIComponent(query)}`
     );
   }
 }

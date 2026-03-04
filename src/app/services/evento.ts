@@ -9,7 +9,7 @@ import { catchError } from 'rxjs/operators';
 export class EventoService {
 
   // ✅ Sin proxy: apunta directo al backend
-  private apiUrl = 'http://localhost:8080/eventos';
+  private apiUrl = '/eventos';
 
   constructor(private http: HttpClient) {}
 
@@ -50,7 +50,6 @@ export class EventoService {
     if (!path) return '';
     if (/^https?:\/\//i.test(path)) return path;
 
-    // base = http://localhost:8080  (quita el sufijo /eventos)
     const base = this.apiUrl.replace(/\/eventos\/?$/i, '');
 
     if (path.startsWith('/')) {

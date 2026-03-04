@@ -112,7 +112,6 @@ export class CreateEventComponent implements OnDestroy {
     try {
       const errors = this.validateCurrentStep();
       if (errors.length) {
-        // Mantengo tu comportamiento actual (luego si quieres lo migramos a modal/toast)
         alert('Por favor completa los campos faltantes:\n' + errors.join('\n'));
         return;
       }
@@ -155,7 +154,6 @@ export class CreateEventComponent implements OnDestroy {
 
     const file = input.files[0];
 
-    // Backend permite: jpg/jpeg/png/webp (según tu CrearEventoForm)
     const ct = (file.type || '').toLowerCase().trim();
     const ok =
       ct === 'image/jpeg' ||
@@ -177,18 +175,15 @@ export class CreateEventComponent implements OnDestroy {
       return;
     }
 
-    // ✅ Guardamos el File REAL para mandarlo por multipart
     this.selectedCoverFile = file;
     this.eventData.imagenPortadaContentType = ct;
 
-    // ✅ Preview (base64) para tu vista previa existente (HTML usa imagenPortadaUrl)
     const reader = new FileReader();
     reader.onload = () => {
       this.eventData.imagenPortadaUrl = String(reader.result || '');
     };
     reader.readAsDataURL(file);
 
-    // ✅ Preview local (objectURL) para el modal de éxito (más rápido y estable)
     if (this.localCoverPreviewUrl) {
       URL.revokeObjectURL(this.localCoverPreviewUrl);
     }
@@ -228,7 +223,6 @@ export class CreateEventComponent implements OnDestroy {
   // HELPERS
   // =========================
   private normalizeTime(t: string): string {
-    // input type="time" suele dar "HH:mm" -> lo volvemos "HH:mm:ss"
     if (!t) return t;
     return t.length === 5 ? `${t}:00` : t;
   }
@@ -244,12 +238,12 @@ export class CreateEventComponent implements OnDestroy {
     return v ? 'true' : 'false';
   }
 
-
+  // ✅ IMPORTANTE: devolvemos rutas relativas para que Vercel rewrites funcione (/uploads/**)
   private resolveBackendImageUrl(url: string): string {
     if (!url) return '';
     if (/^https?:\/\//i.test(url)) return url;
-    // backend base: http://localhost:8080
-    return `http://localhost:8080${url.startsWith('/') ? '' : '/'}${url}`;
+    const path = url.startsWith('/') ? url : `/${url}`;
+    return path;
   }
 
   // =========================
@@ -269,7 +263,6 @@ export class CreateEventComponent implements OnDestroy {
       if (!this.eventData.horaInicio) e.push('La hora de inicio es obligatoria.');
       if (!this.eventData.horaFin) e.push('La hora de finalización es obligatoria.');
 
-      // ✅ sin validar rango rígido (permite cruzar medianoche)
       const enLinea = Boolean(this.eventData.eventoEnLinea);
 
       if (enLinea) {
@@ -304,24 +297,20 @@ export class CreateEventComponent implements OnDestroy {
   private buildFormData(): FormData {
     const fd = new FormData();
 
-    // ⚠️ claves deben coincidir con CrearEventoForm (exactas)
     this.appendIfNotEmpty(fd, 'titulo', this.eventData.titulo);
     this.appendIfNotEmpty(fd, 'descripcion', this.eventData.descripcion);
     this.appendIfNotEmpty(fd, 'categoria', this.eventData.categoria);
 
-    // fecha y horas: como string
     this.appendIfNotEmpty(fd, 'fecha', this.eventData.fecha);
     this.appendIfNotEmpty(fd, 'horaInicio', this.normalizeTime(this.eventData.horaInicio));
     this.appendIfNotEmpty(fd, 'horaFin', this.normalizeTime(this.eventData.horaFin));
 
-    // booleans (Spring los bindea si van como "true"/"false")
     fd.append('eventoEnLinea', this.toBooleanString(this.eventData.eventoEnLinea));
     fd.append('eventoGratuito', this.toBooleanString(this.eventData.eventoGratuito));
     fd.append('eventoPublico', this.toBooleanString(this.eventData.eventoPublico));
     fd.append('permitirComentarios', this.toBooleanString(this.eventData.permitirComentarios));
     fd.append('recordatoriosAutomaticos', this.toBooleanString(this.eventData.recordatoriosAutomaticos));
 
-    // online/presencial condicional
     if (Boolean(this.eventData.eventoEnLinea)) {
       this.appendIfNotEmpty(fd, 'urlVirtual', this.eventData.urlVirtual);
     } else {
@@ -331,26 +320,20 @@ export class CreateEventComponent implements OnDestroy {
       this.appendIfNotEmpty(fd, 'ciudad', this.eventData.ciudad);
     }
 
-    // cupo
     fd.append('cupo', String(Number(this.eventData.cupo)));
 
-    // precio si no es gratuito
     if (!Boolean(this.eventData.eventoGratuito)) {
-      // BigDecimal en backend -> mandar número como string
       this.appendIfNotEmpty(fd, 'precio', this.eventData.precio);
     }
 
-    // contacto
     this.appendIfNotEmpty(fd, 'emailContacto', this.eventData.emailContacto);
     this.appendIfNotEmpty(fd, 'telefonoContacto', this.eventData.telefonoContacto);
     this.appendIfNotEmpty(fd, 'sitioWeb', this.eventData.sitioWeb);
 
-    // detalle privado si no es público
     if (!Boolean(this.eventData.eventoPublico)) {
       this.appendIfNotEmpty(fd, 'detallePrivado', this.eventData.detallePrivado);
     }
 
-    // ✅ archivo real: el nombre debe ser "imagenPortada"
     if (this.selectedCoverFile) {
       fd.append('imagenPortada', this.selectedCoverFile, this.selectedCoverFile.name);
     }
@@ -362,18 +345,20 @@ export class CreateEventComponent implements OnDestroy {
   // ✅ MODAL ÉXITO: acciones
   // =========================
   onModifyFromModal() {
-    // Cierra modal y deja al usuario editando (no pierde datos)
     this.showSuccessModal = false;
   }
+
+  // ✅ FIX: usa this.createdEvent (no existe "evento" aquí)
   onAcceptFromModal() {
     this.showSuccessModal = false;
 
-    // ✅ Ruta real del listado (tu ExploreComponent)
+    const id = this.createdEvent?.idEvento ?? this.createdEvent?.id ?? null;
+
     this.router.navigate(['/explore'], {
+      queryParams: id ? { created: id } : {},
       state: { newlyCreatedEvent: this.createdEvent }
     });
   }
-
 
   // =========================
   // CREAR EVENTO (multipart)
@@ -381,7 +366,6 @@ export class CreateEventComponent implements OnDestroy {
   createEvent() {
     const errors = this.validateCurrentStep();
     if (errors.length) {
-      // Mantengo tu comportamiento para este caso (si quieres lo pasamos al error modal)
       alert(errors.join('\n'));
       return;
     }
@@ -390,20 +374,18 @@ export class CreateEventComponent implements OnDestroy {
 
     this.eventoService.crearEvento(formData).subscribe({
       next: (evento) => {
-        // ✅ Guardamos respuesta para el modal
         this.createdEvent = {
           ...evento,
-          // normaliza imagen si viene como ruta relativa
-          imagenPortadaUrl: evento?.imagenPortadaUrl ? this.resolveBackendImageUrl(evento.imagenPortadaUrl) : evento?.imagenPortadaUrl
+          imagenPortadaUrl: evento?.imagenPortadaUrl
+            ? this.resolveBackendImageUrl(evento.imagenPortadaUrl)
+            : evento?.imagenPortadaUrl
         };
 
-        // ✅ cierra preview modal si estaba abierto
         if (this.showPreview) this.showPreview = false;
 
-        // ✅ abre modal bonito
         this.showSuccessModal = true;
       },
-      error: err => {
+      error: (err) => {
         console.error('Error creando evento:', err && err.message ? err.message : err);
         if (err && err.status === 401) {
           alert('❌ Debes estar autenticado para crear un evento.');

@@ -344,7 +344,7 @@ export class AuthService {
   uploadPerfil(id: number, formData: FormData) {
     const token = this.getToken();
     return this.http.post(
-      `http://localhost:8080/usuarios/${id}/foto-perfil`,
+      `/usuarios/${id}/foto-perfil`,
       formData,
       { headers: token ? { Authorization: `Bearer ${token}` } : {} }
     );
@@ -353,7 +353,7 @@ export class AuthService {
   uploadPortada(id: number, formData: FormData) {
     const token = this.getToken();
     return this.http.post(
-      `http://localhost:8080/usuarios/${id}/foto-portada`,
+      `/usuarios/${id}/foto-portada`,
       formData,
       { headers: token ? { Authorization: `Bearer ${token}` } : {} }
     );
@@ -362,14 +362,15 @@ export class AuthService {
   getUsuarioById(id: number) {
     const token = this.getToken();
     const headers = token ? new HttpHeaders({ Authorization: `Bearer ${token}` }) : undefined;
-    return this.http.get<UserData>(`http://localhost:8080/usuarios/${id}`, { headers });
+    return this.http.get<UserData>(`/usuarios/${id}`, { headers });
   }
+
 
   updateUsuario(id: number, payload: Partial<UserData>): Observable<UserData> {
     const token = this.getToken();
     const headers = token ? new HttpHeaders({ Authorization: `Bearer ${token}` }) : undefined;
 
-    return this.http.put<UserData>(`http://localhost:8080/usuarios/${id}`, payload, { headers }).pipe(
+    return this.http.put<UserData>(`/usuarios/${id}`, payload, { headers }).pipe(
       tap((u) => {
         const current = this.userData.value;
         this.userData.next({ ...(current || {}), ...(u || {}) });
@@ -378,3 +379,6 @@ export class AuthService {
   }
   
 }
+
+}
+

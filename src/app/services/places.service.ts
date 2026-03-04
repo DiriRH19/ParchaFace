@@ -15,7 +15,7 @@ export interface RadarPlace {
 
 @Injectable({ providedIn: 'root' })
 export class PlacesService {
-  private readonly apiUrl = 'http://localhost:8080/api/places';
+  private readonly apiUrl = '/api/places';
   private cache = new Map<string, Observable<RadarPlace[]>>();
 
   constructor(private http: HttpClient) {}

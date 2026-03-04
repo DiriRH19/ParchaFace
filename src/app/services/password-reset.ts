@@ -5,7 +5,7 @@ import { Observable } from 'rxjs';
 @Injectable({ providedIn: 'root' })
 export class PasswordResetService {
   // AJUSTA si tu backend usa otro host/puerto
-  private baseUrl = 'http://localhost:8080/auth';
+  private baseUrl = '/auth';
 
   constructor(private http: HttpClient) {}
 
