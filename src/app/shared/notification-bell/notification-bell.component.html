@@ -1,0 +1,30 @@
+<div class="notif-wrap" (click)="$event.stopPropagation()">
+  <button class="bell" type="button" (click)="toggle($event)" aria-label="Notificaciones">
+    🔔
+    <span class="badge" *ngIf="(store.count$ | async) as c" [class.hidden]="c === 0">{{ c }}</span>
+  </button>
+
+  <div class="dropdown" *ngIf="open">
+    <div class="header">
+      <div class="title">Notificaciones</div>
+      <button class="link" type="button" (click)="marcarTodas($event)">Leer todas</button>
+    </div>
+
+    <div class="list" *ngIf="(store.lista$ | async) as lista">
+      <div class="empty" *ngIf="lista.length === 0">
+        No tienes notificaciones.
+      </div>
+
+      <button
+        type="button"
+        class="item"
+        *ngFor="let n of lista"
+        [class.unread]="!n.leido"
+        (click)="marcarLeida(n.id_notificacion, $event)"
+      >
+        <div class="msg">{{ n.mensaje }}</div>
+        <div class="date">{{ formatFecha(n.fechaEnvio) }}</div>
+      </button>
+    </div>
+  </div>
+</div>
