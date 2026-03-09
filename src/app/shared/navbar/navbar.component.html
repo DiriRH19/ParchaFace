@@ -16,7 +16,7 @@
     <div class="navbar-right">
       <!-- ✅ Transporte: NUEVO -->
       <button type="button" class="btn-transport-nav" (click)="toggleTransportModal()">
-        🚘 Transporte
+        🚘  Transporte
       </button>
 
       <!-- ✅ Emergencias: siempre visible -->
@@ -27,16 +27,21 @@
       <!-- ✅ Toggle de tema -->
       <app-theme-toggle></app-theme-toggle>
 
+      <!-- ✅ NOTIFICACIONES (solo con sesión) -->
+      @if (isLoggedIn) {
+      <app-notification-bell></app-notification-bell>
+      }
+
       @if (!isLoggedIn) {
-        <a routerLink="/login" class="btn-login-nav">Iniciar Sesión</a>
-        <a routerLink="/register" class="btn-register-nav">Registrarse</a>
+      <a routerLink="/login" class="btn-login-nav">Iniciar Sesión</a>
+      <a routerLink="/register" class="btn-register-nav">Registrarse</a>
       }
 
       @if (isLoggedIn) {
-        <a routerLink="/profile" class="btn-profile-nav">
-          {{ userData?.nombre || userData?.usuario || 'Mi Perfil' }}
-        </a>
-        <button type="button" (click)="onLogoutClick()" class="btn-logout-nav">Cerrar Sesión</button>
+      <a routerLink="/profile" class="btn-profile-nav">
+      {{ userData?.nombre || userData?.usuario || 'Mi Perfil' }}
+      </a>
+      <button type="button" (click)="onLogoutClick()" class="btn-logout-nav">Cerrar Sesión</button>
       }
     </div>
   </div>

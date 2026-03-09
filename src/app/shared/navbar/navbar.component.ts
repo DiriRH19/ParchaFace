@@ -4,12 +4,14 @@ import { CommonModule } from '@angular/common';
 import { AuthService, UserData } from '../../services/auth.service';
 import { ThemeToggleComponent } from '../theme-toggle/theme-toggle.component';
 import { Subscription } from 'rxjs';
+import { NotificationBellComponent } from '../../shared/notification-bell/notification-bell.component';
+import { NotificacionesStore } from '../../services/notificaciones-store.service';
 
 type EmergencyItem = {
   icon: string;
   name: string;
-  number: string;  // texto visible
-  tel: string;     // tel: limpio
+  number: string;
+  tel: string;
   desc: string;
   primary?: boolean;
 };
@@ -17,8 +19,8 @@ type EmergencyItem = {
 type TransportItem = {
   icon: string;
   name: string;
-  number: string;  // texto visible (ej: "Web", "Android", "+57 ...")
-  href: string;    // link: https://... | tel:... | https://wa.me/...
+  number: string;
+  href: string;
   desc: string;
   primary?: boolean;
 };
@@ -26,7 +28,7 @@ type TransportItem = {
 @Component({
   selector: 'app-navbar',
   standalone: true,
-  imports: [CommonModule, RouterLink, RouterLinkActive, ThemeToggleComponent],
+  imports: [CommonModule, RouterLink, RouterLinkActive, ThemeToggleComponent, NotificationBellComponent],
   templateUrl: './navbar.component.html',
   styleUrls: ['./navbar.component.css']
 })
@@ -34,6 +36,13 @@ export class NavbarComponent implements OnInit, OnDestroy {
   isLoggedIn = false;
   userData: UserData | null = null;
   private subscriptions = new Subscription();
+
+  // ✅ Notificaciones (store)
+  constructor(
+    private authService: AuthService,
+    private router: Router,
+    private notificacionesStore: NotificacionesStore
+  ) {}
 
   // =========================
   // ✅ Emergencias (modal)
@@ -50,15 +59,14 @@ export class NavbarComponent implements OnInit, OnDestroy {
 
   readonly armenia = signal<EmergencyItem[]>([
     { icon: '🚨', name: 'Línea Única', number: '123', tel: '123', desc: 'Atención inmediata', primary: true },
-    // Armenia/Quindío indicativo 606 — en tel usamos internacional +57
     { icon: '🛟', name: 'Defensa Civil Quindío', number: '(606) 735 9733', tel: '+576067359733', desc: 'Apoyo y emergencias' },
     { icon: '🚒', name: 'Bomberos', number: '119', tel: '119', desc: 'Incendios / rescate' },
     { icon: '⛑️', name: 'Cruz Roja / Emergencias', number: '132', tel: '132', desc: 'Asistencia humanitaria' }
   ]);
 
   // =========================
-// ✅ Transporte (modal) - NUEVO
-// =========================
+  // ✅ Transporte (modal)
+  // =========================
   showTransportModal = false;
 
   readonly transportApps = signal<TransportItem[]>([
@@ -68,44 +76,35 @@ export class NavbarComponent implements OnInit, OnDestroy {
     { icon: '🛵', name: 'Picap', number: 'Web', desc: 'Abrir sitio', href: 'https://picap.app/' }
   ]);
 
-
   readonly taxisArmenia = signal<TransportItem[]>([
-    // Radio Taxi del Quindío
     { icon: '🚌', name: 'BUSES TINTO', number: '', desc: 'Pagina Web', href: 'https://tinto.com.co/ruta3.htm', primary: true },
-
     { icon: '💬', name: 'Radio Taxi del Quindío', number: '311 542 2222', desc: 'WhatsApp', href: 'https://wa.me/573115422222', primary: true },
     { icon: '📞', name: 'Radio Taxi del Quindío', number: '(606) 746 2222', desc: 'Pedidos', href: 'tel:+576067462222' },
-    // Tax Páramo S.A
     { icon: '📞', name: 'Tax Páramo S.A', number: '(606) 740 2254', desc: 'Servicio al cliente', href: 'tel:+576067402254' },
-    // Cooperativa de Motoristas del Quindío LTDA
     { icon: '📞', name: 'Cooperativa de Motoristas del Quindío', number: '(606) 748 1111', desc: 'Servicio al cliente', href: 'tel:+576067481111' },
-    // Taxis Armenia (tel + WhatsApp)
     { icon: '💬', name: 'Taxis Armenia', number: '314 751 1530', desc: 'WhatsApp', href: 'https://wa.me/573147511530' },
     { icon: '📞', name: 'Taxis Armenia', number: '314 751 1530', desc: 'Llamar', href: 'tel:+573147511530' }
   ]);
 
   readonly taxisColombia = signal<TransportItem[]>([
-    // Taxis Libres (WhatsApp sirve en Colombia)
     { icon: '💬', name: 'Taxis Libres', number: '310 211 1111', desc: 'WhatsApp', href: 'https://wa.me/573102111111', primary: true },
-
-    // Líneas por ciudad (Taxis Libres)
     { icon: '📞', name: 'Taxis Libres Bogotá', number: '(601) 311 1111', desc: 'Teléfono', href: 'tel:+576013111111' },
     { icon: '📞', name: 'Taxis Libres Bogotá', number: '(601) 211 1111', desc: 'Teléfono', href: 'tel:+576012111111' },
     { icon: '📞', name: 'Taxis Libres Cali', number: '(602) 444 4444', desc: 'Teléfono', href: 'tel:+576024444444' },
     { icon: '📞', name: 'Taxis Libres Medellín', number: '(604) 311 1111', desc: 'Teléfono', href: 'tel:+576043111111' }
   ]);
 
-
-
-  constructor(
-    private authService: AuthService,
-    private router: Router
-  ) {}
-
   ngOnInit(): void {
     const loginSub = this.authService.isLoggedIn$.subscribe(isLoggedIn => {
-      this.isLoggedIn = isLoggedIn;
-    });
+  this.isLoggedIn = isLoggedIn;
+
+  if (isLoggedIn) {
+    this.notificacionesStore.startPolling(15000);
+  } else {
+    this.notificacionesStore.stopPolling();
+    this.notificacionesStore.clear();
+  }
+});;
 
     const userSub = this.authService.userData$.subscribe(userData => {
       this.userData = userData;
@@ -117,12 +116,9 @@ export class NavbarComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.subscriptions.unsubscribe();
-    this.unlockScroll(); // por si se destruye abierto
+    this.unlockScroll();
   }
 
-  // =========================
-  // ✅ Acciones existentes
-  // =========================
   onCreateEventClick(): void {
     if (this.authService.getIsLoggedIn()) {
       this.router.navigate(['/create-event']);
@@ -133,6 +129,9 @@ export class NavbarComponent implements OnInit, OnDestroy {
 
   onLogoutClick(): void {
     this.authService.logout();
+    this.notificacionesStore.clear();
+    // opcional:
+    // this.notificacionesStore.stopPolling();
   }
 
   // =========================
@@ -160,8 +159,8 @@ export class NavbarComponent implements OnInit, OnDestroy {
   }
 
   // =========================
-// ✅ Transporte modal - NUEVO
-// =========================
+  // ✅ Transporte modal
+  // =========================
   toggleTransportModal(): void {
     this.showTransportModal = !this.showTransportModal;
     this.showTransportModal ? this.lockScroll() : this.unlockScroll();
@@ -176,5 +175,4 @@ export class NavbarComponent implements OnInit, OnDestroy {
   isExternal(href: string): boolean {
     return href.startsWith('http');
   }
-
 }
