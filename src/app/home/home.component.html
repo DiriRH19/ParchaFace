@@ -1,35 +1,67 @@
 <app-navbar></app-navbar>
-<div class="landing-container">
-  <div class="hero-section">
-    <h1 class="hero-title">
-      Conecta con <span class="highlight">Eventos</span><span class="highlight-normal"> Increíbles</span>
-    </h1>
-    <p class="hero-subtitle">
-      Descubre conciertos, partidos, fiestas, competencias gaming y más. Crea tus propios eventos y conecta con personas que comparten tus pasiones.
-    </p>
-    <div class="hero-buttons">
-      <button class="btn-primary" routerLink="/register">Comenzar Ahora</button>
-      <button class="btn-secondary" routerLink="/explore">Explorar Eventos</button>
-    </div>
-  </div>
 
-  <div class="features-section">
-    <div class="feature-card">
-      <div class="feature-icon music">🎵</div>
-      <h3 class="feature-title">Conciertos y Música</h3>
-      <p class="feature-description">Descubre los mejores eventos musicales cerca de ti</p>
+<div class="landing-container">
+  <ng-container *ngIf="!isLoggedIn(); else loggedHome">
+    <div class="hero-section">
+      <h1 class="hero-title">
+        Conecta con <span class="highlight">Eventos</span><span class="highlight-normal"> Increíbles</span>
+      </h1>
+
+      <p class="hero-subtitle">
+        Descubre conciertos, partidos, fiestas, competencias gaming y más.
+        Crea tus propios eventos y conecta con personas que comparten tus pasiones.
+      </p>
+
+      <div class="hero-buttons">
+        <button class="btn-primary" routerLink="/register">Comenzar Ahora</button>
+        <button class="btn-secondary" routerLink="/explore">Explorar Eventos</button>
+      </div>
     </div>
-    <div class="feature-card">
-      <div class="feature-icon gaming">🎮</div>
-      <h3 class="feature-title">Gaming y Esports</h3>
-      <p class="feature-description">Únete a torneos y competencias gaming épicas</p>
+
+    <div class="features-section">
+      <div class="feature-card">
+        <div class="feature-icon music">🎵</div>
+        <h3 class="feature-title">Conciertos y Música</h3>
+        <p class="feature-description">Descubre los mejores eventos musicales cerca de ti</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon gaming">🎮</div>
+        <h3 class="feature-title">Gaming y Esports</h3>
+        <p class="feature-description">Únete a torneos y competencias gaming épicas</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon party">🎉</div>
+        <h3 class="feature-title">Fiestas y Social</h3>
+        <p class="feature-description">Conecta con tu comunidad en eventos sociales</p>
+      </div>
     </div>
-    <div class="feature-card">
-      <div class="feature-icon party">🎉</div>
-      <h3 class="feature-title">Fiestas y Social</h3>
-      <p class="feature-description">Conecta con tu comunidad en eventos sociales</p>
-    </div>
-  </div>
+  </ng-container>
+
+  <ng-template #loggedHome>
+    <section class="map-shell">
+      <div class="map-header">
+        <h1 class="map-title">Mapa principal</h1>
+      </div>
+
+      <div *ngIf="mapLoading" class="map-status">
+        Cargando mapa...
+      </div>
+
+      <div *ngIf="mapError" class="map-status error">
+        {{ mapError }}
+      </div>
+
+      <div *ngIf="mapNotice" class="map-status notice">
+        {{ mapNotice }}
+      </div>
+
+      <div class="map-card">
+        <div #mapContainer class="leaflet-map"></div>
+      </div>
+    </section>
+  </ng-template>
 
   <app-footer></app-footer>
 </div>
