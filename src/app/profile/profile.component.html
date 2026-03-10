@@ -118,111 +118,272 @@
     }
   </div>
 
-  <div class="profile-content">
-    <div class="content-section">
-      <div class="section-card">
-        <h2 class="section-title">Acerca de</h2>
+<div class="profile-content">
+  @switch (activeTab) {
 
-        @if (!isEditing) {
-          <p class="section-text">
-            {{ userData?.acercaDe?.trim() ? userData?.acercaDe : 'Aún no has agregado información.' }}
-          </p>
-        } @else {
-          <label class="edit-label">Descripción</label>
-          <textarea
-            class="edit-textarea"
-            rows="4"
-            [(ngModel)]="editForm.acercaDe"
-            [ngModelOptions]="{ standalone: true }"
-            placeholder="Escribe algo sobre ti…"></textarea>
-        }
+    @case ('profile') {
+      <div class="content-section">
+        <div class="section-card">
+          <h2 class="section-title">Acerca de</h2>
 
-        <div class="contact-info">
-          <div class="contact-item">
-            <span class="contact-icon"></span>
-            <span>{{ getUserEmail() || 'No disponible' }}</span>
+          @if (!isEditing) {
+            <p class="section-text">
+              {{ userData?.acercaDe?.trim() ? userData?.acercaDe : 'Aún no has agregado información.' }}
+            </p>
+          } @else {
+            <label class="edit-label">Descripción</label>
+            <textarea
+              class="edit-textarea"
+              rows="4"
+              [(ngModel)]="editForm.acercaDe"
+              [ngModelOptions]="{ standalone: true }"
+              placeholder="Escribe algo sobre ti…"></textarea>
+          }
+
+          <div class="contact-info">
+            <div class="contact-item">
+              <span class="contact-icon"></span>
+              <span>{{ getUserEmail() || 'No disponible' }}</span>
+            </div>
           </div>
         </div>
       </div>
-    </div>
 
-    <div class="content-section">
-      <div class="section-card">
-        <div class="section-title-row">
-          <h2 class="section-title">Intereses</h2>
+      <div class="content-section">
+        <div class="section-card">
+          <div class="section-title-row">
+            <h2 class="section-title">Intereses</h2>
 
-          <button
-            type="button"
-            class="btn-cancel btn-small"
-            [routerLink]="['/preferencias']"
-            [queryParams]="{ returnTo: 'profile' }">
-            Editar intereses
-          </button>
-        </div>
+            <button
+              type="button"
+              class="btn-cancel btn-small"
+              [routerLink]="['/preferencias']"
+              [queryParams]="{ returnTo: 'profile' }">
+              Editar intereses
+            </button>
+          </div>
 
-        <div class="interests-list">
-          @for (interest of userData?.categoriasPreferidas; track interest) {
-            <span class="interest-tag">
-              {{ interest }}
-            </span>
+          <div class="interests-list">
+            @for (interest of userData?.categoriasPreferidas; track interest) {
+              <span class="interest-tag">
+                {{ interest }}
+              </span>
+            }
+          </div>
+
+          @if (!((userData?.categoriasPreferidas?.length || 0) > 0)) {
+            <p class="section-text">No tienes intereses seleccionados todavía.</p>
           }
         </div>
+      </div>
 
-        @if (!((userData?.categoriasPreferidas?.length || 0) > 0)) {
-          <p class="section-text">No tienes intereses seleccionados todavía.</p>
+      <div class="social-section">
+        <div class="section-card">
+          <h2 class="section-title">Redes Sociales</h2>
+
+          @if (!isEditing) {
+            @if ((userData?.redesSociales?.length || 0) > 0) {
+              <div class="social-list">
+                @for (social of userData?.redesSociales; track social) {
+                  <div class="social-item">
+                    <span class="social-icon"></span>
+                    <span><b>{{ social.platform }}</b>: {{ social.handle }}</span>
+                  </div>
+                }
+              </div>
+            } @else {
+              <p class="section-text">Aún no has agregado redes sociales.</p>
+            }
+          } @else {
+            <div class="social-edit-list">
+              @for (social of editForm.redesSociales; let i = $index; track i) {
+                <div class="social-edit-row">
+                  <input
+                    class="edit-input"
+                    type="text"
+                    placeholder="Plataforma (Instagram, X, Facebook...)"
+                    [(ngModel)]="social.platform"
+                    [ngModelOptions]="{ standalone: true }"
+                  />
+
+                  <input
+                    class="edit-input"
+                    type="text"
+                    placeholder="Usuario o link"
+                    [(ngModel)]="social.handle"
+                    [ngModelOptions]="{ standalone: true }"
+                  />
+
+                  <button type="button" class="btn-cancel btn-icon" (click)="removeSocial(i)">✕</button>
+                </div>
+              }
+
+              <button type="button" class="btn-cancel btn-small" (click)="addSocial()">
+                + Añadir red
+              </button>
+            </div>
+          }
+        </div>
+      </div>
+    }
+
+    @case ('events') {
+      <div class="section-card full-width tab-full-width events-panel">
+        <h2 class="section-title">Tus eventos</h2>
+
+        @if (loadingEvents) {
+          <p class="section-text">Cargando tus eventos...</p>
+        }
+
+        @if (eventsError) {
+          <p class="section-text error-text">{{ eventsError }}</p>
+        }
+
+        @if (!loadingEvents && !eventsError) {
+          <div class="events-two-columns">
+            <section class="events-column-panel">
+              <div class="events-block-header">
+                <h3 class="subsection-title">Eventos creados por mí</h3>
+              </div>
+
+              @if (createdEvents.length === 0) {
+                <div class="empty-state">Todavía no has creado eventos.</div>
+              }
+
+              <div class="event-list-vertical">
+                @for (event of createdEvents; track event.idEvento) {
+                  <a class="event-card-wide" [routerLink]="['/event', event.idEvento]">
+                    <div class="event-image-box">
+                      @if (event.imagenPortadaUrl) {
+                        <img
+                          [src]="event.imagenPortadaUrl"
+                          [alt]="event.titulo"
+                          class="event-image"
+                        />
+                      } @else {
+                        <div class="event-image-placeholder">
+                          Sin imagen
+                        </div>
+                      }
+                    </div>
+
+                    <div class="event-card-content">
+                      <div class="event-card-top">
+                        <h4>{{ event.titulo }}</h4>
+                        <span class="event-badge badge-created">Creado</span>
+                      </div>
+
+                      <div class="event-card-meta">
+                        <p><strong>Categoría:</strong> {{ event.categoria || 'Sin categoría' }}</p>
+                        <p><strong>Fecha:</strong> {{ formatDate(event.fecha) }}</p>
+                        <p><strong>Ciudad:</strong> {{ event.ciudad || 'No definida' }}</p>
+                        <p><strong>Lugar:</strong> {{ event.nombreLugar || 'No definido' }}</p>
+                      </div>
+                    </div>
+                  </a>
+                }
+              </div>
+            </section>
+
+            <section class="events-column-panel">
+              <div class="events-block-header">
+                <h3 class="subsection-title">Eventos a los que estoy inscrito</h3>
+              </div>
+
+              @if (joinedEvents.length === 0) {
+                <div class="empty-state">Todavía no te has inscrito a eventos.</div>
+              }
+
+              <div class="event-list-vertical">
+                @for (event of joinedEvents; track event.idEvento) {
+                  <a class="event-card-wide" [routerLink]="['/event', event.idEvento]">
+                    <div class="event-image-box">
+                      @if (event.imagenPortadaUrl) {
+                        <img
+                          [src]="event.imagenPortadaUrl"
+                          [alt]="event.titulo"
+                          class="event-image"
+                        />
+                      } @else {
+                        <div class="event-image-placeholder">
+                          Sin imagen
+                        </div>
+                      }
+                    </div>
+
+                    <div class="event-card-content">
+                      <div class="event-card-top">
+                        <h4>{{ event.titulo }}</h4>
+                        <span class="event-badge badge-joined">Inscrito</span>
+                      </div>
+
+                      <div class="event-card-meta">
+                        <p><strong>Categoría:</strong> {{ event.categoria || 'Sin categoría' }}</p>
+                        <p><strong>Fecha evento:</strong> {{ formatDate(event.fecha) }}</p>
+                        <p><strong>Fecha inscripción:</strong> {{ formatDate(event.fechaInscripcion) }}</p>
+                        <p><strong>Ciudad:</strong> {{ event.ciudad || 'No definida' }}</p>
+                        <p><strong>Lugar:</strong> {{ event.nombreLugar || 'No definido' }}</p>
+                      </div>
+                    </div>
+                  </a>
+                }
+              </div>
+            </section>
+          </div>
         }
       </div>
-    </div>
-  </div>
+    }
 
-  <div class="social-section">
-    <div class="section-card">
-      <h2 class="section-title">Redes Sociales</h2>
+    @case ('activity') {
+      <div class="section-card full-width tab-full-width activity-panel">
+        <h2 class="section-title">Actividad reciente</h2>
 
-      @if (!isEditing) {
-        @if ((userData?.redesSociales?.length || 0) > 0) {
-          <div class="social-list">
-            @for (social of userData?.redesSociales; track social) {
-              <div class="social-item">
-                <span class="social-icon"></span>
-                <span><b>{{ social.platform }}</b>: {{ social.handle }}</span>
+        @if (loadingActivity) {
+          <p class="section-text">Cargando tu actividad...</p>
+        }
+
+        @if (activityError) {
+          <p class="section-text error-text">{{ activityError }}</p>
+        }
+
+        @if (!loadingActivity && !activityError) {
+          @if (activityItems.length === 0) {
+            <div class="empty-state">Todavía no tienes actividad para mostrar.</div>
+          }
+
+          <div class="activity-list">
+            @for (item of activityItems; track $index) {
+              <div class="activity-item">
+                <div class="activity-top">
+                  <span class="activity-badge" [class]="getActivityBadgeClass(item.tipo)">
+                    {{ item.titulo }}
+                  </span>
+                  <span class="activity-date">{{ formatDate(item.fecha) }}</span>
+                </div>
+
+                <p class="activity-description">{{ item.descripcion }}</p>
+
+                @if (item.referenciaTipo === 'EVENTO' && item.referenciaId) {
+                  <a class="activity-link" [routerLink]="['/event', item.referenciaId]">
+                    Ver evento
+                  </a>
+                }
               </div>
             }
           </div>
-        } @else {
-          <p class="section-text">Aún no has agregado redes sociales.</p>
         }
-      } @else {
-        <div class="social-edit-list">
-          @for (social of editForm.redesSociales; let i = $index; track i) {
-            <div class="social-edit-row">
-              <input
-                class="edit-input"
-                type="text"
-                placeholder="Plataforma (Instagram, X, Facebook...)"
-                [(ngModel)]="social.platform"
-                [ngModelOptions]="{ standalone: true }"
-              />
+      </div>
+    }
 
-              <input
-                class="edit-input"
-                type="text"
-                placeholder="Usuario o link"
-                [(ngModel)]="social.handle"
-                [ngModelOptions]="{ standalone: true }"
-              />
-
-              <button type="button" class="btn-cancel btn-icon" (click)="removeSocial(i)">✕</button>
-            </div>
-          }
-
-          <button type="button" class="btn-cancel btn-small" (click)="addSocial()">
-            + Añadir red
-          </button>
-        </div>
-      }
-    </div>
-  </div>
+    @case ('settings') {
+      <div class="section-card full-width">
+        <h2 class="section-title">Configuración</h2>
+        <p class="section-text">
+          Esta pestaña la dejamos libre para preferencias, privacidad y ajustes de cuenta.
+        </p>
+      </div>
+    }
+  }
 </div>
 
 @if (showDiscardModal) {

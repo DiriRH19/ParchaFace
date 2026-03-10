@@ -22,6 +22,11 @@
   gap: 48px;
 }
 
+.navbar-auth-placeholder {
+  width: 280px;
+  height: 48px;
+}
+
 .logo {
   display: flex;
   align-items: center;
