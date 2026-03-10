@@ -30,7 +30,7 @@ export class LoginComponent {
     });
   }
 
-  togglePassword() {
+  togglePassword(): void {
     this.showPassword = !this.showPassword;
   }
 
@@ -38,7 +38,7 @@ export class LoginComponent {
     return this.loginForm.controls;
   }
 
-  onSubmit() {
+  onSubmit(): void {
     if (this.loginForm.invalid) {
       this.loginForm.markAllAsTouched();
       return;
@@ -47,39 +47,49 @@ export class LoginComponent {
     this.isLoading = true;
     this.errorMessage = '';
 
-    const { correo, contrasena } = this.loginForm.value;
+    const { correo, contrasena, rememberMe } = this.loginForm.value;
 
-    this.authService.login(correo, contrasena).subscribe({
-      next: (token) => {
-        console.log('Login exitoso, token recibido:', token);
+    this.authService.login(correo, contrasena, rememberMe).subscribe({
+      next: () => {
         this.isLoading = false;
         const redirectTo = this.route.snapshot.queryParamMap.get('redirectTo') || '/';
         this.router.navigateByUrl(redirectTo);
       },
       error: (error) => {
         this.isLoading = false;
-        console.error('Error completo de login:', error && error.message ? error.message : error.status || error);
-        
+        console.error(
+          'Error completo de login:',
+          error && error.message ? error.message : error.status || error
+        );
+
         if (error.status === 0) {
-          this.errorMessage = 'No se puede conectar con el servidor. Verifica que el backend esté corriendo en http://localhost:8080';
+          this.errorMessage =
+            'No se puede conectar con el servidor. Verifica que el backend esté corriendo en http://localhost:8080';
         } else if (error.error) {
           try {
             let errorObj: any;
+
             if (typeof error.error === 'string') {
               errorObj = JSON.parse(error.error);
             } else {
               errorObj = error.error;
             }
-            
+
             if (errorObj.error) {
               this.errorMessage = errorObj.error;
             } else if (errorObj.message) {
               this.errorMessage = errorObj.message;
             } else {
-              this.errorMessage = typeof error.error === 'string' ? error.error : 'Credenciales inválidas';
+              this.errorMessage =
+                typeof error.error === 'string'
+                  ? error.error
+                  : 'Credenciales inválidas';
             }
           } catch (e) {
-            this.errorMessage = typeof error.error === 'string' ? error.error : 'Error al iniciar sesión. Por favor, intenta de nuevo.';
+            this.errorMessage =
+              typeof error.error === 'string'
+                ? error.error
+                : 'Error al iniciar sesión. Por favor, intenta de nuevo.';
           }
         } else if (error.message) {
           this.errorMessage = error.message;

@@ -17,7 +17,7 @@ export interface RegisterRequest {
   usuario: string;
 }
 
-/** ✅ NUEVO: tipo para redes sociales */
+/** tipo para redes sociales */
 export type SocialLink = { platform: string; handle: string };
 
 export interface UserData {
@@ -29,16 +29,10 @@ export interface UserData {
   fotoPerfil?: string;
   fotoPortada?: string;
 
-  /** ✅ NUEVO: perfil extendido */
   acercaDe?: string;
-
-  /** ✅ NUEVO: redes sociales */
   redesSociales?: SocialLink[];
-
-  /** ✅ NUEVO: intereses (categorías preferidas) */
   categoriasPreferidas?: string[];
 
-  /** mantener compatibilidad con cualquier campo extra del backend */
   [key: string]: any;
 }
 
@@ -66,8 +60,8 @@ export class AuthService {
       return;
     }
 
-    const token = localStorage.getItem('token');
-    
+    const token = this.getToken();
+
     if (token && this.isTokenValid(token)) {
       this.isLoggedIn.next(true);
       const userData = this.decodeToken(token);
@@ -77,7 +71,7 @@ export class AuthService {
     } else {
       this.isLoggedIn.next(false);
       this.userData.next(null);
-      localStorage.removeItem('token');
+      this.removeStoredToken();
     }
   }
 
@@ -109,10 +103,50 @@ export class AuthService {
   }
 
   private isTokenValid(token: string | null): boolean {
-    return token !== null && token.length > 0;
+    if (!token) return false;
+
+    try {
+      const payload = token.split('.')[1];
+      if (!payload) return false;
+
+      const decoded = JSON.parse(atob(payload));
+      const exp = decoded?.exp;
+
+      if (!exp) {
+        return false;
+      }
+
+      return Date.now() < exp * 1000;
+    } catch {
+      return false;
+    }
   }
 
-  login(correo: string, contrasena: string): Observable<string> {
+  private saveToken(token: string, rememberMe: boolean): void {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+
+    localStorage.removeItem('token');
+    sessionStorage.removeItem('token');
+
+    if (rememberMe) {
+      localStorage.setItem('token', token);
+    } else {
+      sessionStorage.setItem('token', token);
+    }
+  }
+
+  private removeStoredToken(): void {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+
+    localStorage.removeItem('token');
+    sessionStorage.removeItem('token');
+  }
+
+  login(correo: string, contrasena: string, rememberMe: boolean = false): Observable<string> {
     const loginData: LoginRequest = { correo, contrasena };
 
     return this.http.post(
@@ -155,9 +189,11 @@ export class AuthService {
       }),
       tap((token: string) => {
         console.log('Token recibido:', token);
+
         if (token && isPlatformBrowser(this.platformId)) {
-          localStorage.setItem('token', token);
+          this.saveToken(token, rememberMe);
           this.isLoggedIn.next(true);
+
           const userData = this.decodeToken(token);
           if (userData) {
             this.userData.next(userData);
@@ -193,7 +229,12 @@ export class AuthService {
     );
   }
 
-  register(usuario: string, correo: string, contrasena: string, confirmarContrasena: string): Observable<string> {
+  register(
+    usuario: string,
+    correo: string,
+    contrasena: string,
+    confirmarContrasena: string
+  ): Observable<string> {
     const registerData: RegisterRequest = { usuario, correo, contrasena, confirmarContrasena };
 
     return this.http.post(
@@ -239,10 +280,13 @@ export class AuthService {
         return token;
       }),
       tap((token: string) => {
-        console.log('Guardando token en localStorage:', token);
+        console.log('Guardando token después de registro:', token);
+
         if (token && isPlatformBrowser(this.platformId)) {
-          localStorage.setItem('token', token);
+          // Registro = sesión persistente por defecto
+          this.saveToken(token, true);
           this.isLoggedIn.next(true);
+
           const userData = this.decodeToken(token);
           if (userData) {
             this.userData.next(userData);
@@ -262,7 +306,8 @@ export class AuthService {
           const { correo: loginCorreo, contrasena: loginContrasena } = error.credentials;
           console.log('Haciendo login automático con:', loginCorreo);
 
-          return this.login(loginCorreo, loginContrasena);
+          // Registro + auto login = persistente por defecto
+          return this.login(loginCorreo, loginContrasena, true);
         }
 
         let token: string | null = null;
@@ -281,14 +326,16 @@ export class AuthService {
         if (token && typeof token === 'string') {
           console.log('Usando token de respuesta de error, registro considerado exitoso');
           if (isPlatformBrowser(this.platformId)) {
-            localStorage.setItem('token', token);
+            this.saveToken(token, true);
             this.isLoggedIn.next(true);
+
             const userData = this.decodeToken(token);
             if (userData) {
               this.userData.next(userData);
             }
           }
-          console.log('Token guardado en localStorage exitosamente');
+
+          console.log('Token guardado exitosamente');
           return of(token);
         }
 
@@ -319,9 +366,7 @@ export class AuthService {
   }
 
   logout(): void {
-    if (isPlatformBrowser(this.platformId)) {
-      localStorage.removeItem('token');
-    }
+    this.removeStoredToken();
     this.isLoggedIn.next(false);
     this.userData.next(null);
     this.router.navigate(['/']);
@@ -340,7 +385,8 @@ export class AuthService {
     if (!isPlatformBrowser(this.platformId)) {
       return null;
     }
-    return localStorage.getItem('token');
+
+    return localStorage.getItem('token') || sessionStorage.getItem('token');
   }
 
   getUserData(): UserData | null {
