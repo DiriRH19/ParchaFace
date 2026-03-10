@@ -67,6 +67,7 @@ export class AuthService {
     }
 
     const token = localStorage.getItem('token');
+    
     if (token && this.isTokenValid(token)) {
       this.isLoggedIn.next(true);
       const userData = this.decodeToken(token);

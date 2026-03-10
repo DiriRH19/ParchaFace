@@ -30,10 +30,12 @@ type TransportItem = {
   standalone: true,
   imports: [CommonModule, RouterLink, RouterLinkActive, ThemeToggleComponent, NotificationBellComponent],
   templateUrl: './navbar.component.html',
-  styleUrls: ['./navbar.component.css']
+  styleUrls: ['./navbar.component.css'],
+  host: { ngSkipHydration: 'true' }
 })
 export class NavbarComponent implements OnInit, OnDestroy {
   isLoggedIn = false;
+  authChecked = false;
   userData: UserData | null = null;
   private subscriptions = new Subscription();
 
@@ -96,15 +98,16 @@ export class NavbarComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     const loginSub = this.authService.isLoggedIn$.subscribe(isLoggedIn => {
-  this.isLoggedIn = isLoggedIn;
+      this.isLoggedIn = isLoggedIn;
+      this.authChecked = true;
 
-  if (isLoggedIn) {
-    this.notificacionesStore.startPolling(15000);
-  } else {
-    this.notificacionesStore.stopPolling();
-    this.notificacionesStore.clear();
-  }
-});;
+      if (isLoggedIn) {
+        this.notificacionesStore.startPolling(15000);
+      } else {
+        this.notificacionesStore.stopPolling();
+        this.notificacionesStore.clear();
+      }
+    });
 
     const userSub = this.authService.userData$.subscribe(userData => {
       this.userData = userData;
