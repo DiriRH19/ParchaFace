@@ -3,12 +3,16 @@ import { HttpInterceptorFn } from '@angular/common/http';
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   let token: string | null = null;
 
-  // Evitar acceder a localStorage en entornos sin window (SSR)
   try {
-    if (typeof window !== 'undefined' && window?.localStorage) {
-      token = localStorage.getItem('token') || localStorage.getItem('jwt') || null;
+    if (typeof window !== 'undefined') {
+      token =
+        localStorage.getItem('token') ||
+        sessionStorage.getItem('token') ||
+        localStorage.getItem('jwt') ||
+        sessionStorage.getItem('jwt') ||
+        null;
     }
-  } catch (e) {
+  } catch {
     token = null;
   }
 

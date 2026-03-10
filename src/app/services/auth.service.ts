@@ -17,22 +17,19 @@ export interface RegisterRequest {
   usuario: string;
 }
 
-/** tipo para redes sociales */
 export type SocialLink = { platform: string; handle: string };
 
 export interface UserData {
   id?: number;
+  idUsuario?: number;
   nombre?: string;
   usuario?: string;
   correo?: string;
-
   fotoPerfil?: string;
   fotoPortada?: string;
-
   acercaDe?: string;
   redesSociales?: SocialLink[];
   categoriasPreferidas?: string[];
-
   [key: string]: any;
 }
 
@@ -129,6 +126,8 @@ export class AuthService {
 
     localStorage.removeItem('token');
     sessionStorage.removeItem('token');
+    localStorage.removeItem('jwt');
+    sessionStorage.removeItem('jwt');
 
     if (rememberMe) {
       localStorage.setItem('token', token);
@@ -144,6 +143,8 @@ export class AuthService {
 
     localStorage.removeItem('token');
     sessionStorage.removeItem('token');
+    localStorage.removeItem('jwt');
+    sessionStorage.removeItem('jwt');
   }
 
   login(correo: string, contrasena: string, rememberMe: boolean = false): Observable<string> {
@@ -184,12 +185,9 @@ export class AuthService {
           }
         }
 
-        console.log('Token procesado:', token);
         return token;
       }),
       tap((token: string) => {
-        console.log('Token recibido:', token);
-
         if (token && isPlatformBrowser(this.platformId)) {
           this.saveToken(token, rememberMe);
           this.isLoggedIn.next(true);
@@ -244,13 +242,12 @@ export class AuthService {
     ).pipe(
       map((response: string) => {
         const raw = (response || '').trim();
-        console.log('Respuesta cruda de registro:', raw);
 
         if (raw.startsWith('<')) {
           throw new Error('El servidor devolvió una página. Arranca el backend (puerto 8080) y usa ng serve para el front.');
         }
 
-        let data: { token?: string; error?: string; mensaje?: string };
+        let data: any;
         try {
           data = JSON.parse(raw);
         } catch {
@@ -263,11 +260,7 @@ export class AuthService {
           token = data;
         }
 
-        console.log('Token extraído:', token);
-        console.log('Datos parseados:', data);
-
         if (!token && data?.mensaje) {
-          console.log('Registro exitoso pero sin token. Se requiere login automático.');
           const error: any = new Error('NEED_AUTO_LOGIN');
           error.credentials = { correo, contrasena };
           throw error;
@@ -280,10 +273,7 @@ export class AuthService {
         return token;
       }),
       tap((token: string) => {
-        console.log('Guardando token después de registro:', token);
-
         if (token && isPlatformBrowser(this.platformId)) {
-          // Registro = sesión persistente por defecto
           this.saveToken(token, true);
           this.isLoggedIn.next(true);
 
@@ -294,19 +284,8 @@ export class AuthService {
         }
       }),
       catchError((error) => {
-        console.error('Error en registro - detalles completos:', {
-          status: error.status,
-          statusText: error.statusText,
-          error: error.error,
-          headers: error.headers,
-          message: error.message
-        });
-
         if (error.message === 'NEED_AUTO_LOGIN' && error.credentials) {
           const { correo: loginCorreo, contrasena: loginContrasena } = error.credentials;
-          console.log('Haciendo login automático con:', loginCorreo);
-
-          // Registro + auto login = persistente por defecto
           return this.login(loginCorreo, loginContrasena, true);
         }
 
@@ -315,16 +294,11 @@ export class AuthService {
         if (error.error) {
           try {
             const errorResponse = typeof error.error === 'string' ? JSON.parse(error.error) : error.error;
-            console.log('Respuesta parseada del error:', errorResponse);
             token = errorResponse?.token || errorResponse?.data?.token;
-            console.log('Token encontrado en respuesta de error:', token);
-          } catch (e) {
-            console.log('No se pudo extraer token de la respuesta de error', e);
-          }
+          } catch {}
         }
 
         if (token && typeof token === 'string') {
-          console.log('Usando token de respuesta de error, registro considerado exitoso');
           if (isPlatformBrowser(this.platformId)) {
             this.saveToken(token, true);
             this.isLoggedIn.next(true);
@@ -334,8 +308,6 @@ export class AuthService {
               this.userData.next(userData);
             }
           }
-
-          console.log('Token guardado exitosamente');
           return of(token);
         }
 
@@ -386,7 +358,12 @@ export class AuthService {
       return null;
     }
 
-    return localStorage.getItem('token') || sessionStorage.getItem('token');
+    return (
+      localStorage.getItem('token') ||
+      sessionStorage.getItem('token') ||
+      localStorage.getItem('jwt') ||
+      sessionStorage.getItem('jwt')
+    );
   }
 
   getUserData(): UserData | null {

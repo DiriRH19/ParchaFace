@@ -2,20 +2,21 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
+import { AuthService } from './auth.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class EventoService {
-
-  // ✅ Sin proxy: apunta directo al backend
   private apiUrl = 'http://localhost:8080/eventos';
 
-  constructor(private http: HttpClient) {}
-
+  constructor(
+    private http: HttpClient,
+    private authService: AuthService
+  ) {}
 
   getSeedEvents(): any[] {
-    const seed = [
+    return [
       {
         title: 'Parcha Nocturno',
         description: 'Noche de beats y buena vibra en la terraza.',
@@ -23,7 +24,7 @@ export class EventoService {
         location: 'La Terraza, Centro',
         attendees: '50 asistentes',
         category: 'Música',
-        tags: ['música','fiesta'],
+        tags: ['música', 'fiesta'],
         price: 'Gratis',
         rating: 4.5,
         imageUrl: this.getFullImageUrl('/uploads/sample1.jpg')
@@ -35,22 +36,18 @@ export class EventoService {
         location: 'Cowork CDMX',
         attendees: '120 asistentes',
         category: 'Networking',
-        tags: ['tech','meetup'],
+        tags: ['tech', 'meetup'],
         price: '$10',
         rating: 4,
         imageUrl: this.getFullImageUrl('/uploads/sample2.jpg')
       }
     ];
-
-    return seed;
   }
-
 
   getFullImageUrl(path: string): string {
     if (!path) return '';
     if (/^https?:\/\//i.test(path)) return path;
 
-    // base = http://localhost:8080  (quita el sufijo /eventos)
     const base = this.apiUrl.replace(/\/eventos\/?$/i, '');
 
     if (path.startsWith('/')) {
@@ -60,25 +57,10 @@ export class EventoService {
     return `${base}/${path}`;
   }
 
-  // Busca el token en varias keys típicas (por si tu login lo guarda distinto)
   private getToken(): string | null {
-    // En entornos sin `window` (SSR / server) evitar acceder a localStorage
-    if (typeof window === 'undefined' || !window?.localStorage) return null;
-
-    return (
-      localStorage.getItem('token') ||
-      localStorage.getItem('jwt') ||
-      localStorage.getItem('access_token') ||
-      localStorage.getItem('accessToken') ||
-      null
-    );
+    return this.authService.getToken();
   }
 
-  /**
-   * ✅ Headers con Authorization.
-   * - Por defecto NO forzamos Content-Type (mejor para GET y multipart).
-   * - Si necesitas JSON, pasa { contentTypeJson: true }.
-   */
   private getAuthHeaders(options?: { contentTypeJson?: boolean }): HttpHeaders {
     const token = this.getToken();
 
@@ -95,33 +77,18 @@ export class EventoService {
     return headers;
   }
 
-  // =========================
-  // POST /eventos
-  // =========================
-
-  /**
-   * ✅ Crea evento con multipart/form-data (imagen real).
-   * NO seteamos Content-Type manualmente (el browser define boundary).
-   */
   crearEventoMultipart(formData: FormData): Observable<any> {
     return this.http.post(this.apiUrl, formData, {
       headers: this.getAuthHeaders()
     });
   }
 
-  /**
-   * ✅ Crea evento con JSON (legacy).
-   */
   crearEventoJson(dto: any): Observable<any> {
     return this.http.post(this.apiUrl, dto, {
       headers: this.getAuthHeaders({ contentTypeJson: true })
     });
   }
 
-  /**
-   * ✅ Crea evento (auto-detecta FormData vs JSON).
-   * Se deja por compatibilidad con tu código actual.
-   */
   crearEvento(payload: any): Observable<any> {
     if (payload instanceof FormData) {
       return this.crearEventoMultipart(payload);
@@ -129,18 +96,12 @@ export class EventoService {
     return this.crearEventoJson(payload);
   }
 
-  /**
-   * Guarda un borrador en el backend. Se espera que el endpoint acepte multipart/form-data
-   * y guarde el evento en estado borrador. Si tu backend usa otra ruta, ajusta aquí.
-   */
   guardarBorrador(payload: any): Observable<any> {
     const isFormData = payload instanceof FormData;
     const headers = isFormData
       ? this.getAuthHeaders()
       : this.getAuthHeaders({ contentTypeJson: true });
 
-    // Intentamos la ruta explícita /eventos/borrador primero.
-    // Si el backend no la soporta (404/405), reintentamos con query param ?borrador=true.
     return this.http.post<any>(`${this.apiUrl}/borrador`, payload, { headers }).pipe(
       catchError(err => {
         const status = (err && err.status) || 0;
@@ -152,19 +113,12 @@ export class EventoService {
     );
   }
 
-  // =========================
-  // GETs
-  // =========================
   obtenerEventos(): Observable<any[]> {
     return this.http.get<any[]>(this.apiUrl, {
       headers: this.getAuthHeaders()
     });
   }
 
-  /**
-   * Obtiene eventos que no requieren autenticación. Intenta `/eventos/public` y
-   * si no existe, reintenta `/eventos?public=true`.
-   */
   obtenerEventosPublicos(): Observable<any[]> {
     return this.http.get<any[]>(`${this.apiUrl}/public`, {
       headers: this.getAuthHeaders()
@@ -193,9 +147,6 @@ export class EventoService {
     });
   }
 
-  // =========================
-  // PUT / DELETE (admin)
-  // =========================
   actualizarEvento(id: number, payload: any): Observable<any> {
     const isFormData = payload instanceof FormData;
     const headers = isFormData
