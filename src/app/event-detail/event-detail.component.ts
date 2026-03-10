@@ -91,6 +91,8 @@ export class EventDetailComponent implements OnInit {
   nuevoComentario = '';
   comentariosLoading = false;
   comentariosErrorMsg = '';
+  nuevaImagenComentario: File | null = null;
+  nuevoComentarioPreviewUrl = '';
 
   private getEmptyForm(): EventoVM {
     return {
@@ -557,6 +559,7 @@ export class EventDetailComponent implements OnInit {
     this.nuevoComentario = '';
     this.comentariosLoading = false;
     this.comentariosErrorMsg = '';
+    this.limpiarImagenComentario();
   }
 
   cargarComentarios(): void {
@@ -599,14 +602,15 @@ export class EventDetailComponent implements OnInit {
     }
 
     const texto = this.nuevoComentario.trim();
-    if (!texto) return;
+    if (!texto && !this.nuevaImagenComentario) return;
 
     this.comentariosLoading = true;
     this.comentariosErrorMsg = '';
 
-    this.commentService.crear(Number(this.evento.id), texto).subscribe({
+    this.commentService.crear(Number(this.evento.id), texto, this.nuevaImagenComentario).subscribe({
       next: () => {
         this.nuevoComentario = '';
+        this.limpiarImagenComentario();
         this.comentariosPage = 0;
         this.cargarComentarios();
       },
@@ -669,5 +673,39 @@ export class EventDetailComponent implements OnInit {
     if (this.comentariosPage >= this.comentariosTotalPages - 1) return;
     this.comentariosPage++;
     this.cargarComentarios();
+  }
+
+  onComentarioImagenSeleccionada(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0] ?? null;
+
+    if (!file) {
+      this.limpiarImagenComentario();
+      return;
+    }
+
+    if (!file.type.startsWith('image/')) {
+      this.toast.show('Solo puedes subir imágenes en el comentario', 'error');
+      input.value = '';
+      return;
+    }
+
+    this.nuevaImagenComentario = file;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      this.nuevoComentarioPreviewUrl = String(reader.result || '');
+    };
+    reader.readAsDataURL(file);
+  }
+
+  limpiarImagenComentario(input?: HTMLInputElement): void {
+    this.nuevaImagenComentario = null;
+    this.nuevoComentarioPreviewUrl = '';
+    if (input) input.value = '';
+  }
+
+  comentarioImagenUrl(c: EventoCommentResponse): string {
+    return this.commentService.getFullImageUrl(c.imagenUrl);
   }
 }

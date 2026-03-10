@@ -8,6 +8,7 @@ export interface EventoCommentResponse {
   usuarioId: number;
   nombreUsuario: string;
   contenido: string;
+  imagenUrl?: string | null;
   createdAt: string;
 }
 
@@ -33,11 +34,24 @@ export class EventoCommentService {
     );
   }
 
-  crear(eventoId: number, contenido: string): Observable<EventoCommentResponse> {
+  crear(eventoId: number, contenido: string, imagen?: File | null): Observable<EventoCommentResponse> {
+    const formData = new FormData();
+    formData.append('contenido', contenido);
+
+    if (imagen) {
+      formData.append('imagen', imagen, imagen.name);
+    }
+
     return this.http.post<EventoCommentResponse>(
       `${this.baseUrl}/api/eventos/${eventoId}/comentarios`,
-      { contenido }
+      formData
     );
+  }
+
+  getFullImageUrl(path?: string | null): string {
+    if (!path) return '';
+    if (/^https?:\/\//i.test(path)) return path;
+    return path.startsWith('/') ? `${this.baseUrl}${path}` : `${this.baseUrl}/${path}`;
   }
 
   eliminar(commentId: number): Observable<void> {

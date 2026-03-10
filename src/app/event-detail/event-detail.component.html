@@ -50,9 +50,6 @@
 
         <div class="main-content">
 
-          <!-- =========================
-               VISTA NORMAL
-          ========================== -->
           @if (!editMode) {
             <h1>{{ evento.titulo }}</h1>
             <p class="subtitle">{{ fechaHoraLabel }}</p>
@@ -70,7 +67,6 @@
               }
             </div>
 
-            <!-- ✅ BOTÓN INSCRIBIRME (solo cuando NO estoy editando) -->
             <div class="join-wrapper">
               <button
                 class="btn-join"
@@ -106,12 +102,8 @@
             }
 
           } @else {
-            <!-- =========================
-                 MODO EDICIÓN
-            ========================== -->
             <div class="edit-panel">
 
-              <!-- INFO BÁSICA -->
               <div class="edit-section">
                 <h3 class="edit-title">Información básica</h3>
 
@@ -134,7 +126,6 @@
                 </datalist>
               </div>
 
-              <!-- FECHA Y LUGAR -->
               <div class="edit-section">
                 <h3 class="edit-title">Fecha y lugar</h3>
 
@@ -181,7 +172,6 @@
                 }
               </div>
 
-              <!-- DETALLES -->
               <div class="edit-section">
                 <h3 class="edit-title">Detalles</h3>
 
@@ -212,7 +202,6 @@
                 <input class="edit-input" type="url" [(ngModel)]="form.sitioWeb" />
               </div>
 
-              <!-- CONFIGURACIÓN -->
               <div class="edit-section">
                 <h3 class="edit-title">Configuración</h3>
 
@@ -351,11 +340,7 @@
 
     </div>
 
-    <!-- =========================
-         ✅ Opción 1: Comentarios abajo (a lo ancho)
-    ========================= -->
     <section class="comments-section">
-
       <div class="comments-card">
 
         <div class="comments-head">
@@ -383,12 +368,47 @@
               placeholder="Escribe un comentario..."
             ></textarea>
 
+            <div class="comment-upload-row">
+              <label class="btn-comment btn-comment-secondary" for="comment-image-input">
+                Agregar imagen
+              </label>
+
+              <input
+                id="comment-image-input"
+                #commentImageInput
+                type="file"
+                accept="image/*"
+                class="comment-file-input"
+                (change)="onComentarioImagenSeleccionada($event)"
+              >
+
+              @if (nuevaImagenComentario) {
+                <button
+                  class="btn-comment btn-comment-secondary"
+                  type="button"
+                  (click)="limpiarImagenComentario(commentImageInput)"
+                >
+                  Quitar imagen
+                </button>
+              }
+            </div>
+
+            @if (nuevoComentarioPreviewUrl) {
+              <div class="comment-image-preview-wrap">
+                <img
+                  [src]="nuevoComentarioPreviewUrl"
+                  alt="Vista previa de la imagen del comentario"
+                  class="comment-image comment-image--preview"
+                >
+              </div>
+            }
+
             <div class="comments-actions">
               <button
                 class="btn-comment"
                 type="button"
                 (click)="publicarComentario()"
-                [disabled]="comentariosLoading || !nuevoComentario.trim()"
+                [disabled]="comentariosLoading || (!nuevoComentario.trim() && !nuevaImagenComentario)"
               >
                 Publicar
               </button>
@@ -419,7 +439,20 @@
                 <div class="comment-date">{{ c.createdAt | date:'medium' }}</div>
               </div>
 
-              <div class="comment-body">{{ c.contenido }}</div>
+              @if (c.contenido) {
+                <div class="comment-body">{{ c.contenido }}</div>
+              }
+
+              @if (c.imagenUrl) {
+                <div class="comment-image-wrap">
+                  <img
+                    [src]="comentarioImagenUrl(c)"
+                    alt="Imagen del comentario"
+                    class="comment-image"
+                    loading="lazy"
+                  >
+                </div>
+              }
 
               @if (puedeBorrar(c)) {
                 <div class="comment-buttons">
