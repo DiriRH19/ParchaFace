@@ -3,6 +3,12 @@ import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { AuthService, UserData } from '../services/auth.service';
+import { forkJoin } from 'rxjs';
+import {
+  ProfileDataService,
+  ProfileActivityItem,
+  ProfileEventItem
+} from '../services/profile-data.service';
 
 type SocialLink = { platform: string; handle: string };
 
@@ -17,6 +23,19 @@ export class ProfileComponent implements OnInit {
 
   activeTab = 'profile';
   userData: UserData | null = null;
+
+  createdEvents: ProfileEventItem[] = [];
+  joinedEvents: ProfileEventItem[] = [];
+  activityItems: ProfileActivityItem[] = [];
+
+  loadingEvents = false;
+  loadingActivity = false;
+
+  eventsError = '';
+  activityError = '';
+
+  private eventsLoaded = false;
+  private activityLoaded = false;
 
   tabs = [
     { id: 'profile', label: 'Perfil' },
@@ -49,7 +68,10 @@ export class ProfileComponent implements OnInit {
     redesSociales: []
   };
 
-  constructor(private authService: AuthService) {}
+  constructor(
+    private authService: AuthService,
+    private profileDataService: ProfileDataService
+  ) {}
 
   ngOnInit(): void {
     // 1) datos básicos desde el token
@@ -83,6 +105,14 @@ export class ProfileComponent implements OnInit {
 
   setActiveTab(tabId: string) {
     this.activeTab = tabId;
+
+    if (tabId === 'events') {
+      this.loadEventsTab();
+    }
+
+    if (tabId === 'activity') {
+      this.loadActivityTab();
+    }
   }
 
   // -----------------------------
@@ -334,5 +364,79 @@ export class ProfileComponent implements OnInit {
       return correo.split('@')[0];
     }
     return '';
+  }
+
+  private loadEventsTab(): void {
+    if (this.eventsLoaded || this.loadingEvents) return;
+
+    this.loadingEvents = true;
+    this.eventsError = '';
+
+    forkJoin({
+      created: this.profileDataService.getMisEventosCreados(),
+      joined: this.profileDataService.getMisEventosInscritos()
+    }).subscribe({
+      next: ({ created, joined }) => {
+        this.createdEvents = created ?? [];
+        this.joinedEvents = joined ?? [];
+        this.eventsLoaded = true;
+        this.loadingEvents = false;
+      },
+      error: (err) => {
+        console.error('Error cargando pestaña de eventos:', err);
+        this.eventsError = 'No se pudieron cargar tus eventos.';
+        this.loadingEvents = false;
+      }
+    });
+  }
+
+  private loadActivityTab(): void {
+    if (this.activityLoaded || this.loadingActivity) return;
+
+    this.loadingActivity = true;
+    this.activityError = '';
+
+    this.profileDataService.getMiActividad().subscribe({
+      next: (items) => {
+        this.activityItems = items ?? [];
+        this.activityLoaded = true;
+        this.loadingActivity = false;
+      },
+      error: (err) => {
+        console.error('Error cargando actividad:', err);
+        this.activityError = 'No se pudo cargar tu actividad.';
+        this.loadingActivity = false;
+      }
+    });
+  }
+
+  formatDate(value?: string | null): string {
+    if (!value) return 'Sin fecha';
+
+    const date = new Date(value);
+    if (isNaN(date.getTime())) return 'Sin fecha';
+
+    return new Intl.DateTimeFormat('es-CO', {
+      dateStyle: 'medium',
+      timeStyle: 'short'
+    }).format(date);
+  }
+
+  getActivityBadgeClass(tipo: string): string {
+    switch (tipo) {
+      case 'EVENTO_CREADO':
+        return 'badge-created';
+      case 'INSCRIPCION_EVENTO':
+        return 'badge-joined';
+      case 'POST_COMUNIDAD':
+        return 'badge-post';
+      case 'COMENTARIO_COMUNIDAD':
+      case 'COMENTARIO_EVENTO':
+        return 'badge-comment';
+      case 'NOTIFICACION':
+        return 'badge-notification';
+      default:
+        return 'badge-default';
+    }
   }
 }

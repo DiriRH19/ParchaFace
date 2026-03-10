@@ -335,16 +335,13 @@ export class EventDetailComponent implements OnInit {
   private loadIsRegistered(): void {
     if (!this.evento?.id) return;
     if (!this.isLoggedIn) return;
-    if (!this.user?.id) return;
 
     this.inscripcionService.getMisInscripciones().subscribe({
       next: (list) => {
         const eventoId = Number(this.evento?.id);
-        const userId = Number(this.user?.id);
 
         this.isRegistered = Array.isArray(list) && list.some(i =>
-          Number(i?.evento?.idEvento) === eventoId &&
-          Number(i?.usuario?.idUsuario) === userId
+          Number(i?.idEvento) === eventoId
         );
       },
       error: () => {

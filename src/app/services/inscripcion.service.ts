@@ -13,6 +13,6 @@ export class InscripcionService {
   }
 
   getMisInscripciones(): Observable<any[]> {
-    return this.http.get<any[]>(`${this.baseUrl}/inscripciones`);
+    return this.http.get<any[]>(`${this.baseUrl}/perfil/mis-eventos-inscritos`);
   }
 }
