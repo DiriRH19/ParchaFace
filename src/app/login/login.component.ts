@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink, Router } from '@angular/router';
+import { RouterLink, Router, ActivatedRoute } from '@angular/router';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { AuthService } from '../services/auth.service';
 
@@ -20,7 +20,8 @@ export class LoginComponent {
   constructor(
     private fb: FormBuilder,
     private authService: AuthService,
-    private router: Router
+    private router: Router,
+    private route: ActivatedRoute
   ) {
     this.loginForm = this.fb.group({
       correo: ['', [Validators.required, Validators.email]],
@@ -52,7 +53,8 @@ export class LoginComponent {
       next: (token) => {
         console.log('Login exitoso, token recibido:', token);
         this.isLoading = false;
-        this.router.navigate(['/']);
+        const redirectTo = this.route.snapshot.queryParamMap.get('redirectTo') || '/';
+        this.router.navigateByUrl(redirectTo);
       },
       error: (error) => {
         this.isLoading = false;

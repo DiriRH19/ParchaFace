@@ -327,7 +327,12 @@ export class AuthService {
   }
 
   getIsLoggedIn(): boolean {
-    return this.isLoggedIn.value;
+    if (this.isLoggedIn.value) {
+      return true;
+    }
+
+    const token = this.getToken();
+    return !!token && this.isTokenValid(token);
   }
 
   getToken(): string | null {

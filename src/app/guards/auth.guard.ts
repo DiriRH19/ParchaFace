@@ -1,17 +1,25 @@
-import { Injectable } from '@angular/core';
-import { Router, CanActivateFn } from '@angular/router';
+import { inject, PLATFORM_ID } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
+import { Router, CanActivateFn, UrlTree } from '@angular/router';
 import { AuthService } from '../services/auth.service';
-import { inject } from '@angular/core';
 
-export const authGuard: CanActivateFn = (route, state) => {
+export const authGuard: CanActivateFn = (_route, state): boolean | UrlTree => {
   const authService = inject(AuthService);
   const router = inject(Router);
+  const platformId = inject(PLATFORM_ID);
 
-  if (authService.getIsLoggedIn()) {
+  if (!isPlatformBrowser(platformId)) {
     return true;
-  } else {
-    router.navigate(['/login']);
-    return false;
   }
-};
 
+  const token = authService.getToken();
+  const isLogged = authService.getIsLoggedIn();
+
+  if (isLogged || !!token) {
+    return true;
+  }
+
+  return router.createUrlTree(['/login'], {
+    queryParams: { redirectTo: state.url }
+  });
+};
