@@ -2,7 +2,7 @@ import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { EventCardComponent, Event } from '../event-card/event-card.component';
 import { NavbarComponent } from '../shared/navbar/navbar.component';
-import { EventoService } from '../services/evento';
+import { EventoMapa, EventoService } from '../services/evento';
 import { WeatherService } from '../services/weather.service';
 import { FormsModule } from '@angular/forms';
 
@@ -26,16 +26,11 @@ export class ExploreComponent implements OnInit {
     private weatherService: WeatherService
   ) {}
 
-  // ✅ FILTROS
   searchText = '';
   categoriaFiltro = '';
-
-  // ✅ NUEVO: rango de precio por select
-  priceRange = ''; // '' = Todos, 'free', '100000-200000', etc.
-
+  priceRange = '';
   sortBy: 'fecha' | 'precio' | 'popularidad' | 'rating' = 'fecha';
 
-  // ✅ CIUDAD
   ciudadFiltro = '';
   ciudadesSugeridas = signal<{ nombre: string; departamento: string }[]>([]);
 
@@ -62,14 +57,15 @@ export class ExploreComponent implements OnInit {
 
   private loadEvents(): void {
     this.isLoading = true;
+    this.authRequired = false;
 
-    this.eventoService.obtenerEventos().subscribe({
-      next: (list: any[]) => {
-        const mapped = (list || []).map(e => this.mapToCardEvent(e));
+    this.eventoService.obtenerEventosMapa().subscribe({
+      next: (list: EventoMapa[]) => {
+        const mapped = (list || []).map((e: EventoMapa) => this.mapToCardEvent(e));
         this.events = this.insertNewlyCreatedFirst(mapped);
         this.isLoading = false;
       },
-      error: (err) => {
+      error: (err: any) => {
         if (err && err.status === 401) {
           this.authRequired = true;
           this.isLoading = false;
@@ -80,7 +76,7 @@ export class ExploreComponent implements OnInit {
           }
 
           try {
-            const seed = (this.eventoService.getSeedEvents() || []).map(e => e as Event);
+            const seed = (this.eventoService.getSeedEvents() || []).map((e: any) => e as Event);
             this.events = this.insertNewlyCreatedFirst(seed);
           } catch (_) {
             this.events = [];
@@ -90,6 +86,7 @@ export class ExploreComponent implements OnInit {
         }
 
         console.error('Error cargando eventos:', err && err.message ? err.message : err);
+        this.events = [];
         this.isLoading = false;
       }
     });
@@ -143,7 +140,7 @@ export class ExploreComponent implements OnInit {
         ? 'Gratis'
         : (e?.precio != null
           ? (typeof e.precio === 'number' ? `$${e.precio}` : String(e.precio))
-          : (e?.price ?? ''));
+          : (e?.price ?? 'Gratis'));
 
     const rawImg =
       e?.imagenPortadaUrl ||
@@ -190,7 +187,6 @@ export class ExploreComponent implements OnInit {
     });
   }
 
-  // ✅ PRECIO COP
   private parsePriceCOP(price: string): number {
     const p = (price || '').toLowerCase().trim();
     if (!p) return 0;
@@ -251,7 +247,6 @@ export class ExploreComponent implements OnInit {
       list = list.filter(ev => (ev.ciudad || '').toLowerCase().includes(qCity));
     }
 
-    // ✅ NUEVO: rango de precio
     const r = (this.priceRange || '').trim();
     if (r) {
       list = list.filter(ev => this.inPriceRange(this.parsePriceCOP(ev.price), r));
