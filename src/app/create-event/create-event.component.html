@@ -5,8 +5,8 @@
     </a>
     <div class="logo">ParchaFace</div>
     <div class="header-actions">
-      <button class="btn-draft" type="button" (click)="saveDraft()">Guardar Borrador</button>
-      <button class="btn-preview" type="button" (click)="togglePreview()">Vista Previa</button>
+      <button type="button" class="btn-draft">Guardar Borrador</button>
+      <button type="button" class="btn-preview">Vista Previa</button>
     </div>
   </div>
 
@@ -16,268 +16,24 @@
   </div>
 
   <div class="progress-bar">
-    @for (step of steps; track step.id) {
-      <div
-        class="step"
-        [class.completed]="isStepComplete(step.id)"
-        [class.active]="currentStep === step.id"
-      >
-        <div class="step-circle">
-          @if (isStepComplete(step.id)) {
-            <span>✓</span>
-          }
-          @if (!isStepComplete(step.id)) {
-            <span>{{ step.icon }}</span>
-          }
-        </div>
-        <div class="step-info">
-          <div class="step-title">Paso {{ step.id }} {{ step.title }}</div>
-          <div class="step-description">{{ step.description }}</div>
-        </div>
+    <div
+      class="step"
+      *ngFor="let step of steps"
+      [class.completed]="isStepComplete(step.id)"
+      [class.active]="currentStep === step.id"
+    >
+      <div class="step-circle">
+        <span *ngIf="isStepComplete(step.id)">✓</span>
+        <span *ngIf="!isStepComplete(step.id)">{{ step.id }}</span>
       </div>
-    }
-  </div>
-
-  @if (showSuccessModal) {
-    <div class="success-backdrop">
-      <div class="success-modal" role="dialog" aria-modal="true" aria-label="Evento creado exitosamente">
-        <div class="success-header">
-          <div class="success-title">
-            <span class="success-badge">✓</span>
-            <div>
-              <h3>Evento creado</h3>
-              <p>Revisa la vista previa antes de continuar.</p>
-            </div>
-          </div>
-          <button type="button" class="success-close" (click)="onModifyFromModal()" aria-label="Cerrar">✕</button>
-        </div>
-
-        <div class="success-body">
-          <div class="success-preview-grid">
-            <!-- Portada -->
-            <div class="success-cover">
-              @if (localCoverPreviewUrl || createdEvent?.imagenPortadaUrl) {
-                <img
-                  [src]="localCoverPreviewUrl || createdEvent?.imagenPortadaUrl"
-                  alt="Portada del evento"
-                />
-              }
-              @if (!(localCoverPreviewUrl || createdEvent?.imagenPortadaUrl)) {
-                <div class="success-cover-placeholder">
-                  🖼️ Sin portada
-                </div>
-              }
-              <span class="success-category">
-                {{ createdEvent?.categoria || eventData.categoria || 'Sin categoría' }}
-              </span>
-            </div>
-
-            <!-- Info -->
-            <div class="success-info">
-              <h2 class="success-event-title">{{ createdEvent?.titulo || eventData.titulo || 'Sin título' }}</h2>
-              <p class="success-event-desc">{{ createdEvent?.descripcion || eventData.descripcion }}</p>
-
-              <div class="success-meta">
-                <div class="success-meta-item">
-                  <span>📅</span>
-                  <div>
-                    <div class="meta-label">Fecha</div>
-                    <div class="meta-value">{{ createdEvent?.fecha || eventData.fecha || '—' }}</div>
-                  </div>
-                </div>
-
-                <div class="success-meta-item">
-                  <span>🕐</span>
-                  <div>
-                    <div class="meta-label">Hora</div>
-                    <div class="meta-value">
-                      {{ createdEvent?.horaInicio || eventData.horaInicio || '—' }}
-                      <span *ngIf="createdEvent?.horaFin || eventData.horaFin">
-                        - {{ createdEvent?.horaFin || eventData.horaFin }}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="success-meta-item">
-                  <span>{{ (createdEvent?.eventoEnLinea ?? eventData.eventoEnLinea) ? '🌐' : '📍' }}</span>
-                  <div>
-                    <div class="meta-label">
-                      {{ (createdEvent?.eventoEnLinea ?? eventData.eventoEnLinea) ? 'En línea' : 'Presencial' }}
-                    </div>
-                    <div class="meta-value">
-                      @if ((createdEvent?.eventoEnLinea ?? eventData.eventoEnLinea)) {
-                        {{ createdEvent?.urlVirtual || eventData.urlVirtual || '—' }}
-                      } @else {
-                        {{ createdEvent?.ubicacion || eventData.ubicacion || '—' }}
-                        @if (createdEvent?.ciudad || eventData.ciudad) {
-                          <span> • {{ createdEvent?.ciudad || eventData.ciudad }}</span>
-                        }
-                      }
-                    </div>
-                  </div>
-                </div>
-
-                <div class="success-meta-item">
-                  <span>🎟️</span>
-                  <div>
-                    <div class="meta-label">Cupo / Precio</div>
-                    <div class="meta-value">
-                      {{ createdEvent?.cupo || eventData.cupo || '—' }} cupos •
-                      {{
-                        (createdEvent?.eventoGratuito ?? eventData.eventoGratuito)
-                          ? 'Gratis'
-                          : ('$' + (createdEvent?.precio || eventData.precio || '—'))
-                      }}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div class="success-actions">
-                <button type="button" class="btn-secondary" (click)="onModifyFromModal()">
-                  Modificar
-                </button>
-                <button type="button" class="btn-primary" (click)="onAcceptFromModal()">
-                  Aceptar y ver en eventos
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+      <div class="step-info">
+        <div class="step-title">Paso {{ step.id }} - {{ step.title }}</div>
+        <div class="step-description">{{ step.description }}</div>
       </div>
-
-      <!-- click afuera cierra como "Modificar" -->
-      <button class="success-backdrop-click" type="button" (click)="onModifyFromModal()" aria-label="Cerrar"></button>
-    </div>
-  }
-
-  <!-- Preview modal -->
-  <div class="preview-modal" *ngIf="showPreview">
-    <div class="preview-backdrop" (click)="togglePreview()"></div>
-
-    <div class="preview-panel" role="dialog" aria-modal="true" aria-label="Vista previa del evento">
-      <div class="preview-event-header">
-        <button class="preview-back-link" type="button" (click)="togglePreview()">
-          <span>←</span> Volver
-        </button>
-        <div class="preview-logo">ParchaFace</div>
-        <div class="preview-header-actions"></div>
-      </div>
-
-      <div class="preview-event-content">
-        <!-- Main content -->
-        <div class="preview-event-main">
-          <!-- Image -->
-          <div class="preview-event-image">
-            <img *ngIf="eventData.imagenPortadaUrl" [src]="eventData.imagenPortadaUrl" alt="Portada del evento" class="preview-img">
-            <div *ngIf="!eventData.imagenPortadaUrl" class="preview-img-placeholder">
-              🖼️ Imagen del evento
-            </div>
-            <span class="preview-category-tag">{{ eventData.categoria || 'Sin categoría' }}</span>
-          </div>
-
-          <!-- Title & Description -->
-          <h1 class="preview-event-title">{{ eventData.titulo || 'Sin título' }}</h1>
-          <p class="preview-event-description">{{ eventData.descripcion }}</p>
-
-          <!-- Tags -->
-          <div class="preview-event-tags" *ngIf="eventData.tags?.length > 0">
-            <span class="preview-tag" *ngFor="let tag of eventData.tags">#{{ tag }}</span>
-          </div>
-        </div>
-
-        <!-- Sidebar -->
-        <aside class="preview-event-sidebar" aria-labelledby="sidebar-title">
-          <div class="preview-sidebar-card">
-            <!-- Price & Capacity -->
-            <div class="preview-price-section">
-              <div class="preview-price">
-                {{ eventData.eventoGratuito ? 'Gratis' : ('$' + eventData.precio) }}
-              </div>
-              <div class="preview-attendees-info">{{ eventData.cupo || '—' }} cupo</div>
-            </div>
-
-            <!-- Event Info -->
-            <div class="preview-event-info" id="sidebar-title" role="region" aria-label="Información del evento">
-              <!-- Date -->
-              <div class="preview-info-item">
-                <span class="preview-info-icon">📅</span>
-                <div>
-                  <div class="info-label">Fecha</div>
-                  <div class="info-value">{{ eventData.fecha || '—' }}</div>
-                </div>
-              </div>
-
-              <!-- Time -->
-              <div class="preview-info-item">
-                <span class="preview-info-icon">🕐</span>
-                <div>
-                  <div class="info-label">Hora</div>
-                  <div class="info-value">
-                    {{ eventData.horaInicio || '—' }}
-                    <span *ngIf="eventData.horaFin"> - {{ eventData.horaFin }}</span>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Location/Online -->
-              <div class="preview-info-item">
-                <span class="preview-info-icon">
-                  {{ eventData.eventoEnLinea ? '🌐' : '📍' }}
-                </span>
-                <div>
-                  <div class="info-label">{{ eventData.eventoEnLinea ? 'En línea' : 'Presencial' }}</div>
-                  <div class="preview-address info-value">
-                    {{ eventData.eventoEnLinea ? (eventData.urlVirtual || '—') : (eventData.nombreLugar || eventData.ubicacion || '—') }}
-                    <span *ngIf="!eventData.eventoEnLinea && eventData.ciudad"> • {{ eventData.ciudad }}</span>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Online URL -->
-              <div class="preview-info-item" *ngIf="eventData.eventoEnLinea && eventData.urlVirtual">
-                <span class="preview-info-icon">🔗</span>
-                <div class="info-value">{{ eventData.urlVirtual }}</div>
-              </div>
-            </div>
-
-            <!-- Create Button -->
-            <button class="preview-btn-register" type="button" (click)="createEvent()">
-              ✓ Crear Evento
-            </button>
-
-            <p class="preview-terms-text">Tu evento será visible en la plataforma.</p>
-
-            <!-- Organizer Info -->
-            <div class="preview-organizer-section">
-              <h3 class="preview-organizer-title">Información de Contacto</h3>
-              <div class="preview-organizer-contact">
-                <div class="preview-contact-item" *ngIf="eventData.emailContacto">
-                  <span>📧</span> {{ eventData.emailContacto }}
-                </div>
-                <div class="preview-contact-item" *ngIf="eventData.telefonoContacto">
-                  <span>📱</span> {{ eventData.telefonoContacto }}
-                </div>
-                <div class="preview-contact-item" *ngIf="eventData.sitioWeb">
-                  <span>🌐</span> <a [href]="eventData.sitioWeb" target="_blank" rel="noopener noreferrer">{{ eventData.sitioWeb }}</a>
-                </div>
-              </div>
-            </div>
-          </div>
-        </aside>
-      </div>
-
-      <!-- Close button -->
-      <button class="preview-close-btn" type="button" aria-label="Cerrar vista previa" (click)="togglePreview()">✕</button>
     </div>
   </div>
 
   <div class="form-card">
-
-    <!-- =========================
-         PASO 1 — INFO BÁSICA
-    ========================== -->
     <div *ngIf="currentStep === 1" class="step-content">
       <div class="step-header">
         <span class="step-icon"></span>
@@ -295,45 +51,33 @@
           placeholder="Ej: Festival de Música Electrónica 2026"
           class="form-input"
         >
-        <p class="form-hint">Elige un título claro y atractivo.</p>
       </div>
 
       <div class="form-group">
-        <label class="form-label">Descripción *</label>
+        <label class="form-label">Descripción</label>
         <textarea
           [(ngModel)]="eventData.descripcion"
-          placeholder="Describe tu evento, qué pueden esperar los asistentes, qué incluye, etc."
+          placeholder="Describe tu evento, qué incluye y qué pueden esperar los asistentes."
           class="form-textarea"
           rows="6"
         ></textarea>
-        <p class="form-hint">Recomendado hasta 500 caracteres.</p>
       </div>
 
       <div class="form-group">
-        <label class="form-label">Categoría *</label>
-
-        <input
-          type="text"
-          class="form-input"
-          list="categorias"
-          [(ngModel)]="eventData.categoria"
-          placeholder="Ej: TECNO, DEPORTE, MÚSICA..."
-        >
-        <datalist id="categorias">
-          <option value="TECNO"></option>
-          <option value="DEPORTE"></option>
-          <option value="MUSICA"></option>
-          <option value="GASTRONOMIA"></option>
-          <option value="ARTE"></option>
-          <option value="NETWORKING"></option>
-          <option value="FIESTAS"></option>
-        </datalist>
-
-        <p class="form-hint">Puedes escribir una categoría nueva o usar sugerencias.</p>
+        <label class="form-label">Categoría</label>
+        <select [(ngModel)]="eventData.categoria" class="form-select">
+          <option value="">Selecciona una categoría</option>
+          <option value="Música">Música</option>
+          <option value="Gaming">Gaming</option>
+          <option value="Fiestas">Fiestas</option>
+          <option value="Networking">Networking</option>
+          <option value="Deportes">Deportes</option>
+          <option value="Gastronomía">Gastronomía</option>
+        </select>
       </div>
 
       <div class="form-group">
-        <label class="form-label">Etiquetas (opcional)</label>
+        <label class="form-label">Etiquetas</label>
         <div class="tags-input">
           <input
             type="text"
@@ -344,8 +88,8 @@
           >
           <button type="button" class="btn-add-tag" (click)="addTag()">Agregar</button>
         </div>
-        <p class="form-hint">Las etiquetas ayudan a que encuentren tu evento.</p>
-        <div class="tags-list" *ngIf="eventData.tags?.length > 0">
+
+        <div class="tags-list" *ngIf="eventData.tags.length > 0">
           <span class="tag" *ngFor="let tag of eventData.tags">
             {{ tag }}
             <button type="button" class="tag-remove" (click)="removeTag(tag)">×</button>
@@ -354,35 +98,16 @@
       </div>
 
       <div class="form-group">
-        <label class="form-label">Imagen de Portada (JPG)</label>
-
+        <label class="form-label">Imagen de Portada</label>
         <input
           type="file"
-          accept=".jpg,.jpeg"
+          accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+          class="form-input"
           (change)="onImageSelected($event)"
-          style="display:none"
-          #fileInput
         >
-
-        <div class="upload-area" (click)="fileInput.click()">
-          <div class="upload-icon">🖼️</div>
-
-          <ng-container *ngIf="!eventData.imagenPortadaUrl; else previewImg">
-            <p>Haz clic para subir una imagen JPG</p>
-            <p class="upload-hint">Solo JPG/JPEG - recomendado 1920x1080px</p>
-          </ng-container>
-
-          <ng-template #previewImg>
-            <p class="upload-hint">Imagen seleccionada</p>
-            <img class="cover-preview" [src]="eventData.imagenPortadaUrl" alt="Portada">
-          </ng-template>
-        </div>
       </div>
     </div>
 
-    <!-- =========================
-         PASO 2 — FECHA Y LUGAR
-    ========================== -->
     <div *ngIf="currentStep === 2" class="step-content">
       <div class="step-header">
         <span class="step-icon"></span>
@@ -402,6 +127,7 @@
           <label class="form-label">Hora de Inicio *</label>
           <input type="time" [(ngModel)]="eventData.horaInicio" class="form-input">
         </div>
+
         <div class="form-group">
           <label class="form-label">Hora de Finalización *</label>
           <input type="time" [(ngModel)]="eventData.horaFin" class="form-input">
@@ -410,47 +136,59 @@
 
       <div class="form-group">
         <label class="checkbox-label">
-          <input type="checkbox" [(ngModel)]="eventData.eventoEnLinea" class="checkbox">
+          <input
+            type="checkbox"
+            [(ngModel)]="eventData.eventoEnLinea"
+            (change)="onEventModeChange()"
+            class="checkbox"
+          >
           <span>Evento en línea</span>
         </label>
       </div>
 
-      <!-- ONLINE -->
       <div *ngIf="eventData.eventoEnLinea" class="form-group">
-        <label class="form-label">Sitio web o medio virtual *</label>
+        <label class="form-label">URL del evento *</label>
         <input
-          type="text"
+          type="url"
           [(ngModel)]="eventData.urlVirtual"
           placeholder="Ej: https://meet.google.com/..."
           class="form-input"
         >
       </div>
 
-      <!-- PRESENCIAL -->
-      <div *ngIf="!eventData.eventoEnLinea">
+      <ng-container *ngIf="!eventData.eventoEnLinea">
         <div class="form-group">
-          <label class="form-label">Ubicación / Lugar *</label>
+          <label class="form-label">Ubicación *</label>
           <input
             type="text"
             [(ngModel)]="eventData.ubicacion"
-            placeholder="Ej: Bogotá - Parque de los Novios"
+            placeholder="Ej: Evento presencial / punto de encuentro"
             class="form-input"
           >
-          <p class="form-hint">Si no es en línea, ubicación es obligatoria.</p>
         </div>
 
         <div class="form-group">
-          <label class="form-label">Nombre del Lugar (opcional)</label>
-          <input type="text" [(ngModel)]="eventData.nombreLugar" class="form-input">
+          <label class="form-label">Nombre del Lugar</label>
+          <input
+            type="text"
+            [(ngModel)]="eventData.nombreLugar"
+            placeholder="Ej: Centro de Convenciones, Parque, Teatro, Bar"
+            class="form-input"
+          >
         </div>
 
         <div class="form-group">
-          <label class="form-label">Dirección Completa (opcional)</label>
-          <input type="text" [(ngModel)]="eventData.direccionCompleta" class="form-input">
+          <label class="form-label">Dirección Completa</label>
+          <input
+            type="text"
+            [(ngModel)]="eventData.direccionCompleta"
+            placeholder="Calle, número, barrio, referencia"
+            class="form-input"
+          >
         </div>
 
         <div class="form-group">
-          <label class="form-label">Ciudad </label>
+          <label class="form-label">Ciudad</label>
           <input
             type="text"
             [(ngModel)]="eventData.ciudad"
@@ -458,12 +196,20 @@
             class="form-input"
           >
         </div>
-      </div>
+
+        <div class="form-group">
+          <label class="form-label">Selecciona la ubicación exacta en el mapa *</label>
+          <div id="create-event-map" class="mini-map"></div>
+          <p class="form-hint">
+            Haz clic en el mapa para fijar la ubicación exacta del evento.
+          </p>
+          <p class="form-hint" *ngIf="eventData.latitud !== null && eventData.longitud !== null">
+            Coordenadas seleccionadas: {{ eventData.latitud }}, {{ eventData.longitud }}
+          </p>
+        </div>
+      </ng-container>
     </div>
 
-    <!-- =========================
-         PASO 3 — DETALLES
-    ========================== -->
     <div *ngIf="currentStep === 3" class="step-content">
       <div class="step-header">
         <span class="step-icon"></span>
@@ -491,19 +237,20 @@
         </label>
       </div>
 
-      <div *ngIf="!eventData.eventoGratuito" class="form-group">
-        <label class="form-label">Precio de Inscripción *</label>
+      <div class="form-group" *ngIf="!eventData.eventoGratuito">
+        <label class="form-label">Precio *</label>
         <input
           type="number"
           [(ngModel)]="eventData.precio"
           placeholder="Ej: 25000"
           class="form-input"
-          min="1">
+          min="1"
+          step="0.01"
+        >
       </div>
 
       <div class="form-group">
         <h3 class="section-title">Información de Contacto</h3>
-
         <input
           type="email"
           [(ngModel)]="eventData.emailContacto"
@@ -511,7 +258,6 @@
           class="form-input"
           style="margin-bottom: 12px;"
         >
-
         <input
           type="tel"
           [(ngModel)]="eventData.telefonoContacto"
@@ -519,7 +265,6 @@
           class="form-input"
           style="margin-bottom: 12px;"
         >
-
         <input
           type="url"
           [(ngModel)]="eventData.sitioWeb"
@@ -529,9 +274,6 @@
       </div>
     </div>
 
-    <!-- =========================
-         PASO 4 — CONFIGURACIÓN
-    ========================== -->
     <div *ngIf="currentStep === 4" class="step-content">
       <div class="step-header">
         <span class="step-icon"></span>
@@ -542,30 +284,26 @@
       </div>
 
       <div class="form-group">
-        <h3 class="section-title">Privacidad</h3>
-
+        <h3 class="section-title">Configuración de Privacidad</h3>
         <label class="toggle-label">
           <input type="checkbox" [(ngModel)]="eventData.eventoPublico" class="toggle">
           <span class="toggle-slider"></span>
           <span class="toggle-text">Evento público</span>
         </label>
+      </div>
 
-        <p class="form-hint">Si no es público, debes indicar detallePrivado.</p>
-
-        <div *ngIf="!eventData.eventoPublico" style="margin-top: 12px;">
-          <label class="form-label">Detalle (empresa / índole) *</label>
-          <input
-            type="text"
-            [(ngModel)]="eventData.detallePrivado"
-            placeholder="Ej: Evento privado - Empresa X"
-            class="form-input"
-          >
-        </div>
+      <div class="form-group" *ngIf="!eventData.eventoPublico">
+        <label class="form-label">Detalle del evento privado *</label>
+        <input
+          type="text"
+          [(ngModel)]="eventData.detallePrivado"
+          placeholder="Ej: Solo para empresa, invitados o comunidad específica"
+          class="form-input"
+        >
       </div>
 
       <div class="form-group">
-        <h3 class="section-title">Interacción</h3>
-
+        <h3 class="section-title">Configuración de Interacción</h3>
         <label class="toggle-label">
           <input type="checkbox" [(ngModel)]="eventData.permitirComentarios" class="toggle">
           <span class="toggle-slider"></span>
@@ -582,7 +320,6 @@
       <div class="event-summary">
         <h3 class="section-title">Resumen del Evento</h3>
         <div class="summary-grid">
-
           <div class="summary-item">
             <span class="summary-label">Título:</span>
             <span class="summary-value">{{ eventData.titulo || 'Sin título' }}</span>
@@ -599,62 +336,70 @@
           </div>
 
           <div class="summary-item">
+            <span class="summary-label">Hora:</span>
+            <span class="summary-value">
+              {{ eventData.horaInicio || '--' }} - {{ eventData.horaFin || '--' }}
+            </span>
+          </div>
+
+          <div class="summary-item">
             <span class="summary-label">Modalidad:</span>
-            <span class="summary-value">{{ eventData.eventoEnLinea ? 'En línea' : 'Presencial' }}</span>
+            <span class="summary-value">
+              {{ eventData.eventoEnLinea ? 'En línea' : 'Presencial' }}
+            </span>
           </div>
 
           <div class="summary-item" *ngIf="!eventData.eventoEnLinea">
             <span class="summary-label">Ubicación:</span>
-            <span class="summary-value">{{ eventData.ubicacion || 'Sin ubicación' }}</span>
-          </div>
-
-          <div class="summary-item" *ngIf="eventData.eventoEnLinea">
-            <span class="summary-label">URL:</span>
-            <span class="summary-value">{{ eventData.urlVirtual || 'Sin URL' }}</span>
+            <span class="summary-value">{{ eventData.nombreLugar || eventData.ubicacion || 'Sin ubicación' }}</span>
           </div>
 
           <div class="summary-item">
             <span class="summary-label">Precio:</span>
-            <span class="summary-value">{{ eventData.eventoGratuito ? 'Gratis' : (eventData.precio || 'Sin precio') }}</span>
+            <span class="summary-value">
+              {{ eventData.eventoGratuito ? 'Gratis' : eventData.precio || 'Con precio' }}
+            </span>
           </div>
 
           <div class="summary-item">
-            <span class="summary-label">Cupo:</span>
+            <span class="summary-label">Capacidad:</span>
             <span class="summary-value">{{ eventData.cupo || 'Sin cupo' }}</span>
           </div>
 
+          <div class="summary-item">
+            <span class="summary-label">Visibilidad:</span>
+            <span class="summary-value">{{ eventData.eventoPublico ? 'Público' : 'Privado' }}</span>
+          </div>
         </div>
       </div>
     </div>
 
     <div class="form-actions">
-      <button type="button" class="btn-previous" (click)="previousStep()" *ngIf="currentStep > 1">
+      <button
+        type="button"
+        class="btn-previous"
+        (click)="previousStep()"
+        *ngIf="currentStep > 1"
+      >
         Anterior
       </button>
 
-      <button type="button" class="btn-next" (click)="nextStep()" *ngIf="currentStep < totalSteps">
+      <button
+        type="button"
+        class="btn-next"
+        (click)="nextStep()"
+        *ngIf="currentStep < totalSteps"
+      >
         Siguiente
       </button>
 
-      <button type="button" class="btn-create" (click)="createEvent()" *ngIf="currentStep === totalSteps">
+      <button
+        type="button"
+        class="btn-create"
+        (click)="createEvent()"
+        *ngIf="currentStep === totalSteps"
+      >
         Crear Evento
-      </button>
-    </div>
-  </div>
-
-  <div *ngIf="showErrorModal" class="error-overlay">
-    <div class="error-modal">
-      <div class="error-icon">❌</div>
-      <h3>Error en el formulario</h3>
-
-      <ul>
-        <li *ngFor="let error of errorMessages">
-          {{ error }}
-        </li>
-      </ul>
-
-      <button (click)="closeErrorModal()" class="error-btn">
-        Aceptar
       </button>
     </div>
   </div>
