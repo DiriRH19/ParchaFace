@@ -18,8 +18,8 @@ export interface EventoMapa {
   providedIn: 'root'
 })
 export class EventoService {
-
-  private apiUrl = '/api/eventos';
+  private apiUrl = 'http://localhost:8080/eventos';
+  private uploadsBaseUrl = 'http://localhost:8080';
 
   constructor(private http: HttpClient) {}
 
@@ -41,5 +41,31 @@ export class EventoService {
 
   obtenerEventosMapa(): Observable<EventoMapa[]> {
     return this.http.get<EventoMapa[]>(`${this.apiUrl}/public`);
+  }
+
+  actualizarEvento(id: number, payload: any): Observable<any> {
+    return this.http.put(`${this.apiUrl}/${id}`, payload);
+  }
+
+  eliminarEvento(id: number): Observable<any> {
+    return this.http.delete(`${this.apiUrl}/${id}`);
+  }
+
+  getFullImageUrl(path: string): string {
+    if (!path) return '';
+
+    if (path.startsWith('http://') || path.startsWith('https://')) {
+      return path;
+    }
+
+    if (path.startsWith('/')) {
+      return `${this.uploadsBaseUrl}${path}`;
+    }
+
+    return `${this.uploadsBaseUrl}/${path}`;
+  }
+
+  getSeedEvents(): any[] {
+    return [];
   }
 }

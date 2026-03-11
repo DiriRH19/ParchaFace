@@ -1,8 +1,13 @@
-import { AfterViewInit, Component, OnDestroy } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import {
+  AfterViewInit,
+  Component,
+  OnDestroy,
+  PLATFORM_ID,
+  inject
+} from '@angular/core';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import * as L from 'leaflet';
 import { EventoService } from '../services/evento';
 
 @Component({
@@ -13,18 +18,25 @@ import { EventoService } from '../services/evento';
   styleUrls: ['./create-event.component.css']
 })
 export class CreateEventComponent implements AfterViewInit, OnDestroy {
+  private platformId = inject(PLATFORM_ID);
 
   currentStep = 1;
   totalSteps = 4;
 
-  private map: L.Map | null = null;
-  private locationMarker: L.Marker | null = null;
+  private leaflet?: typeof import('leaflet');
+  private map?: import('leaflet').Map;
+  private locationMarker?: import('leaflet').Marker;
 
   private readonly defaultLat = 4.60971;
   private readonly defaultLng = -74.08175;
   private readonly defaultZoom = 12;
 
   selectedImageFile: File | null = null;
+  imagePreviewUrl: string | null = null;
+
+  isSubmitting = false;
+  submitError = '';
+  submitSuccess = '';
 
   eventData = {
     titulo: '',
@@ -70,12 +82,15 @@ export class CreateEventComponent implements AfterViewInit, OnDestroy {
 
   ngAfterViewInit(): void {
     if (this.currentStep === 2 && !this.eventData.eventoEnLinea) {
-      setTimeout(() => this.initLocationMap(), 0);
+      setTimeout(() => {
+        this.initLocationMap();
+      }, 0);
     }
   }
 
   ngOnDestroy(): void {
     this.destroyMap();
+    this.revokePreviewUrl();
   }
 
   addTag(): void {
@@ -90,6 +105,9 @@ export class CreateEventComponent implements AfterViewInit, OnDestroy {
   }
 
   nextStep(): void {
+    this.submitError = '';
+    this.submitSuccess = '';
+
     if (!this.validateCurrentStep()) {
       return;
     }
@@ -98,12 +116,17 @@ export class CreateEventComponent implements AfterViewInit, OnDestroy {
       this.currentStep++;
 
       if (this.currentStep === 2 && !this.eventData.eventoEnLinea) {
-        setTimeout(() => this.initLocationMap(), 0);
+        setTimeout(() => {
+          this.initLocationMap();
+        }, 0);
       }
     }
   }
 
   previousStep(): void {
+    this.submitError = '';
+    this.submitSuccess = '';
+
     if (this.currentStep > 1) {
       this.currentStep--;
     }
@@ -114,6 +137,9 @@ export class CreateEventComponent implements AfterViewInit, OnDestroy {
   }
 
   onEventModeChange(): void {
+    this.submitError = '';
+    this.submitSuccess = '';
+
     if (this.eventData.eventoEnLinea) {
       this.eventData.ubicacion = '';
       this.eventData.nombreLugar = '';
@@ -123,17 +149,42 @@ export class CreateEventComponent implements AfterViewInit, OnDestroy {
       this.eventData.longitud = null;
       this.destroyMap();
     } else {
-      setTimeout(() => this.initLocationMap(), 0);
+      setTimeout(() => {
+        this.initLocationMap();
+      }, 0);
     }
   }
 
   onImageSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0] ?? null;
+
     this.selectedImageFile = file;
+    this.submitError = '';
+    this.submitSuccess = '';
+
+    this.revokePreviewUrl();
+
+    if (!file) {
+      this.imagePreviewUrl = null;
+      return;
+    }
+
+    if (!this.isValidImageFile(file)) {
+      this.selectedImageFile = null;
+      this.imagePreviewUrl = null;
+      this.submitError = 'La imagen debe ser JPG, JPEG, PNG o WEBP.';
+      input.value = '';
+      return;
+    }
+
+    this.imagePreviewUrl = URL.createObjectURL(file);
   }
 
   createEvent(): void {
+    this.submitError = '';
+    this.submitSuccess = '';
+
     if (!this.validateAllSteps()) {
       return;
     }
@@ -169,9 +220,29 @@ export class CreateEventComponent implements AfterViewInit, OnDestroy {
       formData.append('imagenPortada', this.selectedImageFile);
     }
 
+    this.isSubmitting = true;
+
+    console.log('Enviando evento...', this.eventData);
+
     this.eventoService.crearEvento(formData).subscribe({
-      next: () => this.router.navigate(['/eventos']),
-      error: err => console.error('Error creando evento', err)
+      next: () => {
+        this.isSubmitting = false;
+        this.submitSuccess = 'Evento creado correctamente.';
+        this.router.navigate(['/explore']);
+      },
+      error: (err: any) => {
+        this.isSubmitting = false;
+        console.error('Error creando evento', err);
+
+        const backendMessage =
+          err?.error?.message ||
+          err?.error?.error ||
+          err?.error?.detalle ||
+          err?.message;
+
+        this.submitError = backendMessage || 'No se pudo crear el evento. Revisa los campos e inténtalo de nuevo.';
+        alert(this.submitError);
+      }
     });
   }
 
@@ -266,11 +337,15 @@ export class CreateEventComponent implements AfterViewInit, OnDestroy {
     return true;
   }
 
-  private initLocationMap(): void {
+  private async initLocationMap(): Promise<void> {
+    if (!isPlatformBrowser(this.platformId)) return;
+
     const mapContainer = document.getElementById('create-event-map');
     if (!mapContainer) {
       return;
     }
+
+    const L = await this.getLeaflet();
 
     this.destroyMap();
 
@@ -288,12 +363,12 @@ export class CreateEventComponent implements AfterViewInit, OnDestroy {
       attribution: '&copy; OpenStreetMap contributors'
     }).addTo(this.map);
 
-    this.map.on('click', (e: L.LeafletMouseEvent) => {
+    this.map.on('click', (e: import('leaflet').LeafletMouseEvent) => {
       this.setSelectedLocation(e.latlng.lat, e.latlng.lng);
     });
 
     if (this.eventData.latitud != null && this.eventData.longitud != null) {
-      this.setSelectedLocation(this.eventData.latitud, this.eventData.longitud);
+      await this.setSelectedLocation(this.eventData.latitud, this.eventData.longitud);
     } else {
       this.tryCenterOnUserLocation();
     }
@@ -301,7 +376,11 @@ export class CreateEventComponent implements AfterViewInit, OnDestroy {
     setTimeout(() => this.map?.invalidateSize(), 200);
   }
 
-  private setSelectedLocation(lat: number, lng: number): void {
+  private async setSelectedLocation(lat: number, lng: number): Promise<void> {
+    if (!this.map) return;
+
+    const L = await this.getLeaflet();
+
     this.eventData.latitud = Number(lat.toFixed(6));
     this.eventData.longitud = Number(lng.toFixed(6));
 
@@ -312,7 +391,7 @@ export class CreateEventComponent implements AfterViewInit, OnDestroy {
     if (this.locationMarker) {
       this.locationMarker.setLatLng([lat, lng]);
     } else {
-      this.locationMarker = L.marker([lat, lng], { draggable: true }).addTo(this.map!);
+      this.locationMarker = L.marker([lat, lng], { draggable: true }).addTo(this.map);
 
       this.locationMarker.on('dragend', () => {
         const pos = this.locationMarker!.getLatLng();
@@ -321,10 +400,11 @@ export class CreateEventComponent implements AfterViewInit, OnDestroy {
       });
     }
 
-    this.map?.setView([lat, lng], 15);
+    this.map.setView([lat, lng], 15);
   }
 
   private tryCenterOnUserLocation(): void {
+    if (!isPlatformBrowser(this.platformId)) return;
     if (!navigator.geolocation || !this.map) {
       return;
     }
@@ -345,12 +425,29 @@ export class CreateEventComponent implements AfterViewInit, OnDestroy {
     );
   }
 
+  private async getLeaflet(): Promise<typeof import('leaflet')> {
+    if (this.leaflet) return this.leaflet;
+
+    const L = await import('leaflet');
+
+    delete (L.Icon.Default.prototype as any)._getIconUrl;
+
+    L.Icon.Default.mergeOptions({
+      iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+      iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+      shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png'
+    });
+
+    this.leaflet = L;
+    return L;
+  }
+
   private destroyMap(): void {
     if (this.map) {
       this.map.remove();
-      this.map = null;
+      this.map = undefined;
     }
-    this.locationMarker = null;
+    this.locationMarker = undefined;
   }
 
   private appendIfNotEmpty(fd: FormData, key: string, value: any): void {
@@ -365,5 +462,17 @@ export class CreateEventComponent implements AfterViewInit, OnDestroy {
     }
 
     return value.length === 5 ? `${value}:00` : value;
+  }
+
+  private isValidImageFile(file: File): boolean {
+    const allowed = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    return allowed.includes((file.type || '').toLowerCase());
+  }
+
+  private revokePreviewUrl(): void {
+    if (this.imagePreviewUrl) {
+      URL.revokeObjectURL(this.imagePreviewUrl);
+      this.imagePreviewUrl = null;
+    }
   }
 }

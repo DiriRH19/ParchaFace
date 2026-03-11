@@ -34,6 +34,14 @@
   </div>
 
   <div class="form-card">
+    <div *ngIf="submitError" class="map-status error" style="margin-bottom: 20px;">
+      {{ submitError }}
+    </div>
+
+    <div *ngIf="submitSuccess" class="map-status notice" style="margin-bottom: 20px;">
+      {{ submitSuccess }}
+    </div>
+
     <div *ngIf="currentStep === 1" class="step-content">
       <div class="step-header">
         <span class="step-icon"></span>
@@ -99,11 +107,35 @@
 
       <div class="form-group">
         <label class="form-label">Imagen de Portada</label>
+
         <input
           type="file"
           accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
           class="form-input"
           (change)="onImageSelected($event)"
+        >
+
+        <p class="form-hint">
+          Formatos permitidos: JPG, JPEG, PNG y WEBP.
+        </p>
+
+        <p class="form-hint">
+          Recomendación visual: imagen horizontal, idealmente 1920 × 1080 px.
+        </p>
+
+        <p
+          class="form-hint"
+          *ngIf="selectedImageFile && !submitError"
+          style="color: #1f7a3d; font-weight: 600;"
+        >
+          Imagen seleccionada correctamente: {{ selectedImageFile.name }}
+        </p>
+
+        <img
+          *ngIf="imagePreviewUrl"
+          [src]="imagePreviewUrl"
+          alt="Vista previa de la imagen de portada"
+          class="cover-preview"
         >
       </div>
     </div>

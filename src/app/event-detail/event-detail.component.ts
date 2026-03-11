@@ -11,7 +11,7 @@ import { AuthService, UserData } from '../services/auth.service';
 import { InscripcionService } from '../services/inscripcion.service';
 import { FormsModule } from '@angular/forms';
 
-// ✅ NUEVO: comentarios
+
 import {
   EventoCommentService,
   EventoCommentResponse,
