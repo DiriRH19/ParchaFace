@@ -154,6 +154,7 @@ export class EventDetailComponent implements OnInit {
 
     this.auth.userData$.subscribe(u => {
       this.user = u;
+      this.canManage = this.isOrganizer
     });
 
     const idParam = this.route.snapshot.paramMap.get('id');
@@ -182,7 +183,6 @@ export class EventDetailComponent implements OnInit {
 
     this.isRegistered = false;
 
-    // ✅ reset comentarios al cambiar evento
     this.resetComentarios();
 
     this.eventoService.obtenerEventoPorId(id).subscribe({
@@ -195,7 +195,6 @@ export class EventDetailComponent implements OnInit {
         this.loadClimaForEvento();
         this.loadIsRegistered();
 
-        // ✅ NUEVO: cargar comentarios si el evento permite
         if (this.evento?.permitirComentarios !== false && this.evento?.id) {
           this.cargarComentarios();
         }
@@ -203,18 +202,29 @@ export class EventDetailComponent implements OnInit {
       error: (err) => {
         this.isLoading = false;
 
+        console.error('Error cargando evento por id:', err);
+        console.error('status:', err?.status);
+        console.error('body:', err?.error);
+
         if (err?.status === 404) {
           this.errorMsg = 'No se encontró el evento.';
           return;
         }
 
         if (err?.status === 401) {
-          this.errorMsg = 'Necesitas iniciar sesión para ver este evento.';
+          this.errorMsg = 'Tu sesión no es válida o expiró. Cierra sesión y vuelve a entrar.';
           return;
         }
 
-        this.errorMsg = 'No se pudo cargar el evento. Revisa la consola.';
-        console.error('Error cargando evento por id:', err);
+        if (err?.status === 403) {
+          this.errorMsg = 'No tienes permisos para ver este evento.';
+          return;
+        }
+
+        this.errorMsg =
+          err?.error?.message ||
+          err?.error?.error ||
+          'No se pudo cargar el evento. Revisa la consola.';
       }
     });
   }
@@ -276,8 +286,8 @@ export class EventDetailComponent implements OnInit {
     const idEvento = e?.idEvento ?? e?.id ?? e?.id_evento ?? undefined;
 
     const idOrganizador =
-      e?.organizador?.idUsuario ??
       e?.idOrganizador ??
+      e?.organizador?.idUsuario ??
       e?.organizadorId ??
       null;
 
