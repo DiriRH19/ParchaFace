@@ -11,7 +11,6 @@ import { AuthService, UserData } from '../services/auth.service';
 import { InscripcionService } from '../services/inscripcion.service';
 import { FormsModule } from '@angular/forms';
 
-
 import {
   EventoCommentService,
   EventoCommentResponse,
@@ -71,18 +70,15 @@ export class EventDetailComponent implements OnInit {
   climaLoading = false;
   climaError = false;
 
-  // ✅ estado de auth + inscripción
   isLoggedIn = false;
   user: UserData | null = null;
   isRegistered = false;
   isJoining = false;
 
-  // ✅ edición/eliminación evento
   canManage = false;
   editMode = false;
   form: EventoVM = this.getEmptyForm();
 
-  // ✅ NUEVO: comentarios
   comentarios: EventoCommentResponse[] = [];
   comentariosPage = 0;
   comentariosSize = 10;
@@ -138,11 +134,8 @@ export class EventDetailComponent implements OnInit {
     private eventoService: EventoService,
     private weatherService: WeatherService,
     private toast: ToastService,
-
     private auth: AuthService,
     private inscripcionService: InscripcionService,
-
-    // ✅ NUEVO
     private commentService: EventoCommentService
   ) {}
 
@@ -154,7 +147,7 @@ export class EventDetailComponent implements OnInit {
 
     this.auth.userData$.subscribe(u => {
       this.user = u;
-      this.canManage = this.isOrganizer
+      this.canManage = this.isOrganizer;
     });
 
     const idParam = this.route.snapshot.paramMap.get('id');
@@ -328,9 +321,6 @@ export class EventDetailComponent implements OnInit {
     };
   }
 
-  // =========================
-  // helpers
-  // =========================
   get isOrganizer(): boolean {
     const myId = this.user?.id;
     const orgId = this.evento?.idOrganizador;
@@ -449,9 +439,6 @@ export class EventDetailComponent implements OnInit {
     );
   }
 
-  // =========================
-  // Editar / Eliminar evento (tu código)
-  // =========================
   empezarEditar(): void {
     if (!this.evento) return;
 
@@ -459,14 +446,15 @@ export class EventDetailComponent implements OnInit {
     this.form = { ...this.evento };
 
     if (this.form.fecha) {
-      this.form.fecha = String(this.form.fecha).slice(0, 10) as any;
+      this.form.fecha = String(this.form.fecha).slice(0, 10);
     }
 
     if (this.form.horaInicio) {
-      this.form.horaInicio = String(this.form.horaInicio).slice(0, 5) as any;
+      this.form.horaInicio = String(this.form.horaInicio).slice(0, 5);
     }
+
     if (this.form.horaFin) {
-      this.form.horaFin = String(this.form.horaFin).slice(0, 5) as any;
+      this.form.horaFin = String(this.form.horaFin).slice(0, 5);
     }
   }
 
@@ -475,35 +463,100 @@ export class EventDetailComponent implements OnInit {
     this.form = this.evento ? { ...this.getEmptyForm(), ...this.evento } : this.getEmptyForm();
   }
 
+  private buildUpdatePayload(): Record<string, unknown> | null {
+    const fecha = this.normalizeDateTime(this.form.fecha, this.form.horaInicio);
+    const horaInicio = this.normalizeTimeOrNull(this.form.horaInicio);
+    const horaFin = this.normalizeTimeOrNull(this.form.horaFin);
+
+    if (!this.form.titulo?.trim()) {
+      this.toast.show('El título es obligatorio.', 'error');
+      return null;
+    }
+
+    if (!fecha || !horaInicio || !horaFin) {
+      this.toast.show('Fecha, hora inicio y hora fin son obligatorias.', 'error');
+      return null;
+    }
+
+    if (this.form.cupo == null || Number(this.form.cupo) <= 0) {
+      this.toast.show('El cupo debe ser mayor a 0.', 'error');
+      return null;
+    }
+
+    if (this.form.eventoEnLinea && !this.form.urlVirtual?.trim()) {
+      this.toast.show('La URL virtual es obligatoria para eventos en línea.', 'error');
+      return null;
+    }
+
+    if (!this.form.eventoEnLinea && !this.form.ubicacion?.trim()) {
+      this.toast.show('La ubicación es obligatoria para eventos presenciales.', 'error');
+      return null;
+    }
+
+    if (!this.form.eventoGratuito && (this.form.precio == null || Number(this.form.precio) <= 0)) {
+      this.toast.show('El precio debe ser mayor a 0.', 'error');
+      return null;
+    }
+
+    if (!this.form.eventoPublico && !this.form.detallePrivado?.trim()) {
+      this.toast.show('El detalle privado es obligatorio para eventos privados.', 'error');
+      return null;
+    }
+
+    const payload: Record<string, unknown> = {
+      titulo: this.trimOrNull(this.form.titulo),
+      descripcion: this.trimOrNull(this.form.descripcion),
+      categoria: this.trimOrNull(this.form.categoria),
+      fecha,
+      horaInicio,
+      horaFin,
+      eventoEnLinea: Boolean(this.form.eventoEnLinea),
+      urlVirtual: this.form.eventoEnLinea ? this.trimOrNull(this.form.urlVirtual) : null,
+      ubicacion: this.form.eventoEnLinea ? null : this.trimOrNull(this.form.ubicacion),
+      nombreLugar: this.form.eventoEnLinea ? null : this.trimOrNull(this.form.nombreLugar),
+      direccionCompleta: this.form.eventoEnLinea ? null : this.trimOrNull(this.form.direccionCompleta),
+      ciudad: this.form.eventoEnLinea ? null : this.trimOrNull(this.form.ciudad),
+      cupo: Number(this.form.cupo),
+      eventoGratuito: Boolean(this.form.eventoGratuito),
+      precio: this.form.eventoGratuito ? null : Number(this.form.precio),
+      emailContacto: this.trimOrNull(this.form.emailContacto),
+      telefonoContacto: this.trimOrNull(this.form.telefonoContacto),
+      sitioWeb: this.trimOrNull(this.form.sitioWeb),
+      eventoPublico: Boolean(this.form.eventoPublico),
+      detallePrivado: this.form.eventoPublico ? null : this.trimOrNull(this.form.detallePrivado),
+      permitirComentarios: Boolean(this.form.permitirComentarios),
+      recordatoriosAutomaticos: Boolean(this.form.recordatoriosAutomaticos)
+    };
+
+    return payload;
+  }
+
+  private trimOrNull(value: unknown): string | null {
+    const normalized = String(value ?? '').trim();
+    return normalized ? normalized : null;
+  }
+
+  private normalizeTimeOrNull(value: unknown): string | null {
+    const normalized = String(value ?? '').trim();
+    return normalized ? normalized.slice(0, 5) : null;
+  }
+
+  private normalizeDateTime(dateValue: unknown, timeValue: unknown): string | null {
+    const date = String(dateValue ?? '').trim();
+    const time = this.normalizeTimeOrNull(timeValue);
+
+    if (!date || !time) {
+      return null;
+    }
+
+    return `${date}T${time}:00`;
+  }
+
   guardarCambios(): void {
     if (!this.evento?.id) return;
 
-    const payload: any = { ...this.form };
-
-    const fRaw = (payload.fecha || '').toString().trim();
-    const hiRaw = (payload.horaInicio || '').toString().trim();
-    const hfRaw = (payload.horaFin || '').toString().trim();
-
-    const hi = hiRaw ? hiRaw.slice(0, 5) : '';
-    const hf = hfRaw ? hfRaw.slice(0, 5) : '';
-
-    if (fRaw && fRaw.length === 10) {
-      payload.fecha = `${fRaw}T${hi || '00:00'}:00`;
-    }
-
-    payload.horaInicio = hi;
-    payload.horaFin = hf;
-
-    if (payload.eventoGratuito) payload.precio = null;
-
-    if (payload.eventoEnLinea) {
-      payload.ubicacion = payload.ubicacion ?? '';
-      payload.nombreLugar = payload.nombreLugar ?? '';
-      payload.direccionCompleta = payload.direccionCompleta ?? '';
-      payload.ciudad = payload.ciudad ?? '';
-    } else {
-      payload.urlVirtual = '';
-    }
+    const payload = this.buildUpdatePayload();
+    if (!payload) return;
 
     this.eventoService.actualizarEvento(Number(this.evento.id), payload).subscribe({
       next: (actualizado: any) => {
@@ -555,9 +608,6 @@ export class EventDetailComponent implements OnInit {
     });
   }
 
-  // =========================
-  // ✅ NUEVO: Comentarios (frontend)
-  // =========================
   private resetComentarios(): void {
     this.comentarios = [];
     this.comentariosPage = 0;
@@ -628,7 +678,6 @@ export class EventDetailComponent implements OnInit {
     });
   }
 
-  // ✅ solo dueño (por UI)
   puedeBorrar(c: EventoCommentResponse): boolean {
     const myId = this.user?.id;
     return this.isLoggedIn && myId != null && Number(myId) === Number(c.usuarioId);

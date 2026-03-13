@@ -18,8 +18,8 @@ export interface EventoMapa {
   providedIn: 'root'
 })
 export class EventoService {
-  private apiUrl = 'http://localhost:8080/eventos';
-  private uploadsBaseUrl = 'http://localhost:8080';
+  private apiUrl = '/eventos';
+  private uploadsBaseUrl = '';
 
   constructor(private http: HttpClient) {}
 
