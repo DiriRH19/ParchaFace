@@ -48,13 +48,13 @@ export interface CreateCommentDto {
   content: string;
 }
 
-export interface RatingSummary{
+export interface RatingSummary {
   average: number | null;
-  count: number; 
-  myRating: number | null; 
+  count: number;
+  myRating: number | null;
 }
 
-export interface LikeSummary{
+export interface LikeSummary {
   likes: number;
   likedByMe: boolean | null;
 }
@@ -76,7 +76,12 @@ export class CommunityService {
       eventId: p.eventId != null ? String(p.eventId) : null,
       eventTitle: null,
       eventImage: null,
-      authorName: p.authorCorreo ?? p.authorName ?? 'Usuario',
+      authorName:
+        p.authorName ??
+        p.authorCorreo ??
+        p.usuario?.nombre ??
+        p.usuarioNombre ??
+        'Usuario',
       createdAt: p.createdAt ?? new Date().toISOString(),
       commentsCount: Number(p.commentsCount ?? 0),
     };
@@ -87,7 +92,12 @@ export class CommunityService {
       id: String(c.idComment ?? c.id ?? ''),
       postId: String(c.postId ?? ''),
       content: c.content ?? '',
-      authorName: c.authorCorreo ?? c.authorName ?? 'Usuario',
+      authorName:
+        c.authorName ??
+        c.authorCorreo ??
+        c.usuario?.nombre ??
+        c.usuarioNombre ??
+        'Usuario',
       createdAt: c.createdAt ?? new Date().toISOString(),
       rating: c.rating ?? undefined,
     };
@@ -100,6 +110,7 @@ export class CommunityService {
 
   getPosts(query: PostsQuery): Observable<CommunityPost[]> {
     let params = new HttpParams();
+
     if (query.q) params = params.set('q', query.q);
     if (query.city) params = params.set('city', query.city);
     if (query.category) params = params.set('category', query.category);
@@ -116,6 +127,7 @@ export class CommunityService {
 
   getPostById(id: string): Observable<CommunityPost | null> {
     const postId = this.toNumberId(id);
+
     return this.http.get<any>(`${this.communityBase}/posts/${postId}`).pipe(
       map(p => this.mapPostFromApi(p)),
       catchError((err) => {
@@ -127,6 +139,7 @@ export class CommunityService {
 
   getComments(postIdStr: string): Observable<CommunityComment[]> {
     const postId = this.toNumberId(postIdStr);
+
     return this.http.get<any[]>(`${this.communityBase}/posts/${postId}/comments`).pipe(
       map(list => (list ?? []).map(c => this.mapCommentFromApi(c))),
       catchError((err) => {
@@ -152,6 +165,7 @@ export class CommunityService {
 
   addComment(postIdStr: string, dto: CreateCommentDto): Observable<CommunityComment> {
     const postId = this.toNumberId(postIdStr);
+
     return this.http.post<any>(`${this.communityBase}/posts/${postId}/comments`, dto).pipe(
       map(c => this.mapCommentFromApi(c))
     );
@@ -159,6 +173,7 @@ export class CommunityService {
 
   rateComment(commentIdStr: string, rating: number): Observable<CommunityComment | null> {
     const commentId = this.toNumberId(commentIdStr);
+
     return this.http.post<any>(`${this.communityBase}/comments/${commentId}/rating`, { rating }).pipe(
       map(c => this.mapCommentFromApi(c)),
       catchError((err) => {
@@ -168,23 +183,25 @@ export class CommunityService {
     );
   }
 
-  getPostRatingSummary(postId: string) {
-    const id = Number(postId);
-    return this.http.get<RatingSummary>(`/community/posts/${id}/rating`);
+  getPostRatingSummary(postId: string): Observable<RatingSummary> {
+    const id = this.toNumberId(postId);
+    return this.http.get<RatingSummary>(`${this.communityBase}/posts/${id}/rating`);
   }
 
-  ratePost(postId: string, rating: number) {
-    const id = Number(postId);
-    return this.http.post(`/community/posts/${id}/rating`, { rating });
+  ratePost(postId: string): Observable<any>;
+  ratePost(postId: string, rating: number): Observable<any>;
+  ratePost(postId: string, rating?: number): Observable<any> {
+    const id = this.toNumberId(postId);
+    return this.http.post(`${this.communityBase}/posts/${id}/rating`, { rating });
   }
 
-  getCommentLikes(commentId: string) {
-    const id = Number(commentId);
-    return this.http.get<LikeSummary>(`/community/comments/${id}/likes`);
+  getCommentLikes(commentId: string): Observable<LikeSummary> {
+    const id = this.toNumberId(commentId);
+    return this.http.get<LikeSummary>(`${this.communityBase}/comments/${id}/likes`);
   }
 
-  toggleCommentLike(commentId: string) {
-    const id = Number(commentId);
-    return this.http.post<LikeSummary>(`/community/comments/${id}/like`, {});
+  toggleCommentLike(commentId: string): Observable<LikeSummary> {
+    const id = this.toNumberId(commentId);
+    return this.http.post<LikeSummary>(`${this.communityBase}/comments/${id}/like`, {});
   }
 }

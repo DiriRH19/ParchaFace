@@ -1,5 +1,5 @@
-import { CommonModule } from '@angular/common';
-import { Component, computed, signal } from '@angular/core';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
+import { Component, Inject, PLATFORM_ID, computed, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 
@@ -36,20 +36,32 @@ interface ActivityItem {
 })
 export class CommunityComponent {
   private readonly WELCOME_KEY = 'pf_community_welcome_seen_v1';
+  private readonly isBrowser: boolean;
 
   showWelcome = signal(false);
 
-  constructor(private router: Router) {
-    const seen = localStorage.getItem(this.WELCOME_KEY) === '1';
-    this.showWelcome.set(!seen);
+  constructor(
+    private router: Router,
+    @Inject(PLATFORM_ID) platformId: Object
+  ) {
+    this.isBrowser = isPlatformBrowser(platformId);
+
+    if (this.isBrowser) {
+      const seen = localStorage.getItem(this.WELCOME_KEY) === '1';
+      this.showWelcome.set(!seen);
+    } else {
+      this.showWelcome.set(false);
+    }
   }
 
   dismissWelcome() {
     this.showWelcome.set(false);
-    localStorage.setItem(this.WELCOME_KEY, '1');
+
+    if (this.isBrowser) {
+      localStorage.setItem(this.WELCOME_KEY, '1');
+    }
   }
 
-  // UI state
   search = signal<string>('');
   activeTab = signal<TabKey>('organizers');
 
@@ -126,6 +138,7 @@ export class CommunityComponent {
   filteredOrganizers = computed(() => {
     const q = this.search().trim().toLowerCase();
     if (!q) return this.organizers();
+
     return this.organizers().filter((o) =>
       [o.name, o.city, o.bio, o.tags.join(' ')].join(' ').toLowerCase().includes(q)
     );
@@ -156,13 +169,11 @@ export class CommunityComponent {
     );
   }
 
-  // ✅ Navegación
   goToDiscussions() {
     this.router.navigateByUrl('/community/discussions');
   }
 
   openDiscussion(id: string) {
-    // Lleva al detail. Si luego cambias IDs reales, queda igual.
     this.router.navigate(['/community/discussions', id]);
   }
 
@@ -171,7 +182,6 @@ export class CommunityComponent {
   }
 
   viewRules() {
-    // Si luego creas una ruta /community/rules, la conectamos aquí.
     console.log('View rules');
   }
 }
