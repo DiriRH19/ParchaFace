@@ -142,12 +142,24 @@ export class EventDetailComponent implements OnInit {
   ngOnInit(): void {
     this.auth.isLoggedIn$.subscribe(v => {
       this.isLoggedIn = v;
-      if (!v) this.isRegistered = false;
+
+      if (!v) {
+        this.isRegistered = false;
+        return;
+      }
+
+      if (this.evento?.id) {
+        this.loadIsRegistered();
+      }
     });
 
     this.auth.userData$.subscribe(u => {
       this.user = u;
       this.canManage = this.isOrganizer;
+
+      if (this.isLoggedIn && this.evento?.id) {
+        this.loadIsRegistered();
+      }
     });
 
     const idParam = this.route.snapshot.paramMap.get('id');
@@ -174,7 +186,7 @@ export class EventDetailComponent implements OnInit {
     this.climaLoading = false;
     this.climaError = false;
 
-    this.isRegistered = false;
+    this.isRegistered = this.inscripcionService.estaInscritoLocal(id);
 
     this.resetComentarios();
 
@@ -335,19 +347,35 @@ export class EventDetailComponent implements OnInit {
   }
 
   private loadIsRegistered(): void {
-    if (!this.evento?.id) return;
-    if (!this.isLoggedIn) return;
+    const eventoId = Number(this.evento?.id);
 
+    if (!eventoId) {
+      this.isRegistered = false;
+      return;
+    }
+
+    if (!this.isLoggedIn) {
+      this.isRegistered = false;
+      return;
+    }
+
+    // primero usa el estado local para que el botón no "parpadee"
+    this.isRegistered = this.inscripcionService.estaInscritoLocal(eventoId);
+
+    // luego sincroniza con backend
     this.inscripcionService.getMisInscripciones().subscribe({
       next: (list) => {
-        const eventoId = Number(this.evento?.id);
+        this.inscripcionService.sincronizarInscripciones(list);
 
-        this.isRegistered = Array.isArray(list) && list.some(i =>
-          Number(i?.idEvento) === eventoId
-        );
+        this.isRegistered =
+          Array.isArray(list) &&
+          list.some(i => Number(i?.idEvento ?? i?.evento?.idEvento ?? i?.id) === eventoId);
       },
-      error: () => {
-        this.isRegistered = false;
+      error: (err) => {
+        console.error('Error cargando inscripciones:', err);
+
+        // si falla backend, conserva el estado local
+        this.isRegistered = this.inscripcionService.estaInscritoLocal(eventoId);
       }
     });
   }
@@ -381,6 +409,7 @@ export class EventDetailComponent implements OnInit {
 
     this.inscripcionService.inscribirme(Number(this.evento.id)).subscribe({
       next: () => {
+        this.inscripcionService.marcarComoInscrito(Number(this.evento!.id));
         this.isRegistered = true;
 
         Swal.fire({
@@ -405,7 +434,10 @@ export class EventDetailComponent implements OnInit {
           confirmButtonText: 'Ok'
         });
 
-        if (err?.status === 409) this.isRegistered = true;
+        if (err?.status === 409) {
+          this.inscripcionService.marcarComoInscrito(Number(this.evento!.id));
+          this.isRegistered = true;
+        }
       },
       complete: () => {
         this.isJoining = false;
