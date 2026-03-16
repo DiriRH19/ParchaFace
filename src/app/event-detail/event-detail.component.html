@@ -71,11 +71,11 @@
               <button
                 class="btn-join"
                 type="button"
-                (click)="onJoin()"
-                [disabled]="isJoining || !isLoggedIn || isRegistered || isOrganizer"
+                (click)="isRegistered ? onCancelJoin() : onJoin()"
+                [disabled]="isJoining || !isLoggedIn || isOrganizer"
               >
                 @if (isJoining) {
-                  <span>Inscribiendo...</span>
+                  <span>Procesando...</span>
                 }
                 @if (!isJoining && isOrganizer) {
                   <span>Eres el organizador</span>
@@ -84,13 +84,13 @@
                   <span>Inscribirme</span>
                 }
                 @if (!isJoining && isRegistered) {
-                  <span>Inscrito ✅</span>
+                  <span>Cancelar inscripción</span>
                 }
               </button>
 
               @if (!isLoggedIn) {
                 <span class="join-hint">
-                  Inicia sesión para inscribirte.
+                      Inicia sesión para inscribirte.
                 </span>
               }
             </div>

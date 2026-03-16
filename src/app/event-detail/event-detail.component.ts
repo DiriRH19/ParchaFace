@@ -359,26 +359,32 @@ export class EventDetailComponent implements OnInit {
       return;
     }
 
-    // primero usa el estado local para que el botón no "parpadee"
     this.isRegistered = this.inscripcionService.estaInscritoLocal(eventoId);
 
-    // luego sincroniza con backend
     this.inscripcionService.getMisInscripciones().subscribe({
       next: (list) => {
         this.inscripcionService.sincronizarInscripciones(list);
 
         this.isRegistered =
           Array.isArray(list) &&
-          list.some(i => Number(i?.idEvento ?? i?.evento?.idEvento ?? i?.id) === eventoId);
+          list.some(i => {
+            const id = Number(
+              i?.idEvento ??
+              i?.evento?.idEvento ??
+              i?.evento?.id ??
+              i?.eventoId
+            );
+            return !Number.isNaN(id) && id === eventoId;
+          });
       },
       error: (err) => {
         console.error('Error cargando inscripciones:', err);
-
-        // si falla backend, conserva el estado local
         this.isRegistered = this.inscripcionService.estaInscritoLocal(eventoId);
       }
     });
   }
+
+
 
   onJoin(): void {
     if (!this.evento?.id) return;
@@ -796,4 +802,58 @@ export class EventDetailComponent implements OnInit {
   comentarioImagenUrl(c: EventoCommentResponse): string {
     return this.commentService.getFullImageUrl(c.imagenUrl);
   }
+
+  onCancelJoin(): void {
+    if (!this.evento?.id || !this.isLoggedIn || !this.isRegistered) return;
+
+    Swal.fire({
+      title: '¿Cancelar inscripción?',
+      text: 'Ya no aparecerás como inscrito en este evento.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, cancelar',
+      cancelButtonText: 'No'
+    }).then((result) => {
+      if (!result.isConfirmed) return;
+
+      this.inscripcionService.cancelarInscripcion(Number(this.evento!.id)).subscribe({
+        next: () => {
+          this.isRegistered = false;
+
+          this.inscripcionService.getMisInscripciones().subscribe({
+            next: (list) => {
+              this.inscripcionService.sincronizarInscripciones(list);
+              this.loadIsRegistered();
+            },
+            error: () => {
+              this.inscripcionService.desmarcarComoInscrito(Number(this.evento!.id));
+            }
+          });
+
+          Swal.fire({
+            icon: 'success',
+            title: 'Inscripción cancelada',
+            text: 'Ya no estás inscrito en este evento.',
+            timer: 1500,
+            showConfirmButton: false
+          });
+        },
+        error: (err) => {
+          const msg =
+            err?.error?.message ||
+            err?.error?.error ||
+            err?.error ||
+            'No se pudo cancelar la inscripción.';
+
+          Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: msg,
+            confirmButtonText: 'Ok'
+          });
+        }
+      });
+    });
+  }
+
 }

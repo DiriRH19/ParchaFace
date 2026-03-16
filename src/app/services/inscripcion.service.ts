@@ -17,6 +17,14 @@ export class InscripcionService {
       );
   }
 
+  cancelarInscripcion(idEvento: number) {
+    return this.http
+      .delete(`${this.baseUrl}/inscripciones/eventos/${idEvento}/cancelar`)
+      .pipe(
+        tap(() => this.desmarcarComoInscrito(idEvento))
+      );
+  }
+
   getMisInscripciones(): Observable<any[]> {
     return this.http.get<any[]>(`${this.baseUrl}/perfil/mis-eventos-inscritos`);
   }
@@ -36,7 +44,12 @@ export class InscripcionService {
   sincronizarInscripciones(list: any[]): void {
     const ids = Array.isArray(list)
       ? list
-        .map(i => Number(i?.idEvento ?? i?.evento?.idEvento ?? i?.id))
+        .map(i => Number(
+          i?.idEvento ??
+          i?.evento?.idEvento ??
+          i?.evento?.id ??
+          i?.eventoId
+        ))
         .filter(id => !Number.isNaN(id))
       : [];
 
@@ -54,5 +67,22 @@ export class InscripcionService {
     } catch {
       return [];
     }
+  }
+
+  desmarcarComoInscrito(idEvento: number): void {
+    const ids = this.obtenerIdsInscritos().filter(id => id !== idEvento);
+    localStorage.setItem(this.storageKey, JSON.stringify(ids));
+  }
+
+  private extraerIdEvento(item: any): number | null {
+    const value =
+      item?.idEvento ??
+      item?.evento?.idEvento ??
+      item?.evento?.id ??
+      item?.eventoId ??
+      null;
+
+    const id = Number(value);
+    return Number.isNaN(id) ? null : id;
   }
 }

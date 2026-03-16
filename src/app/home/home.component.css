@@ -233,3 +233,7 @@
     height: 55vh;
   }
 }
+
+.custom-event-marker {
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.35));
+}

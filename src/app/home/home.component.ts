@@ -37,6 +37,7 @@
     private leaflet?: typeof import('leaflet');
     private map?: import('leaflet').Map;
     private eventMarkersLayer?: import('leaflet').LayerGroup;
+    private eventMarkerIcon?: import('leaflet').Icon;
 
     private readonly defaultCenter = { lat: 4.711, lng: -74.0721 }; // Bogotá
 
@@ -145,7 +146,10 @@
             continue;
           }
 
-          const marker = L.marker([evento.latitud, evento.longitud]);
+          const eventIcon = this.createEventMarkerIcon(L);
+          const marker = L.marker([evento.latitud, evento.longitud], {
+            icon: eventIcon
+          });
 
           marker.bindPopup(this.buildPopupContent(evento), {
             maxWidth: 280
@@ -271,5 +275,24 @@
         this.map.remove();
         this.map = undefined;
       }
+    }
+
+    private createEventMarkerIcon(L: typeof import('leaflet')): import('leaflet').Icon {
+      if (this.eventMarkerIcon) {
+        return this.eventMarkerIcon;
+      }
+
+      this.eventMarkerIcon = L.icon({
+        iconUrl: 'event-marker.png',
+        iconSize: [48, 48],
+        iconAnchor: [24, 48],
+        popupAnchor: [0, -42],
+        shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+        shadowSize: [41, 41],
+        shadowAnchor: [12, 41],
+        className: 'custom-event-marker'
+      });
+
+      return this.eventMarkerIcon;
     }
   }
