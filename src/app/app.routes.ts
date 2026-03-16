@@ -21,28 +21,31 @@ import { VerifyCodeComponent } from './password-reset/verify-code/verify-code';
 import { NewPasswordComponent } from './password-reset/new-password/new-password';
 
 export const routes: Routes = [
-  // Home / public
+  // Públicas
   { path: '', component: HomeComponent },
   { path: 'explore', component: ExploreComponent },
+  {
+    path: 'usuarios/:id',
+    loadComponent: () =>
+      import('./user-profile/user-profile.component').then(m => m.UserProfileComponent)
+  },
 
-  // ✅ Comunidad pública (sin login)
+  // Comunidad
   { path: 'community', component: CommunityComponent },
   { path: 'community/discussions', component: DiscussionsComponent },
   { path: 'community/discussions/:id', component: DiscussionDetailComponent },
-
-  // ✅ Acciones privadas (requiere login)
   { path: 'community/create-post', component: CreatePostComponent, canActivate: [authGuard] },
 
   // Auth
   { path: 'login', component: LoginComponent },
   { path: 'register', component: RegisterComponent },
 
-  // Private sections
+  // Privadas
   { path: 'preferencias', component: PreferenciasComponent, canActivate: [authGuard] },
   { path: 'profile', component: ProfileComponent, canActivate: [authGuard] },
   { path: 'create-event', component: CreateEventComponent, canActivate: [authGuard] },
 
-  // Event detail (lo dejo público como lo tenías)
+  // Eventos
   { path: 'event/:id', component: EventDetailComponent },
 
   // Password reset
@@ -50,6 +53,6 @@ export const routes: Routes = [
   { path: 'verify-code', component: VerifyCodeComponent },
   { path: 'new-password', component: NewPasswordComponent },
 
-  // Wildcard (SIEMPRE al final)
-  { path: '**', redirectTo: '', pathMatch: 'full' },
+  // Wildcard
+  { path: '**', redirectTo: '', pathMatch: 'full' }
 ];

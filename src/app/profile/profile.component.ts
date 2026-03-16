@@ -2,13 +2,20 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { AuthService, UserData } from '../services/auth.service';
 import { forkJoin } from 'rxjs';
+
+import { AuthService, UserData } from '../services/auth.service';
 import {
   ProfileDataService,
   ProfileActivityItem,
   ProfileEventItem
 } from '../services/profile-data.service';
+import {
+  UsuariosService,
+  PerfilUsuarioDto,
+  UsuarioResumenDto,
+  UsuarioBusquedaDto
+} from '../services/usuarios.service';
 
 type SocialLink = { platform: string; handle: string };
 
@@ -47,13 +54,11 @@ export class ProfileComponent implements OnInit {
   selectedPerfil: File | null = null;
   selectedPortada: File | null = null;
 
-  // ✅ Estado de edición
   isEditing = false;
   isSaving = false;
   showDiscardModal = false;
   saveError = '';
 
-  // ✅ Form de edición (ahora incluye acercaDe y redesSociales)
   editForm: { nombre: string; correo: string; acercaDe: string; redesSociales: SocialLink[] } = {
     nombre: '',
     correo: '',
@@ -68,42 +73,68 @@ export class ProfileComponent implements OnInit {
     redesSociales: []
   };
 
+  perfilPublico: PerfilUsuarioDto | null = null;
+  totalSeguidores = 0;
+  totalSiguiendo = 0;
+
+  showFollowModal = false;
+  followModalTitle = '';
+  followModalUsers: UsuarioResumenDto[] = [];
+  followModalLoading = false;
+  followModalError = '';
+
+  // =========================
+  // Búsqueda de perfiles
+  // =========================
+  searchQuery = '';
+  searchLoading = false;
+  searchError = '';
+  searchResults: UsuarioBusquedaDto[] = [];
+  searchTouched = false;
+
   constructor(
     private authService: AuthService,
-    private profileDataService: ProfileDataService
+    private profileDataService: ProfileDataService,
+    private usuariosService: UsuariosService
   ) {}
 
   ngOnInit(): void {
-    // 1) datos básicos desde el token
     this.userData = this.authService.getUserData();
 
-    // 2) escuchar cambios del AuthService
     this.authService.userData$.subscribe(userData => {
       this.userData = userData;
 
-      // 3) cuando ya haya id, traer datos completos (incluye fotoPerfil/fotoPortada + extras)
       if (this.userData?.id) {
         this.authService.getUsuarioById(this.userData.id).subscribe(u => {
           this.userData = { ...this.userData, ...u };
 
-          // Si NO está en edición, sincroniza el form con datos actuales
-          if (!this.isEditing) this.syncFormFromUser();
+          if (!this.isEditing) {
+            this.syncFormFromUser();
+          }
+
+          this.loadSocialStats();
         });
+      } else {
+        this.syncFormFromUser();
       }
     });
 
-    // En caso de que ya exista id desde el arranque:
     if (this.userData?.id) {
       this.authService.getUsuarioById(this.userData.id).subscribe(u => {
         this.userData = { ...this.userData, ...u };
-        if (!this.isEditing) this.syncFormFromUser();
+
+        if (!this.isEditing) {
+          this.syncFormFromUser();
+        }
+
+        this.loadSocialStats();
       });
     } else {
       this.syncFormFromUser();
     }
   }
 
-  setActiveTab(tabId: string) {
+  setActiveTab(tabId: string): void {
     this.activeTab = tabId;
 
     if (tabId === 'events') {
@@ -115,9 +146,119 @@ export class ProfileComponent implements OnInit {
     }
   }
 
-  // -----------------------------
-  // ✅ Modo edición: Editar / Guardar / Cancelar
-  // -----------------------------
+  loadSocialStats(): void {
+    if (!this.userData?.id) return;
+
+    this.usuariosService.obtenerPerfil(this.userData.id).subscribe({
+      next: (perfil) => {
+        this.perfilPublico = perfil;
+        this.totalSeguidores = perfil.totalSeguidores ?? 0;
+        this.totalSiguiendo = perfil.totalSiguiendo ?? 0;
+      },
+      error: (err) => {
+        console.error('Error cargando estadísticas sociales:', err);
+      }
+    });
+  }
+
+  getTotalEventosPerfil(): number {
+    return (this.createdEvents?.length || 0) + (this.joinedEvents?.length || 0);
+  }
+
+  openSeguidoresModal(): void {
+    if (!this.userData?.id) return;
+
+    this.showFollowModal = true;
+    this.followModalTitle = 'Seguidores';
+    this.followModalUsers = [];
+    this.followModalError = '';
+    this.followModalLoading = true;
+
+    this.usuariosService.obtenerSeguidores(this.userData.id).subscribe({
+      next: (users) => {
+        this.followModalUsers = users ?? [];
+        this.followModalLoading = false;
+      },
+      error: (err) => {
+        console.error('Error cargando seguidores:', err);
+        this.followModalError = 'No se pudieron cargar los seguidores.';
+        this.followModalLoading = false;
+      }
+    });
+  }
+
+  openSiguiendoModal(): void {
+    if (!this.userData?.id) return;
+
+    this.showFollowModal = true;
+    this.followModalTitle = 'Siguiendo';
+    this.followModalUsers = [];
+    this.followModalError = '';
+    this.followModalLoading = true;
+
+    this.usuariosService.obtenerSiguiendo(this.userData.id).subscribe({
+      next: (users) => {
+        this.followModalUsers = users ?? [];
+        this.followModalLoading = false;
+      },
+      error: (err) => {
+        console.error('Error cargando seguidos:', err);
+        this.followModalError = 'No se pudieron cargar los usuarios seguidos.';
+        this.followModalLoading = false;
+      }
+    });
+  }
+
+  closeFollowModal(): void {
+    this.showFollowModal = false;
+    this.followModalTitle = '';
+    this.followModalUsers = [];
+    this.followModalLoading = false;
+    this.followModalError = '';
+  }
+
+  buscarPerfiles(): void {
+    const q = this.searchQuery.trim();
+
+    this.searchTouched = true;
+    this.searchError = '';
+
+    if (!q) {
+      this.searchResults = [];
+      this.searchLoading = false;
+      return;
+    }
+
+    this.searchLoading = true;
+
+    this.usuariosService.buscarUsuarios(q).subscribe({
+      next: (results) => {
+        this.searchResults = results ?? [];
+        this.searchLoading = false;
+      },
+      error: (err) => {
+        console.error('Error buscando usuarios:', err);
+        this.searchError = 'No se pudieron buscar perfiles.';
+        this.searchLoading = false;
+      }
+    });
+  }
+
+  clearBusqueda(): void {
+    this.searchQuery = '';
+    this.searchResults = [];
+    this.searchError = '';
+    this.searchLoading = false;
+    this.searchTouched = false;
+  }
+
+  getSearchUserImage(path?: string | null): string {
+    if (!path) return '';
+    if (path.startsWith('http://') || path.startsWith('https://')) {
+      return path;
+    }
+    return `http://localhost:8080${path}`;
+  }
 
   startEdit(): void {
     if (!this.userData) return;
@@ -134,14 +275,13 @@ export class ProfileComponent implements OnInit {
     this.editForm = {
       nombre: (this.userData.nombre || this.userData.usuario || this.getFallbackName() || '').toString(),
       correo: (this.userData.correo || '').toString(),
-      acercaDe: ((this.userData as any).acercaDe || '').toString(),
+      acercaDe: ((this.userData as any)?.acercaDe || '').toString(),
       redesSociales: redes.map((r: any) => ({
         platform: (r?.platform || '').toString(),
         handle: (r?.handle || '').toString()
       }))
     };
 
-    // snapshot para descartar
     this.originalForm = {
       ...this.editForm,
       redesSociales: this.editForm.redesSociales.map(x => ({ ...x }))
@@ -153,13 +293,11 @@ export class ProfileComponent implements OnInit {
 
     this.saveError = '';
 
-    // Si no hay cambios, salir sin modal
     if (!this.hasUnsavedChanges()) {
       this.isEditing = false;
       return;
     }
 
-    // Si hay cambios, mostrar modal
     this.showDiscardModal = true;
   }
 
@@ -168,7 +306,6 @@ export class ProfileComponent implements OnInit {
   }
 
   discardChanges(): void {
-    // Restaurar snapshot
     this.editForm = {
       ...this.originalForm,
       redesSociales: this.originalForm.redesSociales.map(x => ({ ...x }))
@@ -185,7 +322,6 @@ export class ProfileComponent implements OnInit {
     const correo = this.normalize(this.editForm.correo);
     const acercaDe = (this.editForm.acercaDe ?? '').toString().trim();
 
-    // redes: limpia vacíos
     const redesSociales = (this.editForm.redesSociales || [])
       .map(r => ({
         platform: (r.platform || '').trim(),
@@ -197,12 +333,12 @@ export class ProfileComponent implements OnInit {
       this.saveError = 'El nombre no puede estar vacío.';
       return;
     }
+
     if (!correo) {
       this.saveError = 'El correo no puede estar vacío.';
       return;
     }
 
-    // Si no cambió nada, salir sin pegarle al backend
     if (!this.hasUnsavedChanges()) {
       this.isEditing = false;
       return;
@@ -220,6 +356,7 @@ export class ProfileComponent implements OnInit {
         this.showDiscardModal = false;
 
         this.syncFormFromUser();
+        this.loadSocialStats();
       },
       error: (err) => {
         const msg = err?.error || err?.message || 'No se pudo guardar los cambios.';
@@ -282,39 +419,36 @@ export class ProfileComponent implements OnInit {
     return (v ?? '').toString().trim();
   }
 
-  // -----------------------------
-  // ✅ Redes sociales (agregar/quitar)
-  // -----------------------------
-
-  trackByIndex(i: number) { return i; }
+  trackByIndex(i: number): number {
+    return i;
+  }
 
   addSocial(): void {
-    this.editForm.redesSociales = [...this.editForm.redesSociales, { platform: '', handle: '' }];
+    this.editForm.redesSociales = [
+      ...this.editForm.redesSociales,
+      { platform: '', handle: '' }
+    ];
   }
 
   removeSocial(index: number): void {
     this.editForm.redesSociales = this.editForm.redesSociales.filter((_, i) => i !== index);
   }
 
-  // -----------------------------
-  // ✅ Fotos (lo que ya tenías)
-  // -----------------------------
-
-  onPerfilSelected(event: any) {
+  onPerfilSelected(event: any): void {
     const file = event?.target?.files?.[0];
     if (!file) return;
     this.selectedPerfil = file;
     this.subirFotoPerfil();
   }
 
-  onPortadaSelected(event: any) {
+  onPortadaSelected(event: any): void {
     const file = event?.target?.files?.[0];
     if (!file) return;
     this.selectedPortada = file;
     this.subirFotoPortada();
   }
 
-  subirFotoPerfil() {
+  subirFotoPerfil(): void {
     if (!this.selectedPerfil || !this.userData?.id) return;
 
     const formData = new FormData();
@@ -323,12 +457,13 @@ export class ProfileComponent implements OnInit {
     this.authService.uploadPerfil(this.userData.id, formData).subscribe({
       next: (u: any) => {
         this.userData = { ...this.userData, ...u };
+        this.loadSocialStats();
       },
       error: (err) => console.error('Error subiendo foto perfil:', err.status, err)
     });
   }
 
-  subirFotoPortada() {
+  subirFotoPortada(): void {
     if (!this.selectedPortada || !this.userData?.id) return;
 
     const formData = new FormData();
@@ -337,14 +472,11 @@ export class ProfileComponent implements OnInit {
     this.authService.uploadPortada(this.userData.id, formData).subscribe({
       next: (u: any) => {
         this.userData = { ...this.userData, ...u };
+        this.loadSocialStats();
       },
       error: (err) => console.error('Error subiendo foto portada:', err.status, err)
     });
   }
-
-  // -----------------------------
-  // ✅ Helpers
-  // -----------------------------
 
   getUserName(): string {
     return this.userData?.nombre || this.userData?.usuario || this.getFallbackName() || 'Usuario';
