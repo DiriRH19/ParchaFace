@@ -1,0 +1,277 @@
+<div class="profile-container">
+  <div class="profile-header">
+    <a routerLink="/" class="back-link">
+      <span>←</span> Volver
+    </a>
+
+    <div class="logo">ParchaFace</div>
+
+    <div class="header-actions">
+      <a *ngIf="perfil?.esMiPerfil" routerLink="/profile" class="btn-cancel">
+        Mi perfil
+      </a>
+    </div>
+  </div>
+
+  <div class="profile-card">
+    <div *ngIf="loading" class="state-box">
+      Cargando perfil...
+    </div>
+
+    <div *ngIf="error && !loading" class="state-box error-box">
+      {{ error }}
+    </div>
+
+    <ng-container *ngIf="perfil && !loading">
+      <div class="cover-section">
+        <div class="cover-image">
+          <img
+            *ngIf="perfil.fotoPortada; else noCover"
+            [src]="getFotoPortada()"
+            alt="Foto de portada"
+            class="cover-img"
+          />
+
+          <ng-template #noCover>
+            <div class="cover-placeholder">Sin portada</div>
+          </ng-template>
+        </div>
+
+        <div class="profile-picture-wrapper">
+          <div class="profile-picture">
+            <img
+              *ngIf="perfil.fotoPerfil; else noProfileImage"
+              [src]="getFotoPerfil()"
+              alt="Foto de perfil"
+              class="profile-img"
+            />
+
+            <ng-template #noProfileImage>
+              <div class="profile-placeholder">👤</div>
+            </ng-template>
+          </div>
+
+          <div class="profile-picture-actions" *ngIf="!perfil.esMiPerfil">
+            <button
+              class="btn-follow"
+              [class.following]="perfil.seguidoPorMi"
+              type="button"
+              [disabled]="actionLoading"
+              (click)="toggleSeguir()"
+            >
+              {{
+                actionLoading
+                  ? 'Procesando...'
+                  : (perfil.seguidoPorMi ? 'Siguiendo' : 'Seguir')
+              }}
+            </button>
+
+            <span class="follow-helper-text">
+              {{
+                perfil.seguidoPorMi
+                  ? 'Ya sigues este perfil'
+                  : 'Sigue este perfil para ver su actividad social'
+              }}
+            </span>
+          </div>
+
+          <div class="profile-picture-actions" *ngIf="perfil.esMiPerfil">
+            <a routerLink="/profile" class="btn-cancel">
+              Editar mi perfil
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <div class="profile-info">
+        <div class="user-details">
+          <div class="user-title-row">
+            <div class="user-title-block">
+              <h1 class="user-name">{{ perfil.nombre }}</h1>
+              <p class="user-username">{{ getDisplayHandle() }}</p>
+            </div>
+          </div>
+
+          <div class="user-meta">
+            <span class="meta-item">{{ perfil.correo }}</span>
+          </div>
+
+          <div class="user-stats social-stats-highlight">
+            <div class="stat-item stat-card">
+              <span class="stat-value">{{ perfil.totalSeguidores }}</span>
+              <span class="stat-label">Seguidores</span>
+            </div>
+
+            <div class="stat-item stat-card">
+              <span class="stat-value">{{ perfil.totalSiguiendo }}</span>
+              <span class="stat-label">Siguiendo</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="profile-tabs">
+        <button
+          *ngFor="let tab of tabs"
+          class="tab-btn"
+          [class.active]="activeTab === tab.id"
+          type="button"
+          (click)="setActiveTab(tab.id)"
+        >
+          {{ tab.label }}
+        </button>
+      </div>
+
+      <div class="profile-content">
+        <ng-container [ngSwitch]="activeTab">
+
+          <ng-container *ngSwitchCase="'profile'">
+            <div class="content-section">
+              <div class="section-card">
+                <h2 class="section-title">Acerca de</h2>
+
+                <p class="section-text">
+                  {{
+                    perfil.acercaDe?.trim()
+                      ? perfil.acercaDe
+                      : 'Este usuario aún no ha agregado información.'
+                  }}
+                </p>
+
+                <div class="contact-info">
+                  <div class="contact-item">
+                    <span class="contact-icon"></span>
+                    <span>{{ perfil.correo }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="content-section">
+              <div class="section-card">
+                <h2 class="section-title">Intereses</h2>
+
+                <div
+                  class="interests-list"
+                  *ngIf="(perfil.categoriasPreferidas?.length || 0) > 0; else noInterests"
+                >
+                  <span
+                    class="interest-tag"
+                    *ngFor="let interest of perfil.categoriasPreferidas"
+                  >
+                    {{ interest }}
+                  </span>
+                </div>
+
+                <ng-template #noInterests>
+                  <p class="section-text">Este usuario aún no tiene intereses visibles.</p>
+                </ng-template>
+              </div>
+            </div>
+          </ng-container>
+
+          <ng-container *ngSwitchCase="'followers'">
+            <div class="section-card full-width tab-full-width">
+              <div class="section-title-row">
+                <h2 class="section-title">Seguidores</h2>
+                <span class="section-counter">{{ seguidores.length }}</span>
+              </div>
+
+              <p *ngIf="loadingFollowers" class="section-text">Cargando seguidores...</p>
+              <p *ngIf="followersError" class="section-text error-text">{{ followersError }}</p>
+
+              <ng-container *ngIf="!loadingFollowers && !followersError">
+                <div *ngIf="seguidores.length === 0" class="empty-state">
+                  Este usuario todavía no tiene seguidores.
+                </div>
+
+                <div class="user-list">
+                  <a
+                    *ngFor="let user of seguidores"
+                    class="user-card"
+                    [routerLink]="['/usuarios', user.idUsuario]"
+                  >
+                    <div class="user-card-avatar">
+                      <img
+                        *ngIf="user.fotoPerfil; else followerNoImage"
+                        [src]="getUsuarioCardImage(user.fotoPerfil)"
+                        [alt]="user.nombre"
+                        class="user-card-avatar-img"
+                      />
+
+                      <ng-template #followerNoImage>
+                        <div class="user-card-placeholder">👤</div>
+                      </ng-template>
+                    </div>
+
+                    <div class="user-card-body">
+                      <h3>{{ user.nombre }}</h3>
+                      <p>
+                        {{ user.acercaDe?.trim() ? user.acercaDe : 'Sin descripción disponible.' }}
+                      </p>
+                    </div>
+
+                    <div class="user-card-action">
+                      <span class="mini-action-chip">Ver perfil</span>
+                    </div>
+                  </a>
+                </div>
+              </ng-container>
+            </div>
+          </ng-container>
+
+          <ng-container *ngSwitchCase="'following'">
+            <div class="section-card full-width tab-full-width">
+              <div class="section-title-row">
+                <h2 class="section-title">Siguiendo</h2>
+                <span class="section-counter">{{ siguiendo.length }}</span>
+              </div>
+
+              <p *ngIf="loadingFollowing" class="section-text">Cargando usuarios seguidos...</p>
+              <p *ngIf="followingError" class="section-text error-text">{{ followingError }}</p>
+
+              <ng-container *ngIf="!loadingFollowing && !followingError">
+                <div *ngIf="siguiendo.length === 0" class="empty-state">
+                  Este usuario todavía no sigue a nadie.
+                </div>
+
+                <div class="user-list">
+                  <a
+                    *ngFor="let user of siguiendo"
+                    class="user-card"
+                    [routerLink]="['/usuarios', user.idUsuario]"
+                  >
+                    <div class="user-card-avatar">
+                      <img
+                        *ngIf="user.fotoPerfil; else followingNoImage"
+                        [src]="getUsuarioCardImage(user.fotoPerfil)"
+                        [alt]="user.nombre"
+                        class="user-card-avatar-img"
+                      />
+
+                      <ng-template #followingNoImage>
+                        <div class="user-card-placeholder">👤</div>
+                      </ng-template>
+                    </div>
+
+                    <div class="user-card-body">
+                      <h3>{{ user.nombre }}</h3>
+                      <p>
+                        {{ user.acercaDe?.trim() ? user.acercaDe : 'Sin descripción disponible.' }}
+                      </p>
+                    </div>
+
+                    <div class="user-card-action">
+                      <span class="mini-action-chip">Ver perfil</span>
+                    </div>
+                  </a>
+                </div>
+              </ng-container>
+            </div>
+          </ng-container>
+
+        </ng-container>
+      </div>
+    </ng-container>
+  </div>
+</div>
