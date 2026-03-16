@@ -3,15 +3,23 @@ import { CommonModule } from '@angular/common';
 import { RouterLink, Router } from '@angular/router';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
 import { AuthService } from '../services/auth.service';
+import { AfterViewInit } from '@angular/core';
+import { environment } from '../../environments/environment';
+
+declare global {
+  interface Window {
+    google: any;
+  }
+}
 
 @Component({
   selector: 'app-register',
   standalone: true,
   imports: [CommonModule, RouterLink, ReactiveFormsModule],
   templateUrl: './register.component.html',
-  styleUrls: ['./register.component.css']
+  styleUrls: ['./register.component.css'],
 })
-export class RegisterComponent {
+export class RegisterComponent implements AfterViewInit{
   showPassword = false;
   showConfirmPassword = false;
   registerForm: FormGroup;
@@ -35,6 +43,8 @@ export class RegisterComponent {
       acceptTerms: [false, [Validators.requiredTrue]]
     }, { validators: [this.passwordsMatchValidator] });
   }
+
+
 
   togglePassword() {
     this.showPassword = !this.showPassword;
@@ -82,7 +92,7 @@ export class RegisterComponent {
           this.router.navigate(['/preferencias']);
           return;
         }
-        
+
         if (error.status === 0) {
           this.errorMessage = 'No se puede conectar con el servidor. Verifica que el backend esté corriendo en http://localhost:8080';
         } else if (error.error) {
@@ -93,7 +103,7 @@ export class RegisterComponent {
             } else {
               errorObj = error.error;
             }
-            
+
             if (errorObj.error) {
               this.errorMessage = errorObj.error;
             } else if (errorObj.message) {
@@ -109,6 +119,50 @@ export class RegisterComponent {
         } else {
           this.errorMessage = 'Error al registrar usuario. Por favor, intenta de nuevo.';
         }
+      }
+    });
+  }
+
+  ngAfterViewInit(): void {
+    this.initGoogleButton();
+  }
+
+  initGoogleButton(): void {
+    if (!window.google) {
+      console.error('Google Identity Services no cargó');
+      return;
+    }
+
+    window.google.accounts.id.initialize({
+      client_id: environment.googleClientId,
+      callback: (response: any) => this.handleGoogleResponse(response)
+    });
+
+    window.google.accounts.id.renderButton(
+      document.getElementById('google-btn'),
+      {
+        theme: 'outline',
+        size: 'large',
+        text: 'signup_with',
+        shape: 'pill',
+        width: 280
+      }
+    );
+  }
+
+  handleGoogleResponse(response: any): void {
+    this.isLoading = true;
+    this.errorMessage = '';
+
+    this.authService.googleLogin(response.credential).subscribe({
+      next: () => {
+        this.isLoading = false;
+        this.router.navigate(['/preferencias']);
+      },
+      error: (error) => {
+        this.isLoading = false;
+        this.errorMessage =
+          error?.error?.error || 'No se pudo registrar con Google';
       }
     });
   }

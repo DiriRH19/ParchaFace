@@ -3,6 +3,14 @@ import { CommonModule } from '@angular/common';
 import { RouterLink, Router, ActivatedRoute } from '@angular/router';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { AuthService } from '../services/auth.service';
+import { AfterViewInit } from '@angular/core';
+import { environment } from '../../environments/environment';
+
+declare global {
+  interface Window {
+    google: any;
+  }
+}
 
 @Component({
   selector: 'app-login',
@@ -11,7 +19,9 @@ import { AuthService } from '../services/auth.service';
   templateUrl: './login.component.html',
   styleUrls: ['./login.component.css']
 })
-export class LoginComponent {
+
+
+export class LoginComponent implements AfterViewInit{
   showPassword = false;
   loginForm: FormGroup;
   isLoading = false;
@@ -29,6 +39,7 @@ export class LoginComponent {
       rememberMe: [false]
     });
   }
+
 
   togglePassword(): void {
     this.showPassword = !this.showPassword;
@@ -96,6 +107,49 @@ export class LoginComponent {
         } else {
           this.errorMessage = 'Error al iniciar sesión. Por favor, intenta de nuevo.';
         }
+      }
+    });
+  }
+
+  ngAfterViewInit(): void {
+    this.initGoogleLoginButton();
+  }
+
+  initGoogleLoginButton(): void {
+    if (!window.google) {
+      console.error('Google Identity Services no cargó');
+      return;
+    }
+
+    window.google.accounts.id.initialize({
+      client_id: environment.googleClientId,
+      callback: (response: any) => this.handleGoogleLoginResponse(response)
+    });
+
+    window.google.accounts.id.renderButton(
+      document.getElementById('google-login-btn'),
+      {
+        theme: 'outline',
+        size: 'large',
+        text: 'signin_with',
+        shape: 'pill',
+        width: 280
+      }
+    );
+  }
+
+  handleGoogleLoginResponse(response: any): void {
+    this.isLoading = true;
+    this.errorMessage = '';
+
+    this.authService.googleLogin(response.credential).subscribe({
+      next: () => {
+        this.isLoading = false;
+        this.router.navigate(['/']);
+      },
+      error: (error) => {
+        this.isLoading = false;
+        this.errorMessage = error?.error?.error || 'No se pudo iniciar sesión con Google';
       }
     });
   }

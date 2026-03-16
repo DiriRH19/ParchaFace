@@ -405,4 +405,61 @@ export class AuthService {
       })
     );
   }
+
+  googleLogin(credential: string): Observable<string> {
+    return this.http.post(
+      `${API_CONFIG.baseUrl}/auth/google`,
+      { credential },
+      { responseType: 'text' }
+    ).pipe(
+      map((response: string) => {
+        let token = response.trim();
+
+        try {
+          const parsed = JSON.parse(token);
+          if (parsed?.token) {
+            token = parsed.token;
+          } else if (parsed?.error) {
+            throw new Error(parsed.error);
+          }
+        } catch (e) {
+          if (!token || token.startsWith('<')) {
+            throw new Error('Respuesta inválida del servidor');
+          }
+        }
+
+        return token;
+      }),
+      tap((token: string) => {
+        if (token && isPlatformBrowser(this.platformId)) {
+          this.saveToken(token, true);
+          this.isLoggedIn.next(true);
+
+          const userData = this.decodeToken(token);
+          if (userData) {
+            this.userData.next(userData);
+          }
+        }
+      }),
+      catchError((error) => {
+        let errorMessage = 'Error al iniciar con Google';
+
+        if (error.error) {
+          try {
+            const errorObj = typeof error.error === 'string'
+              ? JSON.parse(error.error)
+              : error.error;
+            errorMessage = errorObj.error || errorObj.message || errorMessage;
+          } catch {}
+        } else if (error.message) {
+          errorMessage = error.message;
+        }
+
+        return throwError(() => ({
+          ...error,
+          error: { error: errorMessage, message: errorMessage }
+        }));
+      })
+    );
+  }
 }
