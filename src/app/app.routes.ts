@@ -52,4 +52,6 @@ export const routes: Routes = [
 
   // Wildcard (SIEMPRE al final)
   { path: '**', redirectTo: '', pathMatch: 'full' },
+
+  
 ];

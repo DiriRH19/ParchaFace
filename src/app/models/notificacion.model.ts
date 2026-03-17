@@ -3,5 +3,6 @@ export interface Notificacion {
   mensaje: string;
   fechaEnvio: string;
   leido: boolean;
-  usuario?: any;
+  tipo?: string;
+  referenciaId?: number;
 }

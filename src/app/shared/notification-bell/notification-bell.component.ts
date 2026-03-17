@@ -1,20 +1,23 @@
 import { Component, HostListener, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { MatIconModule } from '@angular/material/icon';
+import { Router } from '@angular/router';
 import { NotificacionesStore } from '../../services/notificaciones-store.service';
+import { Notificacion } from '../../models/notificacion.model';
 
 @Component({
   selector: 'app-notification-bell',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, MatIconModule],
   templateUrl: './notification-bell.component.html',
   styleUrls: ['./notification-bell.component.css']
 })
 export class NotificationBellComponent implements OnInit {
   store = inject(NotificacionesStore);
+  router = inject(Router);
   open = false;
 
   ngOnInit(): void {
-    // Si NO quieres polling global, comenta esta línea.
     this.store.startPolling(15000);
   }
 
@@ -33,9 +36,22 @@ export class NotificationBellComponent implements OnInit {
     this.store.marcarTodas();
   }
 
-  marcarLeida(id: number, ev: MouseEvent) {
+  esNavegable(n: Notificacion): boolean {
+    return n.tipo === 'EVENTO' && !!n.referenciaId;
+  }
+
+  abrirNotificacion(n: Notificacion, ev: MouseEvent) {
     ev.stopPropagation();
-    this.store.marcarLeida(id);
+
+    if (!n.leido) {
+      this.store.marcarLeida(n.id_notificacion);
+    }
+
+    this.close();
+
+    if (this.esNavegable(n)) {
+      this.router.navigate(['/event', n.referenciaId]);
+    }
   }
 
   formatFecha(iso: string): string {
