@@ -53,6 +53,8 @@ export const routes: Routes = [
   { path: 'verify-code', component: VerifyCodeComponent },
   { path: 'new-password', component: NewPasswordComponent },
 
-  // Wildcard
-  { path: '**', redirectTo: '', pathMatch: 'full' }
+  // Wildcard (SIEMPRE al final)
+  { path: '**', redirectTo: '', pathMatch: 'full' },
+
+  
 ];

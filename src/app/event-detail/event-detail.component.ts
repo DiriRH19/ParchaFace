@@ -387,33 +387,43 @@ export class EventDetailComponent implements OnInit {
 
 
   onJoin(): void {
-    if (!this.evento?.id) return;
+  if (!this.evento?.id) return;
 
-    if (!this.isLoggedIn) {
-      Swal.fire({
-        icon: 'info',
-        title: 'Inicia sesión',
-        text: 'Debes iniciar sesión para inscribirte.',
-        confirmButtonText: 'Ok'
-      });
-      return;
-    }
+  if (!this.isLoggedIn) {
+    Swal.fire({
+      icon: 'info',
+      title: 'Inicia sesión',
+      text: 'Debes iniciar sesión para inscribirte.',
+      confirmButtonText: 'Ok'
+    });
+    return;
+  }
 
-    if (this.isOrganizer) {
-      Swal.fire({
-        icon: 'warning',
-        title: 'Eres el organizador',
-        text: 'No puedes inscribirte a tu propio evento.',
-        confirmButtonText: 'Entendido'
-      });
-      return;
-    }
+  if (this.isOrganizer) {
+    Swal.fire({
+      icon: 'warning',
+      title: 'Eres el organizador',
+      text: 'No puedes inscribirte a tu propio evento.',
+      confirmButtonText: 'Entendido'
+    });
+    return;
+  }
 
-    if (this.isRegistered || this.isJoining) return;
+  if (this.isRegistered || this.isJoining) return;
+
+  Swal.fire({
+    title: '¿Inscribirte al evento?',
+    text: 'Aparecerás como inscrito en este evento.',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonText: 'Sí, inscribirme',
+    cancelButtonText: 'No'
+  }).then((result) => {
+    if (!result.isConfirmed) return;
 
     this.isJoining = true;
 
-    this.inscripcionService.inscribirme(Number(this.evento.id)).subscribe({
+    this.inscripcionService.inscribirme(Number(this.evento!.id)).subscribe({
       next: () => {
         this.inscripcionService.marcarComoInscrito(Number(this.evento!.id));
         this.isRegistered = true;
@@ -449,7 +459,8 @@ export class EventDetailComponent implements OnInit {
         this.isJoining = false;
       }
     });
-  }
+  });
+}
 
   get fechaHoraLabel(): string {
     if (!this.evento) return '';
