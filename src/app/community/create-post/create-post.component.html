@@ -1,100 +1,130 @@
+<section class="create-post-page">
+  <div class="create-post-shell">
+    <header class="create-post-hero create-post-card">
+      <div class="create-post-hero__content">
+        <p class="create-post-kicker">Nueva publicación</p>
+        <h1 class="create-post-title">Comparte algo con tu comunidad</h1>
+        <p class="create-post-subtitle">
+          Publica una idea, pregunta, recomendación o invitación. También puedes
+          enlazar un evento para dar más contexto a la conversación.
+        </p>
+      </div>
 
-<section class="container">
-  <header class="header">
-    <div>
-      <h1 class="title">Crear publicación</h1>
-      <p class="subtitle muted">Puedes enlazar un evento (opcional) para dar contexto.</p>
-    </div>
+      <div class="create-post-hero__actions">
+        <button type="button" class="btn btn--ghost" (click)="back()">← Volver</button>
+      </div>
+    </header>
 
-    <button type="button" class="btn btn--ghost" (click)="back()">← Volver</button>
-  </header>
-
-  <div class="card panel">
-    <div class="field">
-      <span class="field__label">Título</span>
-      <input
-        class="input"
-        type="text"
-        placeholder="Ej: ¿Alguien para ir a un concierto este finde?"
-        [ngModel]="title()"
-        (ngModelChange)="title.set($event)"
-      />
-    </div>
-
-    <div class="field">
-      <span class="field__label">Contenido</span>
-      <textarea
-        class="textarea"
-        rows="5"
-        placeholder="Cuenta más detalles para que te puedan responder mejor..."
-        [ngModel]="content()"
-        (ngModelChange)="content.set($event)"
-      ></textarea>
-    </div>
-
-    <div class="row">
-      <label class="field">
-        <span class="field__label">Ciudad</span>
-        <select class="select" [ngModel]="city()" (ngModelChange)="city.set($event)">
-          @for (c of cities(); track c) {
-            <option [value]="c">{{ c }}</option>
-          }
-        </select>
-      </label>
-
-      <div class="field">
-        <span class="field__label">Categoría</span>
-        <div class="chips">
-          @for (cat of categories(); track cat) {
-            <button
-              type="button"
-              class="chip"
-              [class.chip--active]="category() === cat"
-              (click)="category.set(cat)"
-            >
-              {{ cat }}
-            </button>
-          }
+    <section class="form-card create-post-card">
+      <div class="panel-head">
+        <div>
+          <p class="panel-kicker">Formulario</p>
+          <h2 class="panel-title">Redacta tu publicación</h2>
+          <p class="panel-subtitle">
+            Cuanto más clara sea tu publicación, mejores respuestas recibirás.
+          </p>
         </div>
       </div>
-    </div>
 
-    <div class="event card">
-      <div class="event__left">
-        <div class="event__title">¿Enlazar un evento?</div>
-        <div class="muted">Opcional. Si lo enlazas, tu post tendrá más contexto.</div>
-      </div>
-
-      <label class="switch">
-        <input type="checkbox" [ngModel]="attachEvent()" (ngModelChange)="attachEvent.set($event)" />
-        <span class="switch__track"></span>
-      </label>
-    </div>
-@if (attachEvent()) {
       <div class="field">
-        <span class="field__label">ID del evento (por ahora)</span>
+        <label class="field__label">Título</label>
         <input
           class="input"
           type="text"
-          placeholder="Ej: e101"
-          [ngModel]="eventId()"
-          (ngModelChange)="eventId.set($event)"
+          placeholder="Ej: ¿Alguien para ir a un concierto este finde?"
+          [ngModel]="title()"
+          (ngModelChange)="title.set($event)"
         />
-        <div class="muted hint">
-          Luego lo cambiamos por un buscador de eventos usando tu EventoService.
+      </div>
+
+      <div class="field">
+        <label class="field__label">Contenido</label>
+        <textarea
+          class="textarea"
+          rows="6"
+          placeholder="Cuenta más detalles para que la comunidad pueda responder mejor..."
+          [ngModel]="content()"
+          (ngModelChange)="content.set($event)"
+        ></textarea>
+      </div>
+
+      <div class="form-grid">
+        <label class="field">
+          <span class="field__label">Ciudad</span>
+          <select class="select" [ngModel]="city()" (ngModelChange)="city.set($event)">
+            @for (c of cities(); track c) {
+              <option [value]="c">{{ c }}</option>
+            }
+          </select>
+        </label>
+
+        <div class="field">
+          <span class="field__label">Categoría</span>
+          <div class="chips">
+            @for (cat of categories(); track cat) {
+              <button
+                type="button"
+                class="chip"
+                [class.chip--active]="category() === cat"
+                (click)="category.set(cat)"
+              >
+                {{ cat }}
+              </button>
+            }
+          </div>
         </div>
       </div>
-    }
 
-    @if (error()) {
-      <div class="error card">{{ error() }}</div>
-    }
+      <div class="event-link-card">
+        <div class="event-link-card__left">
+          <div class="event-link-card__icon">◈</div>
+          <div>
+            <div class="event-link-card__title">¿Enlazar un evento?</div>
+            <div class="event-link-card__text">
+              Es opcional, pero ayuda a que tu publicación tenga más contexto.
+            </div>
+          </div>
+        </div>
 
-    <div class="actions">
-      <button type="button" class="btn btn--ghost" (click)="back()">Cancelar</button>
-      <button type="button" class="btn btn--primary" [disabled]="submitting()" (click)="submit()">
-        {{ submitting() ? 'Publicando...' : 'Publicar' }}
-      </button>
-    </div>
+        <label class="switch">
+          <input
+            type="checkbox"
+            [ngModel]="attachEvent()"
+            (ngModelChange)="attachEvent.set($event)"
+          />
+          <span class="switch__track"></span>
+        </label>
+      </div>
+
+      @if (attachEvent()) {
+        <div class="attach-panel">
+          <div class="field attach-panel__field">
+            <label class="field__label">ID del evento</label>
+            <input
+              class="input"
+              type="text"
+              placeholder="Ej: e101"
+              [ngModel]="eventId()"
+              (ngModelChange)="eventId.set($event)"
+            />
+          </div>
+
+          <div class="attach-hint">
+            Luego esto lo podemos convertir en un buscador de eventos conectado a tu `EventoService`.
+          </div>
+        </div>
+      }
+
+      @if (error()) {
+        <div class="error-card">{{ error() }}</div>
+      }
+
+      <div class="actions">
+        <button type="button" class="btn btn--ghost" (click)="back()">Cancelar</button>
+        <button type="button" class="btn btn--primary" [disabled]="submitting()" (click)="submit()">
+          {{ submitting() ? 'Publicando...' : 'Publicar' }}
+        </button>
+      </div>
+    </section>
   </div>
 </section>

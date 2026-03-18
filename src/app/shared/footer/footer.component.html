@@ -1,10 +1,128 @@
 <footer class="footer">
-  <div class="footer-content">
-    <div class="footer-left">
-      <div class="logo">ParchaFace</div>
+  <div class="footer-shell">
+    <div class="footer-top">
+      <div class="footer-brand">
+        <div class="footer-logo-row">
+          <img
+            src="https://res.cloudinary.com/dzjp34qp8/image/upload/v1773660533/event-marker_muuygp.png"
+            alt="ParchaFace"
+            class="footer-logo-img"
+          >
+          <div>
+            <div class="footer-logo-text">ParchaFace</div>
+            <p class="footer-tagline">Eventos, comunidad y mapa en un solo lugar.</p>
+          </div>
+        </div>
+
+        <p class="footer-description">
+          Descubre planes, organiza experiencias y conecta con personas que comparten
+          tus gustos en una plataforma pensada para vivir la ciudad con más movimiento.
+        </p>
+      </div>
+
+      <div class="footer-links-group">
+        <div class="footer-column">
+          <h4 class="footer-title">Navegación</h4>
+          <a routerLink="/explore">Inicio</a>
+          <a routerLink="/mapa">Mapa</a>
+          <a routerLink="/community">Comunidad</a>
+          <a routerLink="/create-event">Crear evento</a>
+        </div>
+
+        <div class="footer-column">
+          <h4 class="footer-title">Cuenta</h4>
+          <a routerLink="/login">Iniciar sesión</a>
+          <a routerLink="/register">Registrarse</a>
+          <a routerLink="/profile">Mi perfil</a>
+          <a routerLink="/preferencias">Preferencias</a>
+        </div>
+
+        <div class="footer-column footer-support">
+          <h4 class="footer-title">Soporte y seguridad</h4>
+          <p class="footer-support-text">
+            Accede rápidamente a líneas de emergencia cuando lo necesites.
+          </p>
+
+          <button type="button" class="footer-emergency-btn" (click)="toggleEmergencyModal()">
+            <span class="footer-btn-mark">✦</span>
+            Líneas de emergencia
+          </button>
+
+          <p class="footer-support-note">
+            Disponible desde cualquier vista de la plataforma al final de la página.
+          </p>
+        </div>
+      </div>
     </div>
-    <div class="footer-right">
-      <p>© 2025 ParchaFace. Conectando personas a través de eventos increíbles.</p>
+
+    <div class="footer-bottom">
+      <p>© {{ year }} ParchaFace. Conectando personas a través de eventos y experiencias reales.</p>
     </div>
   </div>
 </footer>
+
+@if (showEmergencyModal) {
+  <div class="ft-modal">
+    <div class="ft-backdrop" (click)="closeEmergencyModal()"></div>
+
+    <div class="ft-panel" role="dialog" aria-modal="true" aria-label="Líneas de emergencia">
+      <div class="ft-header">
+        <div class="ft-title">
+          <span class="ft-badge">✦</span>
+          Líneas de emergencia
+        </div>
+
+        <button class="ft-close" type="button" (click)="closeEmergencyModal()" aria-label="Cerrar">
+          ✕
+        </button>
+      </div>
+
+      <div class="ft-content">
+        <div class="ft-grid">
+          <section class="ft-section" aria-label="Emergencias Colombia">
+            <h3 class="ft-section-title">Colombia (Nacional)</h3>
+
+            @for (item of colombiaList; track item.tel + item.name) {
+              <a
+                class="ft-item"
+                [class.primary]="item.primary"
+                [href]="'tel:' + item.tel"
+              >
+                <span class="ft-icon">{{ item.icon }}</span>
+                <span class="ft-main">
+                  <span class="ft-name">{{ item.name }}</span>
+                  <span class="ft-number">{{ item.number }}</span>
+                </span>
+                <span class="ft-desc">{{ item.desc }}</span>
+              </a>
+            }
+          </section>
+
+          <section class="ft-section" aria-label="Emergencias Armenia Quindío">
+            <h3 class="ft-section-title">Armenia (Quindío)</h3>
+
+            @for (item of armeniaList; track item.tel + item.name) {
+              <a
+                class="ft-item"
+                [class.primary]="item.primary"
+                [href]="'tel:' + item.tel"
+              >
+                <span class="ft-icon">{{ item.icon }}</span>
+                <span class="ft-main">
+                  <span class="ft-name">{{ item.name }}</span>
+                  <span class="ft-number">{{ item.number }}</span>
+                </span>
+                <span class="ft-desc">{{ item.desc }}</span>
+              </a>
+            }
+          </section>
+        </div>
+
+        <div class="ft-footer">
+          <span>Directorio de seguridad · ParchaFace</span>
+          <span class="ft-footer-note">Usa estas líneas solo en situaciones reales de emergencia.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+}

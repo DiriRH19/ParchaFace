@@ -16,6 +16,9 @@ export interface Event {
   price: string;
   rating: number;
   imageUrl?: string;
+
+  registeredCount?: number | null;
+  capacity?: number | null;
 }
 
 @Component({
@@ -38,7 +41,9 @@ export class EventCardComponent implements OnChanges {
     tags: [],
     price: 'Gratis',
     rating: 0,
-    imageUrl: ''
+    imageUrl: '',
+    registeredCount: null,
+    capacity: null
   };
 
   clima: ClimaResponse | null = null;
@@ -49,6 +54,25 @@ export class EventCardComponent implements OnChanges {
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['event']) this.loadClima();
+  }
+
+  get hasCapacityInfo(): boolean {
+    return this.event?.registeredCount != null || this.event?.capacity != null;
+  }
+
+  get capacityText(): string {
+    const inscritos = this.toSafeNumber(this.event?.registeredCount);
+    const cupo = this.toSafeNumber(this.event?.capacity);
+
+    if (inscritos === null && cupo === null) return '';
+
+    return `${inscritos ?? '—'} / ${cupo ?? '—'}`;
+  }
+
+  private toSafeNumber(value: unknown): number | null {
+    if (value === null || value === undefined || value === '') return null;
+    const n = Number(value);
+    return Number.isNaN(n) ? null : n;
   }
 
   private loadClima(): void {

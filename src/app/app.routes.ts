@@ -21,9 +21,18 @@ import { VerifyCodeComponent } from './password-reset/verify-code/verify-code';
 import { NewPasswordComponent } from './password-reset/new-password/new-password';
 
 export const routes: Routes = [
-  // Públicas
-  { path: '', component: HomeComponent },
+  // Entrada principal
+  { path: '', redirectTo: 'explore', pathMatch: 'full' },
+
+  // Nueva portada / home visual
   { path: 'explore', component: ExploreComponent },
+
+  // Vista de mapa
+  { path: 'mapa', component: HomeComponent },
+
+  // Alias temporal para no romper enlaces anteriores
+  { path: 'home', redirectTo: 'mapa', pathMatch: 'full' },
+
   {
     path: 'usuarios/:id',
     loadComponent: () =>
@@ -54,5 +63,5 @@ export const routes: Routes = [
   { path: 'new-password', component: NewPasswordComponent },
 
   // Wildcard
-  { path: '**', redirectTo: '', pathMatch: 'full' }
+  { path: '**', redirectTo: 'explore', pathMatch: 'full' }
 ];

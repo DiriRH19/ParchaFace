@@ -1,38 +1,62 @@
 <app-navbar></app-navbar>
-<section class="discussions container">
-  <header class="header">
-    <div class="header__left">
-      <button type="button" class="btn btn--ghost" (click)="back()">← Volver</button>
-      <h1 class="title">Discusiones</h1>
-      <p class="subtitle muted">Explora temas generales o ligados a un evento (opcional).</p>
-    </div>
 
-    <div class="header__right">
-      <button type="button" class="btn btn--primary" (click)="goCreate()">Crear publicación</button>
-    </div>
-  </header>
+<section class="discussions-page">
+  <div class="discussions-shell">
+    <header class="discussions-hero discussions-card">
+      <div class="discussions-hero__content">
+        <p class="discussions-kicker">Conversaciones activas</p>
+        <h1 class="discussions-title">Discusiones de la comunidad</h1>
+        <p class="discussions-subtitle">
+          Explora temas recientes, publicaciones ligadas a eventos y conversaciones
+          que están moviendo a la comunidad en este momento.
+        </p>
 
-  <div class="panel card">
-    <div class="panel__head">
-      <div>
-        <h2 class="panel__title">Explorar</h2>
-        <p class="panel__sub muted">Filtra por ciudad, categoría o busca un tema.</p>
-      </div>
-    </div>
-
-    <div class="filters">
-      <div class="search">
-        <span class="search__icon" aria-hidden="true">🔎</span>
-        <input
-          class="search__input"
-          type="text"
-          placeholder="Buscar por título, contenido, ciudad o evento..."
-          [ngModel]="q()"
-          (ngModelChange)="q.set($event); load()"
-        />
+        <div class="discussions-hero__actions">
+          <button type="button" class="btn btn--ghost" (click)="back()">← Volver</button>
+          <button type="button" class="btn btn--primary" (click)="goCreate()">Crear publicación</button>
+        </div>
       </div>
 
-      <div class="row">
+      <div class="discussions-hero__aside">
+        <div class="hero-note hero-note--gold">
+          <span class="hero-note__label">Explora</span>
+          <strong>{{ posts().length }} resultados</strong>
+        </div>
+
+        <div class="hero-note hero-note--navy">
+          <span class="hero-note__label">Orden actual</span>
+          <strong>
+            @if (sort() === 'recent') { Recientes }
+            @if (sort() === 'trending') { Tendencia }
+            @if (sort() === 'unanswered') { Sin respuesta }
+          </strong>
+        </div>
+      </div>
+    </header>
+
+    <section class="filter-panel discussions-card">
+      <div class="panel-head">
+        <div>
+          <p class="panel-kicker">Explorar</p>
+          <h2 class="panel-title">Filtra las conversaciones</h2>
+          <p class="panel-subtitle">
+            Busca por título, ciudad, categoría o publicación ligada a un evento.
+          </p>
+        </div>
+      </div>
+
+      <div class="filters-grid">
+        <div class="search-field">
+          <span class="search-field__icon" aria-hidden="true">◈</span>
+          <input
+            class="search-field__input"
+            type="text"
+            placeholder="Buscar por título, contenido, ciudad o evento..."
+            [ngModel]="q()"
+            (ngModelChange)="q.set($event); load()"
+          />
+        </div>
+
         <label class="field">
           <span class="field__label">Ciudad</span>
           <select class="field__control" [ngModel]="city()" (ngModelChange)="city.set($event); load()">
@@ -41,8 +65,10 @@
             }
           </select>
         </label>
+      </div>
 
-        <div class="field">
+      <div class="filter-row">
+        <div class="field field--full">
           <span class="field__label">Categoría</span>
           <div class="chips">
             @for (cat of categories(); track cat) {
@@ -59,50 +85,79 @@
         </div>
       </div>
 
-      <div class="sort">
-        <button type="button" class="chip" [class.chip--active]="sort()==='recent'" (click)="setSort('recent')">Recientes</button>
-        <button type="button" class="chip" [class.chip--active]="sort()==='trending'" (click)="setSort('trending')">Tendencia</button>
-        <button type="button" class="chip" [class.chip--active]="sort()==='unanswered'" (click)="setSort('unanswered')">Sin respuesta</button>
+      <div class="sort-row">
+        <span class="field__label field__label--inline">Ordenar por</span>
+
+        <div class="chips">
+          <button
+            type="button"
+            class="chip chip--sort"
+            [class.chip--active]="sort() === 'recent'"
+            (click)="setSort('recent')"
+          >
+            Recientes
+          </button>
+
+          <button
+            type="button"
+            class="chip chip--sort"
+            [class.chip--active]="sort() === 'trending'"
+            (click)="setSort('trending')"
+          >
+            Tendencia
+          </button>
+
+          <button
+            type="button"
+            class="chip chip--sort"
+            [class.chip--active]="sort() === 'unanswered'"
+            (click)="setSort('unanswered')"
+          >
+            Sin respuesta
+          </button>
+        </div>
       </div>
-    </div>
-  </div>
+    </section>
 
-  <div class="list">
-    @if (!loading() && posts().length === 0) {
-      <div class="card empty">
-        No hay publicaciones con esos filtros.
-      </div>
-    }
+    <section class="list-section">
+      @if (!loading() && posts().length === 0) {
+        <div class="empty-card discussions-card">
+          No hay publicaciones con esos filtros.
+        </div>
+      }
 
-    @for (p of posts(); track p.id) {
-      <button type="button" class="post" (click)="openPost(p.id)">
-        <div class="post__main">
-          <div class="post__title">{{ p.title }}</div>
+      <div class="post-list">
+        @for (p of posts(); track p.id) {
+          <button type="button" class="post-card" (click)="openPost(p.id)">
+            <div class="post-card__main">
+              <div class="post-card__title">{{ p.title }}</div>
 
-          <div class="post__meta">
-            @if (p.city) {
-              <span class="chip chip--sm">{{ p.city }}</span>
-            }
-            @if (p.category) {
-              <span class="chip chip--sm">{{ p.category }}</span>
-            }
-            <span class="muted">• {{ p.authorName }}</span>
-          </div>
+              <div class="post-card__meta">
+                @if (p.city) {
+                  <span class="topic-chip topic-chip--city">{{ p.city }}</span>
+                }
+                @if (p.category) {
+                  <span class="topic-chip topic-chip--category">{{ p.category }}</span>
+                }
+                <span class="post-muted">• {{ p.authorName }}</span>
+              </div>
 
-          @if (p.eventTitle) {
-            <div class="post__event">
-              <span class="dot"></span>
-              <span class="muted">Ligado a:</span>
-              <span class="event">{{ p.eventTitle }}</span>
+              @if (p.eventTitle) {
+                <div class="post-card__event">
+                  <span class="post-card__dot"></span>
+                  <span class="post-muted">Ligado a:</span>
+                  <span class="post-card__eventName">{{ p.eventTitle }}</span>
+                </div>
+              }
             </div>
-          }
-        </div>
 
-        <div class="post__side">
-          <div class="count">{{ p.commentsCount }}</div>
-          <div class="muted">comentarios</div>
-        </div>
-      </button>
-    }
+            <div class="post-card__side">
+              <div class="post-card__count">{{ p.commentsCount }}</div>
+              <div class="post-muted">comentarios</div>
+            </div>
+          </button>
+        }
+      </div>
+    </section>
   </div>
 </section>
