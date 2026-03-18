@@ -21,9 +21,13 @@ import { VerifyCodeComponent } from './password-reset/verify-code/verify-code';
 import { NewPasswordComponent } from './password-reset/new-password/new-password';
 
 export const routes: Routes = [
-  // Públicas
-  { path: '', component: HomeComponent },
+  // Home principal visual
+  { path: '', component: ExploreComponent },
   { path: 'explore', component: ExploreComponent },
+
+  // Mapa
+  { path: 'mapa', component: HomeComponent },
+
   {
     path: 'usuarios/:id',
     loadComponent: () =>
@@ -53,8 +57,6 @@ export const routes: Routes = [
   { path: 'verify-code', component: VerifyCodeComponent },
   { path: 'new-password', component: NewPasswordComponent },
 
-  // Wildcard (SIEMPRE al final)
-  { path: '**', redirectTo: '', pathMatch: 'full' },
-
-  
+  // Wildcard
+  { path: '**', redirectTo: '', pathMatch: 'full' }
 ];

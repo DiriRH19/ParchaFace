@@ -1,15 +1,37 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Router, RouterLink } from '@angular/router';
+import { FormsModule } from '@angular/forms';
+
 import { EventCardComponent, Event } from '../event-card/event-card.component';
 import { NavbarComponent } from '../shared/navbar/navbar.component';
+import { FooterComponent } from '../shared/footer/footer.component';
 import { EventoMapa, EventoService } from '../services/evento';
-import { WeatherService } from '../services/weather.service';
-import { FormsModule } from '@angular/forms';
+
+interface ExploreQuickCategory {
+  label: string;
+  value: string;
+  emoji: string;
+}
+
+interface ExploreHighlightCard {
+  title: string;
+  subtitle: string;
+  tag: string;
+  route: string;
+}
 
 @Component({
   selector: 'app-explore',
   standalone: true,
-  imports: [CommonModule, FormsModule, EventCardComponent, NavbarComponent],
+  imports: [
+    CommonModule,
+    FormsModule,
+    RouterLink,
+    EventCardComponent,
+    NavbarComponent,
+    FooterComponent
+  ],
   templateUrl: './explore.component.html',
   styleUrls: ['./explore.component.css']
 })
@@ -18,21 +40,42 @@ export class ExploreComponent implements OnInit {
   isLoading = false;
   authRequired = false;
   private authWarned = false;
-
   private newlyCreatedFromNav: any = null;
-
-  constructor(
-    private eventoService: EventoService,
-    private weatherService: WeatherService
-  ) {}
 
   searchText = '';
   categoriaFiltro = '';
   priceRange = '';
   sortBy: 'fecha' | 'precio' | 'popularidad' | 'rating' = 'fecha';
 
-  ciudadFiltro = '';
-  ciudadesSugeridas = signal<{ nombre: string; departamento: string }[]>([]);
+  readonly quickCategories: ExploreQuickCategory[] = [
+    { label: 'Conciertos', value: 'MUSICA', emoji: '♫' },
+    { label: 'Deportes', value: 'DEPORTE', emoji: '◌' },
+    { label: 'Arte', value: 'ARTE', emoji: '✦' },
+    { label: 'Gastronomía', value: 'GASTRONOMIA', emoji: '◈' },
+    { label: 'Networking', value: 'NETWORKING', emoji: '⟡' },
+    { label: 'Gaming', value: 'GAMING', emoji: '◎' },
+    { label: 'Fiestas', value: 'FIESTAS', emoji: '◐' }
+  ];
+
+  readonly highlightCards: ExploreHighlightCard[] = [
+    {
+      title: 'Comunidades activas',
+      subtitle: 'Sigue personas, conversaciones y experiencias reales.',
+      tag: 'Social',
+      route: '/community'
+    },
+    {
+      title: 'Mapa inteligente',
+      subtitle: 'Descubre eventos por ubicación y muévelos en el mapa.',
+      tag: 'En vivo',
+      route: '/mapa'
+    }
+  ];
+
+  constructor(
+    private eventoService: EventoService,
+    private router: Router
+  ) {}
 
   ngOnInit(): void {
     if (typeof window !== 'undefined') {
@@ -53,6 +96,47 @@ export class ExploreComponent implements OnInit {
 
   refreshEvents(): void {
     this.loadEvents();
+  }
+
+  navigateTo(route: string): void {
+    this.router.navigate([route]);
+  }
+
+  goToMap(): void {
+    this.router.navigate(['/mapa']);
+  }
+
+  goToCommunity(): void {
+    this.router.navigate(['/community']);
+  }
+
+  goToCreateEvent(): void {
+    this.router.navigate(['/create-event']);
+  }
+
+  goToProfile(): void {
+    this.router.navigate(['/profile']);
+  }
+
+  applyQuickCategory(category: string): void {
+    this.categoriaFiltro = category;
+    this.scrollToSection('discover-section');
+  }
+
+  clearFilters(): void {
+    this.searchText = '';
+    this.categoriaFiltro = '';
+    this.priceRange = '';
+    this.sortBy = 'fecha';
+  }
+
+  scrollToSection(sectionId: string): void {
+    if (typeof document === 'undefined') return;
+
+    const el = document.getElementById(sectionId);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
   }
 
   private loadEvents(): void {
@@ -89,20 +173,6 @@ export class ExploreComponent implements OnInit {
         this.events = [];
         this.isLoading = false;
       }
-    });
-  }
-
-  onCiudadInput(value: string): void {
-    const q = (value || '').trim();
-
-    if (q.length < 2) {
-      this.ciudadesSugeridas.set([]);
-      return;
-    }
-
-    this.weatherService.getCiudades(q).subscribe({
-      next: (list) => this.ciudadesSugeridas.set(list || []),
-      error: () => this.ciudadesSugeridas.set([])
     });
   }
 
@@ -168,7 +238,29 @@ export class ExploreComponent implements OnInit {
       tags,
       price,
       rating: Number(e?.rating ?? 0),
-      imageUrl
+      imageUrl,
+
+      registeredCount:
+        e?.inscritos != null
+          ? Number(e.inscritos)
+          : e?.cantidadInscritos != null
+            ? Number(e.cantidadInscritos)
+            : e?.inscritosActuales != null
+              ? Number(e.inscritosActuales)
+              : e?.registeredCount != null
+                ? Number(e.registeredCount)
+                : e?.totalInscritos != null
+                  ? Number(e.totalInscritos)
+                  : null,
+
+      capacity:
+        e?.cupo != null
+          ? Number(e.cupo)
+          : e?.capacidad != null
+            ? Number(e.capacidad)
+            : e?.capacity != null
+              ? Number(e.capacity)
+              : null
     };
   }
 
@@ -242,11 +334,6 @@ export class ExploreComponent implements OnInit {
       list = list.filter(ev => (ev.category || '').toLowerCase() === qCat);
     }
 
-    const qCity = (this.ciudadFiltro || '').trim().toLowerCase();
-    if (qCity) {
-      list = list.filter(ev => (ev.ciudad || '').toLowerCase().includes(qCity));
-    }
-
     const r = (this.priceRange || '').trim();
     if (r) {
       list = list.filter(ev => this.inPriceRange(this.parsePriceCOP(ev.price), r));
@@ -262,5 +349,13 @@ export class ExploreComponent implements OnInit {
     });
 
     return list;
+  }
+
+  get featuredEvents(): Event[] {
+    return this.eventsFiltrados.slice(0, 6);
+  }
+
+  get feedEvents(): Event[] {
+    return [...this.eventsFiltrados].slice(0, 3);
   }
 }

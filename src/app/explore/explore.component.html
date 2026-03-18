@@ -1,99 +1,225 @@
 <app-navbar></app-navbar>
-<div class="explore-container">
-  <div class="explore-layout">
-    <div class="filters-sidebar">
-      <div class="filters-card">
-        <h3 class="filters-title">Filtros</h3>
 
-        <div class="filter-group">
-          <input
-            type="text"
-            placeholder="Buscar eventos..."
-            class="filter-input"
-            [(ngModel)]="searchText"
-          >
-        </div>
+<div class="explore-home">
+  <section class="hero-section">
+    <div class="hero-main-card">
+      <div class="hero-content">
+        <span class="hero-badge">Tendencias</span>
 
-        <div class="filter-group">
-          <label class="filter-label">Categoría</label>
-          <select class="filter-select" [(ngModel)]="categoriaFiltro">
-            <option value="">Todos</option>
-            <option value="MUSICA">Música</option>
-            <option value="GASTRONOMIA">Gastronomía</option>
-            <option value="GAMING">Gaming</option>
-            <option value="FIESTAS">Fiestas</option>
-            <option value="NETWORKING">Networking</option>
-            <option value="ARTE">Arte</option>
-            <option value="TECNO">Tecno</option>
-            <option value="DEPORTE">Deportes</option>
-          </select>
-        </div>
+        <h1 class="hero-title">
+          Tu entrada al <span class="highlight">parche de eventos</span> de la ciudad
+        </h1>
 
-        <div class="filter-group">
-          <label class="filter-label">Ciudad</label>
+        <p class="hero-subtitle">
+          Descubre, comparte y organiza experiencias con una portada viva,
+          social y enfocada en acción.
+        </p>
 
-          <input
-            type="text"
-            class="filter-input"
-            placeholder="Todas las ciudades"
-            [value]="ciudadFiltro"
-            (input)="ciudadFiltro = $any($event.target).value; onCiudadInput($any($event.target).value)"
-            list="ciudades-list"
-          >
+        <div class="hero-actions">
+          <button class="btn-primary" (click)="scrollToSection('discover-section')">
+            Explorar ahora
+          </button>
 
-          <datalist id="ciudades-list">
-            @for (c of ciudadesSugeridas(); track c.nombre) {
-              <option [value]="c.nombre">
-                {{ c.nombre }} - {{ c.departamento }}
-              </option>
-            }
-          </datalist>
-        </div>
-
-        <div class="filter-group">
-          <label class="filter-label">Rango de Precio</label>
-          <select class="filter-select" [(ngModel)]="priceRange">
-            <option value="">Todos</option>
-            <option value="free">Gratis</option>
-            <option value="0-50000">$0 - $50.000</option>
-            <option value="50000-100000">$50.000 - $100.000</option>
-            <option value="100000-200000">$100.000 - $200.000</option>
-            <option value="200000-300000">$200.000 - $300.000</option>
-            <option value="300000-500000">$300.000 - $500.000</option>
-            <option value="500000-1000000">$500.000 - $1.000.000</option>
-            <option value="1000000-2000000">$1.000.000 - $2.000.000</option>
-            <option value="2000000-999999999">$2.00.000+</option>
-          </select>
-        </div>
-
-        <div class="filter-group">
-          <label class="filter-label">Ordenar por</label>
-          <select class="filter-select" [(ngModel)]="sortBy">
-            <option value="fecha">Fecha</option>
-            <option value="precio">Precio</option>
-            <option value="popularidad">Popularidad</option>
-            <option value="rating">Rating</option>
-          </select>
+          <button class="btn-secondary" (click)="goToCreateEvent()">
+            Crear mi evento
+          </button>
         </div>
       </div>
     </div>
 
-    <div class="events-section">
-      <div class="events-header">
-        <h2 class="events-count">{{ eventsFiltrados.length }} eventos</h2>
-
-        @if (authRequired) {
-          <div class="auth-warning">
-            Para ver los eventos necesitas iniciar sesión. <a routerLink="/login">Iniciar sesión</a>
-          </div>
-        }
-      </div>
-
-      <div class="events-grid">
-        @for (event of eventsFiltrados; track event.id) {
-          <app-event-card [event]="event"></app-event-card>
-        }
+    <div class="hero-side-grid">
+      <div
+        class="hero-side-card clickable"
+        *ngFor="let card of highlightCards"
+        (click)="navigateTo(card.route)"
+      >
+        <span class="side-card-tag">{{ card.tag }}</span>
+        <h3>{{ card.title }}</h3>
+        <p>{{ card.subtitle }}</p>
       </div>
     </div>
-  </div>
+  </section>
+
+  <section class="quick-categories-section">
+    <div class="section-intro">
+      <p class="section-tag">Descubrimiento rápido</p>
+      <h2>Empieza navegando por lo que sí importa</h2>
+      <p>
+        Reduce fricción con accesos directos visuales y filtros sociales desde la primera pantalla.
+      </p>
+    </div>
+
+    <div class="quick-categories-list">
+      <button
+        class="category-chip"
+        *ngFor="let category of quickCategories"
+        (click)="applyQuickCategory(category.value)"
+      >
+        <span>{{ category.emoji }}</span>
+        {{ category.label }}
+      </button>
+    </div>
+  </section>
+
+  <section class="discover-section" id="discover-section">
+    <div class="discover-header">
+      <div>
+        <p class="section-tag">Explorar</p>
+        <h2>Eventos</h2>
+      </div>
+
+      <button class="text-link" (click)="clearFilters()">Limpiar filtros</button>
+    </div>
+
+    <div class="discover-toolbar">
+      <input
+        type="text"
+        class="search-input"
+        placeholder="Buscar eventos, lugares o categorías"
+        [(ngModel)]="searchText"
+      />
+
+      <select class="filter-select" [(ngModel)]="categoriaFiltro">
+        <option value="">Todas las categorías</option>
+        <option value="MUSICA">Música</option>
+        <option value="GASTRONOMIA">Gastronomía</option>
+        <option value="GAMING">Gaming</option>
+        <option value="FIESTAS">Fiestas</option>
+        <option value="NETWORKING">Networking</option>
+        <option value="ARTE">Arte</option>
+        <option value="TECNO">Tecno</option>
+        <option value="DEPORTE">Deportes</option>
+      </select>
+
+      <select class="filter-select" [(ngModel)]="priceRange">
+        <option value="">Todos los precios</option>
+        <option value="free">Gratis</option>
+        <option value="0-50000">$0 - $50.000</option>
+        <option value="50000-100000">$50.000 - $100.000</option>
+        <option value="100000-200000">$100.000 - $200.000</option>
+        <option value="200000-300000">$200.000 - $300.000</option>
+        <option value="300000-500000">$300.000 - $500.000</option>
+        <option value="500000-1000000">$500.000 - $1.000.000</option>
+        <option value="1000000-2000000">$1.000.000 - $2.000.000</option>
+        <option value="2000000-999999999">$2.000.000+</option>
+      </select>
+
+      <select class="filter-select" [(ngModel)]="sortBy">
+        <option value="fecha">Ordenar por fecha</option>
+        <option value="precio">Ordenar por precio</option>
+        <option value="popularidad">Ordenar por popularidad</option>
+        <option value="rating">Ordenar por rating</option>
+      </select>
+    </div>
+
+    <div *ngIf="authRequired" class="auth-warning">
+      Para ver todos los eventos necesitas iniciar sesión.
+      <a routerLink="/login">Iniciar sesión</a>
+    </div>
+
+    <div *ngIf="isLoading" class="loading-state">
+      Cargando eventos...
+    </div>
+
+    <div *ngIf="!isLoading && featuredEvents.length === 0" class="empty-state">
+      No encontramos eventos con esos filtros.
+    </div>
+
+    <div class="events-grid" *ngIf="!isLoading && featuredEvents.length > 0">
+      <app-event-card
+        *ngFor="let event of featuredEvents"
+        [event]="event"
+      ></app-event-card>
+    </div>
+  </section>
+
+  <section class="secondary-grid">
+    <article class="map-preview-card">
+      <div class="card-top">
+        <div>
+          <p class="section-tag">Mapa social</p>
+          <h3>Explora eventos desde el mapa</h3>
+        </div>
+
+        <button class="btn-dark" (click)="goToMap()">Ver mapa completo</button>
+      </div>
+
+      <p class="card-description">
+        Busca eventos por ubicación, visualiza marcadores y navega entre el listado y el mapa
+        en una sola vista.
+      </p>
+
+      <div class="mini-info-grid">
+        <div class="mini-info-card">
+          <h4>Eventos cerca de ti</h4>
+          <p>Selecciona un evento y ubícalo inmediatamente.</p>
+        </div>
+
+        <div class="mini-info-card">
+          <h4>Tu red y tendencias</h4>
+          <p>Descubre actividad, asistencia y zonas más activas.</p>
+        </div>
+
+        <div class="mini-info-card">
+          <h4>Ruta directa</h4>
+          <p>Ve al mapa y explora por categoría o búsqueda.</p>
+        </div>
+      </div>
+    </article>
+
+    <article class="community-preview-card">
+      <div class="card-top">
+        <div>
+          <p class="section-tag">Comunidad</p>
+          <h3>La parte social del parche</h3>
+        </div>
+
+        <button class="btn-light" (click)="goToCommunity()">Ir a comunidad</button>
+      </div>
+
+      <p class="card-description">
+        Únete a discusiones, publica contenido y conecta con personas que comparten tus gustos.
+      </p>
+
+      <div class="community-actions">
+        <button class="action-pill" (click)="goToCommunity()">Ver publicaciones</button>
+        <button class="action-pill" (click)="goToCreateEvent()">Crear evento</button>
+        <button class="action-pill" (click)="goToProfile()">Mi perfil</button>
+      </div>
+    </article>
+  </section>
+
+  <section class="feed-section">
+    <div class="feed-header">
+      <div>
+        <p class="section-tag">Actividad</p>
+        <h2>Feed de entrada</h2>
+      </div>
+
+      <button class="text-link" (click)="scrollToSection('discover-section')">
+        Ver más eventos
+      </button>
+    </div>
+
+    <div class="feed-list" *ngIf="feedEvents.length > 0">
+      <a
+        class="feed-item"
+        *ngFor="let event of feedEvents"
+        [routerLink]="['/event', event.id]"
+      >
+        <div class="feed-badge">
+          {{ event.category || 'Evento' }}
+        </div>
+
+        <div class="feed-body">
+          <h4>{{ event.title }}</h4>
+          <p>{{ event.date }} · {{ event.location }}</p>
+        </div>
+
+        <span class="feed-arrow">→</span>
+      </a>
+    </div>
+  </section>
 </div>
+
+<app-footer></app-footer>

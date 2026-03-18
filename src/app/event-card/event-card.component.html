@@ -10,6 +10,10 @@
         loading="lazy"
         (error)="onImgError()"
       >
+    } @else {
+      <div class="event-img-placeholder">
+        Sin imagen
+      </div>
     }
 
     <div class="action-icons">
@@ -17,9 +21,13 @@
       <button class="icon-btn share" type="button"></button>
     </div>
 
-    <div class="rating-badge">
-      {{ event.rating }}
-    </div>
+    @if (hasCapacityInfo) {
+      <div class="capacity-badge">
+        <span class="capacity-dot"></span>
+        <span class="capacity-label">Inscritos</span>
+        <span class="capacity-value">{{ capacityText }}</span>
+      </div>
+    }
   </div>
 
   <div class="event-content">
@@ -75,7 +83,6 @@
       >
         Ver Detalles
       </a>
-
     </div>
   </div>
 </div>

@@ -1,130 +1,267 @@
 <app-navbar></app-navbar>
 
-<section class="community">
-  <div class="container">
+<section class="community-page">
+  <div class="community-shell">
 
     @if (showWelcome()) {
-      <div class="modal">
-        <div class="modal__backdrop" (click)="dismissWelcome()"></div>
+      <div class="community-modal">
+        <div class="community-modal__backdrop" (click)="dismissWelcome()"></div>
 
-        <div class="modal__card card" role="dialog" aria-modal="true">
-          <div class="modal__icon" aria-hidden="true">
-            <svg class="modal__iconSvg" viewBox="0 0 24 24" fill="none">
+        <div class="community-modal__card community-card" role="dialog" aria-modal="true">
+          <div class="community-modal__icon" aria-hidden="true">
+            <svg class="community-modal__iconSvg" viewBox="0 0 24 24" fill="none">
               <path d="M7 11.5c.6-2.7 2.4-4.5 5-4.5 2.9 0 5 2.2 5 5.3 0 2.6-1.3 4.3-3.3 5.1" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
               <path d="M6.2 13.3c0-1.4 1.2-2.6 2.6-2.6h.7c.6 0 1.1.2 1.5.6l.5.5c.4.4.9.6 1.5.6h1.2c1.4 0 2.6 1.2 2.6 2.6v.5c0 1.9-1.5 3.4-3.4 3.4H9.6c-1.9 0-3.4-1.5-3.4-3.4v-.2z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
               <path d="M18.7 6.2l1.1-1.1M20.2 8.8h1.6M18.7 11.4l1.1 1.1" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
             </svg>
           </div>
 
-          <h2 class="modal__title">Bienvenido a tu comunidad ParchaFace</h2>
-          <p class="modal__text">
-            Ven y cuéntanos más acerca de lo que más te gusta hacer cuando no estás en casa.
+          <h2 class="community-modal__title">Bienvenido a tu comunidad ParchaFace</h2>
+          <p class="community-modal__text">
+            Encuentra conversaciones activas, organizadores y gente con tus mismos gustos.
+            Comparte ideas, arma parche y descubre qué está sonando en tu ciudad.
           </p>
 
-          <div class="modal__actions">
+          <div class="community-modal__actions">
             <button type="button" class="btn btn--primary" (click)="dismissWelcome()">Aceptar</button>
           </div>
         </div>
       </div>
     }
 
-    <!-- Header minimal -->
-    <header class="header">
-      <div class="header__left">
-        <h1 class="title">Comunidad</h1>
-        <p class="subtitle">Lo más activo y lo más reciente, en un vistazo.</p>
+    <header class="community-hero community-card">
+      <div class="community-hero__content">
+        <p class="community-kicker">Comunidad ParchaFace</p>
+        <h1 class="community-title">Conversa, conecta y mueve tu parche</h1>
+        <p class="community-subtitle">
+          Explora discusiones activas, encuentra organizadores destacados y participa
+          en una comunidad hecha para vivir eventos con más gente y mejores planes.
+        </p>
+
+        <div class="community-hero__actions">
+          <button type="button" class="btn btn--primary" (click)="goToDiscussions()">
+            Ir a discusiones
+          </button>
+          <button type="button" class="btn btn--soft" (click)="createPost()">
+            Crear publicación
+          </button>
+        </div>
       </div>
 
-      <div class="header__right">
-        <button type="button" class="btn btn--primary" (click)="goToDiscussions()">
-          Ir a discusiones
-        </button>
+      <div class="community-hero__aside">
+        <div class="community-note community-note--gold">
+          <span class="community-note__label">Ahora mismo</span>
+          <strong>{{ topActivity().length }} temas activos</strong>
+        </div>
+
+        <div class="community-note community-note--navy">
+          <span class="community-note__label">Comunidad</span>
+          <strong>{{ organizers().length }} organizadores visibles</strong>
+        </div>
+
+        <div class="community-note community-note--purple">
+          <span class="community-note__label">Participación</span>
+          <strong>{{ filteredActivity().length }} publicaciones filtradas</strong>
+        </div>
       </div>
     </header>
 
-    <!-- Main minimal grid -->
-    <div class="grid2">
-      <!-- Hot topics -->
-      <section class="panel card">
+    <section class="community-stats">
+      @for (item of stats(); track item.label) {
+        <article class="stat-card community-card">
+          <div class="stat-card__value">{{ item.value }}</div>
+          <div class="stat-card__label">{{ item.label }}</div>
+        </article>
+      }
+    </section>
+
+    <section class="community-toolbar community-card">
+      <div class="toolbar-field toolbar-field--search">
+        <label class="toolbar-label">Buscar</label>
+        <input
+          type="text"
+          class="toolbar-input"
+          placeholder="Busca temas, ciudades o categorías"
+          [ngModel]="search()"
+          (ngModelChange)="search.set($event)"
+        >
+      </div>
+
+      <div class="toolbar-field">
+        <label class="toolbar-label">Ciudad</label>
+        <select
+          class="toolbar-select"
+          [ngModel]="selectedCity()"
+          (ngModelChange)="selectedCity.set($event)"
+        >
+          @for (city of cities(); track city) {
+            <option [value]="city">{{ city }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="toolbar-field">
+        <label class="toolbar-label">Categoría</label>
+        <select
+          class="toolbar-select"
+          [ngModel]="selectedCategory()"
+          (ngModelChange)="selectedCategory.set($event)"
+        >
+          @for (category of categories(); track category) {
+            <option [value]="category">{{ category }}</option>
+          }
+        </select>
+      </div>
+    </section>
+
+    <div class="community-main-grid">
+      <section class="panel community-card panel--warm">
         <div class="panel__head">
           <div>
-            <h2 class="panel__title">Hot Topics</h2>
-            <p class="panel__sub muted">Lo que más está sonando ahora.</p>
+            <p class="panel__kicker">Tendencias</p>
+            <h2 class="panel__title">Destacados</h2>
+            <p class="panel__sub">Lo que más se está comentando ahora.</p>
           </div>
-          <button type="button" class="btn btn--ghost btn--sm" (click)="goToDiscussions()">Ver más</button>
+
+          <button type="button" class="btn btn--ghost btn--sm" (click)="goToDiscussions()">
+            Ver más
+          </button>
         </div>
 
         <div class="topic-list">
           @for (a of topActivity(); track a.id) {
             <button
               type="button"
-              class="topic"
+              class="topic-card"
               (click)="openDiscussion(a.id)"
             >
-              <div class="topic__main">
-                <div class="topic__title">{{ a.title }}</div>
-                <div class="topic__meta">
-                  <span class="chip">{{ a.city }}</span>
-                  <span class="chip">{{ a.category }}</span>
-                  <span class="muted">• {{ a.timeAgo }}</span>
+              <div class="topic-card__main">
+                <div class="topic-card__title">{{ a.title }}</div>
+
+                <div class="topic-card__meta">
+                  <span class="topic-chip topic-chip--city">{{ a.city }}</span>
+                  <span class="topic-chip topic-chip--category">{{ a.category }}</span>
+                  <span class="topic-muted">• {{ a.timeAgo }}</span>
                 </div>
               </div>
 
-              <div class="topic__side">
-                <div class="topic__count">{{ a.replies }}</div>
-                <div class="muted">comentarios</div>
+              <div class="topic-card__side">
+                <div class="topic-card__count">{{ a.replies }}</div>
+                <div class="topic-muted">comentarios</div>
               </div>
             </button>
           }
         </div>
       </section>
 
-      <!-- Recientes -->
-      <section class="panel card">
+      <section class="panel community-card panel--cool">
         <div class="panel__head">
           <div>
+            <p class="panel__kicker panel__kicker--purple">Actividad</p>
             <h2 class="panel__title">Recientes</h2>
-            <p class="panel__sub muted">Últimas publicaciones de la comunidad.</p>
+            <p class="panel__sub">Últimas publicaciones de la comunidad.</p>
           </div>
-          <button type="button" class="btn btn--ghost btn--sm" (click)="goToDiscussions()">Ver todo</button>
+
+          <button type="button" class="btn btn--ghost btn--sm" (click)="goToDiscussions()">
+            Ver todo
+          </button>
         </div>
 
         <div class="topic-list">
-          @for (a of topActivity(); track a.id) {
-            <button
-              type="button"
-              class="topic topic--compact"
-              (click)="openDiscussion(a.id)"
-            >
-              <div class="topic__main">
-                <div class="topic__title">{{ a.title }}</div>
-                <div class="topic__meta">
-                  <span class="muted">{{ a.city }} • {{ a.category }} • {{ a.timeAgo }}</span>
+          @if (filteredActivity().length === 0) {
+            <div class="empty-card">
+              No hay publicaciones que coincidan con tus filtros.
+            </div>
+          } @else {
+            @for (a of filteredActivity(); track a.id) {
+              <button
+                type="button"
+                class="topic-card topic-card--compact"
+                (click)="openDiscussion(a.id)"
+              >
+                <div class="topic-card__main">
+                  <div class="topic-card__title">{{ a.title }}</div>
+                  <div class="topic-card__meta">
+                    <span class="topic-muted">{{ a.city }} • {{ a.category }} • {{ a.timeAgo }}</span>
+                  </div>
                 </div>
-              </div>
 
-              <div class="topic__side">
-                <div class="topic__count">{{ a.replies }}</div>
-              </div>
-            </button>
+                <div class="topic-card__side">
+                  <div class="topic-card__count">{{ a.replies }}</div>
+                </div>
+              </button>
+            }
           }
         </div>
       </section>
     </div>
 
-    <!-- Rules reminder -->
-    <div class="rules card">
-      <div class="rules__left">
-        <div class="rules__icon" aria-hidden="true">⚠️</div>
-        <div>
-          <div class="rules__title">Recuerda las reglas</div>
-          <div class="rules__text muted">
-            Respeta a los demás, evita spam y comparte información útil para la comunidad.
+    <div class="community-secondary-grid">
+      <section class="panel community-card panel--purple">
+        <div class="panel__head">
+          <div>
+            <p class="panel__kicker panel__kicker--navy">Organizadores</p>
+            <h2 class="panel__title">Destacados</h2>
+            <p class="panel__sub">Perfiles visibles dentro de la comunidad.</p>
           </div>
         </div>
-      </div>
 
-      <button type="button" class="btn btn--ghost" (click)="viewRules()">Ver reglas</button>
+        <div class="organizer-list">
+          @for (o of filteredOrganizers(); track o.id) {
+            <article class="organizer-card">
+              <div class="organizer-card__top">
+                <div>
+                  <h3 class="organizer-card__name">{{ o.name }}</h3>
+                  <p class="organizer-card__city">{{ o.city }}</p>
+                </div>
+
+                <div class="organizer-card__rating">
+                  {{ o.postsCount }} publicaciones
+                </div>
+              </div>
+
+              <p class="organizer-card__bio">{{ o.bio }}</p>
+
+              <div class="organizer-card__tags">
+                @for (tag of o.tags; track tag) {
+                  <span class="organizer-tag">{{ tag }}</span>
+                }
+              </div>
+
+              <div class="organizer-card__actions">
+                <button
+                  type="button"
+                  class="btn"
+                  [class.btn--primary]="!o.isFollowing"
+                  [class.btn--soft]="o.isFollowing"
+                  (click)="toggleFollow(o.id)"
+                >
+                  {{ o.isFollowing ? 'Siguiendo' : 'Seguir' }}
+                </button>
+              </div>
+            </article>
+          }
+        </div>
+      </section>
+
+      <section class="rules-card community-card">
+        <div class="rules-card__top">
+          <div class="rules-card__icon" aria-hidden="true">✦</div>
+
+          <div>
+            <div class="rules-card__title">Recuerda las reglas</div>
+            <div class="rules-card__text">
+              Respeta a los demás, evita spam y comparte información útil para que la comunidad
+              siga siendo agradable de navegar.
+            </div>
+          </div>
+        </div>
+
+        <div class="rules-card__actions">
+          <button type="button" class="btn btn--ghost" (click)="viewRules()">Ver reglas</button>
+          <button type="button" class="btn btn--soft" (click)="createPost()">Crear publicación</button>
+        </div>
+      </section>
     </div>
 
   </div>
