@@ -2,6 +2,7 @@ import {
   Component,
   ElementRef,
   OnInit,
+  OnDestroy,
   PLATFORM_ID,
   ViewChild,
   inject
@@ -21,7 +22,7 @@ import { EventoMapa, EventoService } from '../services/evento';
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.css']
 })
-export class HomeComponent implements OnInit {
+export class HomeComponent implements OnInit, OnDestroy {
   private eventoService = inject(EventoService);
   private router = inject(Router);
   private platformId = inject(PLATFORM_ID);
@@ -49,11 +50,15 @@ export class HomeComponent implements OnInit {
   private readonly defaultCenter = { lat: 4.711, lng: -74.0721 };
   private mapContainer?: ElementRef<HTMLDivElement>;
 
+  // Evita doble inicialización concurrente
+  private mapInitInProgress = false;
+  private mapReady = false;
+
   @ViewChild('mapContainer')
   set mapContainerSetter(element: ElementRef<HTMLDivElement> | undefined) {
     this.mapContainer = element;
 
-    if (element) {
+    if (element && isPlatformBrowser(this.platformId)) {
       setTimeout(() => {
         this.initializeMap();
       }, 0);
@@ -62,6 +67,10 @@ export class HomeComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadEvents();
+  }
+
+  ngOnDestroy(): void {
+    this.destroyMap();
   }
 
   get uniqueCategories(): string[] {
@@ -228,12 +237,17 @@ export class HomeComponent implements OnInit {
     if (!isPlatformBrowser(this.platformId)) return;
     if (!this.mapContainer) return;
 
-    if (this.map) {
+    // Evita doble inicialización simultánea
+    if (this.mapInitInProgress) return;
+
+    // Si ya está listo, solo refresca
+    if (this.map && this.mapReady) {
       this.map.invalidateSize();
       await this.renderEventMarkers(false);
       return;
     }
 
+    this.mapInitInProgress = true;
     this.mapLoading = true;
     this.mapError = '';
     this.mapNotice = '';
@@ -241,13 +255,24 @@ export class HomeComponent implements OnInit {
     try {
       const L = await this.getLeaflet();
 
+      const container = this.mapContainer.nativeElement as any;
+
+      if (this.map) {
+        this.map.remove();
+        this.map = undefined;
+      }
+
+      if (container._leaflet_id) {
+        container._leaflet_id = null;
+      }
+
       let center = this.defaultCenter;
 
       try {
         center = await this.getUserLocation();
       } catch (error) {
         console.warn('No se pudo obtener la ubicación del usuario:', error);
-        this.mapNotice = 'No pude obtener tu ubicación exacta. Centré el mapa en Bogotá por defecto.';
+        this.mapNotice = 'No pude obtener tu ubicación exacta. Centré el mapa por defecto.';
       }
 
       this.map = L.map(this.mapContainer.nativeElement, {
@@ -261,8 +286,13 @@ export class HomeComponent implements OnInit {
         attribution: '&copy; OpenStreetMap contributors'
       }).addTo(this.map);
 
-      this.userMarker = L.marker([center.lat, center.lng]).addTo(this.map).bindPopup('Tu ubicación actual');
+      this.userMarker = L.marker([center.lat, center.lng])
+        .addTo(this.map)
+        .bindPopup('Tu ubicación actual');
+
       this.eventMarkersLayer = L.layerGroup().addTo(this.map);
+
+      this.mapReady = true;
 
       await this.renderEventMarkers(true);
 
@@ -272,8 +302,31 @@ export class HomeComponent implements OnInit {
     } catch (error) {
       console.error('Error inicializando el mapa:', error);
       this.mapError = 'No se pudo cargar el mapa.';
+      this.mapReady = false;
     } finally {
       this.mapLoading = false;
+      this.mapInitInProgress = false;
+    }
+  }
+
+  private destroyMap(): void {
+    if (this.map) {
+      this.map.remove();
+      this.map = undefined;
+    }
+
+    this.eventMarkersLayer = undefined;
+    this.userMarker = undefined;
+    this.markerByEventId.clear();
+    this.mapReady = false;
+    this.mapInitInProgress = false;
+
+    if (this.mapContainer?.nativeElement) {
+      const container = this.mapContainer.nativeElement as any;
+      if (container._leaflet_id) {
+        container._leaflet_id = null;
+      }
+      container.innerHTML = '';
     }
   }
 
