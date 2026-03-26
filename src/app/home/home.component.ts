@@ -1,7 +1,6 @@
 import {
   Component,
   ElementRef,
-  OnDestroy,
   OnInit,
   PLATFORM_ID,
   ViewChild,
@@ -15,15 +14,6 @@ import { FooterComponent } from '../shared/footer/footer.component';
 import { NavbarComponent } from '../shared/navbar/navbar.component';
 import { EventoMapa, EventoService } from '../services/evento';
 
-interface HeroSlide {
-  eventId: number | null;
-  imageUrl: string;
-  titulo: string;
-  categoria: string;
-  lugar: string;
-  fecha: string;
-}
-
 @Component({
   selector: 'app-home',
   standalone: true,
@@ -31,7 +21,7 @@ interface HeroSlide {
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.css']
 })
-export class HomeComponent implements OnInit, OnDestroy {
+export class HomeComponent implements OnInit {
   private eventoService = inject(EventoService);
   private router = inject(Router);
   private platformId = inject(PLATFORM_ID);
@@ -46,13 +36,6 @@ export class HomeComponent implements OnInit, OnDestroy {
   selectedEventId: number | null = null;
 
   events: EventoMapa[] = [];
-
-  heroSlides: HeroSlide[] = [];
-  heroIndex = 0;
-  private heroTimer: any;
-
-  private listImageTick = 0;
-  private listTimer: any;
 
   private leaflet?: typeof import('leaflet');
   private map?: import('leaflet').Map;
@@ -79,21 +62,6 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.loadEvents();
-  }
-
-  ngOnDestroy(): void {
-    if (this.heroTimer) {
-      clearInterval(this.heroTimer);
-    }
-
-    if (this.listTimer) {
-      clearInterval(this.listTimer);
-    }
-
-    if (this.map) {
-      this.map.remove();
-      this.map = undefined;
-    }
   }
 
   get uniqueCategories(): string[] {
@@ -134,11 +102,6 @@ export class HomeComponent implements OnInit, OnDestroy {
     }
 
     return list.sort((a, b) => String(a.fecha || '').localeCompare(String(b.fecha || '')));
-  }
-
-  get currentHeroSlide(): HeroSlide | null {
-    if (!this.heroSlides.length) return null;
-    return this.heroSlides[this.heroIndex] || null;
   }
 
   async onFiltersChanged(): Promise<void> {
@@ -191,56 +154,18 @@ export class HomeComponent implements OnInit, OnDestroy {
     }
   }
 
-  openHeroEvent(): void {
-    const slide = this.currentHeroSlide;
-    if (slide?.eventId != null) {
-      this.router.navigate(['/event', slide.eventId]);
-    }
-  }
+  getEventImage(evento: EventoMapa): string {
+    const rawImg =
+      (evento as any)?.imagenPortadaUrl ||
+      (evento as any)?.imagenPortadaURL ||
+      (evento as any)?.imagenPortada ||
+      (evento as any)?.portada ||
+      (evento as any)?.portadaUrl ||
+      (evento as any)?.imagenUrl ||
+      (evento as any)?.imageUrl ||
+      '';
 
-  getEventImages(evento: EventoMapa): string[] {
-    const anyEvento = evento as any;
-
-    const fromArray = Array.isArray(anyEvento?.imagenes)
-      ? anyEvento.imagenes
-        .map((img: any) =>
-          this.eventoService.getFullImageUrl(
-            String(img?.imageUrl || img?.imagenUrl || img?.url || '')
-          )
-        )
-        .filter((url: string) => !!url)
-      : [];
-
-    const portada = this.eventoService.getFullImageUrl(
-      String(
-        anyEvento?.imagenPortadaUrl ||
-        anyEvento?.imagenPortadaURL ||
-        anyEvento?.imagenPortada ||
-        anyEvento?.portada ||
-        anyEvento?.portadaUrl ||
-        anyEvento?.imagenUrl ||
-        anyEvento?.imageUrl ||
-        ''
-      )
-    );
-
-    if (fromArray.length > 0) {
-      return fromArray;
-    }
-
-    return portada ? [portada] : [];
-  }
-
-  getCurrentItemImage(evento: EventoMapa): string {
-    const images = this.getEventImages(evento);
-    if (!images.length) return '';
-    return images[this.listImageTick % images.length];
-  }
-
-  getCurrentItemImageIndex(evento: EventoMapa): number {
-    const images = this.getEventImages(evento);
-    if (!images.length) return 0;
-    return this.listImageTick % images.length;
+    return this.eventoService.getFullImageUrl(String(rawImg || ''));
   }
 
   getEventLocation(evento: EventoMapa): string {
@@ -267,10 +192,6 @@ export class HomeComponent implements OnInit, OnDestroy {
     }
   }
 
-  setHeroIndex(index: number): void {
-    this.heroIndex = index;
-  }
-
   private loadEvents(): void {
     this.eventsLoading = true;
     this.mapError = '';
@@ -280,10 +201,6 @@ export class HomeComponent implements OnInit, OnDestroy {
       next: async (list: EventoMapa[]) => {
         this.events = list || [];
         this.eventsLoading = false;
-
-        this.buildHeroSlides();
-        this.startHeroCarousel();
-        this.startListCarousel();
 
         if (this.events.length === 0) {
           this.mapNotice = 'Aún no hay eventos públicos con ubicación para mostrar.';
@@ -301,58 +218,10 @@ export class HomeComponent implements OnInit, OnDestroy {
         }
 
         this.events = [];
-        this.heroSlides = [];
         this.eventsLoading = false;
         await this.renderEventMarkers(true);
       }
     });
-  }
-
-  private buildHeroSlides(): void {
-    this.heroSlides = (this.events || []).flatMap((evento: EventoMapa) => {
-      const images = this.getEventImages(evento);
-      const fecha = this.getEventDateLabel(evento);
-      const lugar = this.getEventLocation(evento);
-
-      return images.map((imageUrl: string) => ({
-        eventId: evento.idEvento ?? null,
-        imageUrl,
-        titulo: evento.titulo || 'Evento',
-        categoria: String(evento.categoria || 'Evento'),
-        lugar,
-        fecha
-      }));
-    });
-
-    this.heroIndex = 0;
-  }
-
-  private startHeroCarousel(): void {
-    if (!isPlatformBrowser(this.platformId)) return;
-
-    if (this.heroTimer) {
-      clearInterval(this.heroTimer);
-    }
-
-    if (this.heroSlides.length <= 1) {
-      return;
-    }
-
-    this.heroTimer = setInterval(() => {
-      this.heroIndex = (this.heroIndex + 1) % this.heroSlides.length;
-    }, 4500);
-  }
-
-  private startListCarousel(): void {
-    if (!isPlatformBrowser(this.platformId)) return;
-
-    if (this.listTimer) {
-      clearInterval(this.listTimer);
-    }
-
-    this.listTimer = setInterval(() => {
-      this.listImageTick++;
-    }, 3200);
   }
 
   private async initializeMap(): Promise<void> {
@@ -399,7 +268,7 @@ export class HomeComponent implements OnInit, OnDestroy {
 
       setTimeout(() => {
         this.map?.invalidateSize();
-      }, 250);
+      }, 200);
     } catch (error) {
       console.error('Error inicializando el mapa:', error);
       this.mapError = 'No se pudo cargar el mapa.';
@@ -484,7 +353,7 @@ export class HomeComponent implements OnInit, OnDestroy {
   private buildPopupContent(evento: EventoMapa): string {
     const fecha = this.getEventDateLabel(evento);
     const lugar = this.getEventLocation(evento);
-    const imageUrl = this.getEventImages(evento)[0] || '';
+    const imageUrl = this.getEventImage(evento);
 
     const imagen = imageUrl
       ? `<img
