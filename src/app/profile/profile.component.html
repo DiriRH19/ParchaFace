@@ -21,191 +21,260 @@
     </div>
   </div>
 
-  <div class="profile-card">
-    <div class="cover-section">
-      <div class="cover-image">
-        @if (userData?.fotoPortada) {
-          <img
-            [src]="'http://localhost:8080' + (userData?.fotoPortada || '')"
-            alt="Foto de portada"
-            class="cover-img"
-          />
-        } @else {
-          <div class="cover-placeholder">Sin portada</div>
-        }
+  <div class="profile-shell">
+    <section class="profile-hero">
+      <div class="profile-main-card">
+        <div class="cover-section">
+          <div class="cover-image">
+            @if (coverImageSrc) {
+              <img
+                [src]="coverImageSrc"
+                alt="Foto de portada"
+                class="cover-img"
+              />
+            } @else {
+              <div class="cover-placeholder">Portada</div>
+            }
 
-        <input
-          type="file"
-          #portadaInput
-          hidden
-          accept="image/*"
-          (change)="onPortadaSelected($event)"
-        />
+            @if (isEditing) {
+              <input
+                type="file"
+                #portadaInput
+                hidden
+                accept="image/*"
+                (change)="onPortadaSelected($event)"
+              />
 
-        <button class="btn-change-cover" type="button" (click)="portadaInput.click()">
-          Cambiar Portada
-        </button>
-      </div>
-
-      <div class="profile-picture-wrapper">
-        <div class="profile-picture">
-          @if (userData?.fotoPerfil) {
-            <img
-              [src]="'http://localhost:8080' + (userData?.fotoPerfil || '')"
-              alt="Foto de perfil"
-              class="profile-img"
-            />
-          } @else {
-            <div class="profile-placeholder">👤</div>
-          }
-
-          <input
-            type="file"
-            #perfilInput
-            hidden
-            accept="image/*"
-            (change)="onPerfilSelected($event)"
-          />
-
-          <button class="btn-change-photo" type="button" (click)="perfilInput.click()">
-            ✎
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <div class="profile-info">
-      <div class="user-details">
-        @if (!isEditing) {
-          <h1 class="user-name">{{ getUserName() }}</h1>
-          <p class="user-username">{{ getDisplayHandle() }}</p>
-        } @else {
-          <div class="edit-grid">
-            <div class="edit-field">
-              <label class="edit-label">Nombre</label>
-              <input class="edit-input" type="text" [(ngModel)]="editForm.nombre" />
-            </div>
-
-            <div class="edit-field">
-              <label class="edit-label">Correo</label>
-              <input class="edit-input" type="email" [(ngModel)]="editForm.correo" />
-            </div>
-          </div>
-
-          @if (saveError) {
-            <div class="edit-error">{{ saveError }}</div>
-          }
-        }
-
-        <div class="user-meta">
-          <span class="meta-item">
-            {{ isEditing ? editForm.correo : (userData?.correo || 'No disponible') }}
-          </span>
-        </div>
-
-        <div class="social-stats-bar">
-          <button type="button" class="social-stat social-stat-static" (click)="setActiveTab('events')">
-            <span class="social-stat-value">{{ getTotalEventosPerfil() }}</span>
-            <span class="social-stat-label">Eventos</span>
-          </button>
-
-          <button type="button" class="social-stat" (click)="openSeguidoresModal()">
-            <span class="social-stat-value">{{ totalSeguidores }}</span>
-            <span class="social-stat-label">Seguidores</span>
-          </button>
-
-          <button type="button" class="social-stat" (click)="openSiguiendoModal()">
-            <span class="social-stat-value">{{ totalSiguiendo }}</span>
-            <span class="social-stat-label">Siguiendo</span>
-          </button>
-        </div>
-
-        <div class="profile-quick-actions">
-          @if (userData?.id) {
-            <a class="btn-outline-accent" [routerLink]="['/usuarios', userData?.id]">
-              Ver perfil público
-            </a>
-          }
-        </div>
-      </div>
-    </div>
-
-    <div class="profile-search-panel">
-      <div class="section-card">
-        <div class="profile-search-header">
-          <div>
-            <h2 class="section-title">Buscar perfiles</h2>
-            <p class="section-text profile-search-subtext">
-              Encuentra otros usuarios de ParchaFace y visita sus perfiles públicos.
-            </p>
-          </div>
-        </div>
-
-        <div class="profile-search-box">
-          <input
-            type="text"
-            class="profile-search-input"
-            placeholder="Busca por nombre o correo..."
-            [(ngModel)]="searchQuery"
-            (keyup.enter)="buscarPerfiles()"
-          />
-
-          <button type="button" class="btn-save" (click)="buscarPerfiles()">
-            Buscar
-          </button>
-
-          @if (searchQuery) {
-            <button type="button" class="btn-cancel" (click)="clearBusqueda()">
-              Limpiar
-            </button>
-          }
-        </div>
-
-        @if (searchLoading) {
-          <p class="section-text">Buscando perfiles...</p>
-        }
-
-        @if (searchError) {
-          <p class="section-text error-text">{{ searchError }}</p>
-        }
-
-        @if (!searchLoading && !searchError && searchTouched && searchQuery.trim() && searchResults.length === 0) {
-          <div class="empty-state">No se encontraron perfiles con ese criterio.</div>
-        }
-
-        @if (searchResults.length > 0) {
-          <div class="search-user-list">
-            @for (user of searchResults; track user.idUsuario) {
-              <a class="search-user-card" [routerLink]="['/usuarios', user.idUsuario]">
-                <div class="search-user-avatar">
-                  @if (user.fotoPerfil) {
-                    <img
-                      [src]="getSearchUserImage(user.fotoPerfil)"
-                      [alt]="user.nombre"
-                      class="search-user-avatar-img"
-                    />
-                  } @else {
-                    <div class="search-user-placeholder">👤</div>
-                  }
-                </div>
-
-                <div class="search-user-body">
-                  <h3>{{ user.nombre }}</h3>
-                  <p class="search-user-handle">{{ user.correo }}</p>
-                  <p class="search-user-bio">
-                    {{ user.acercaDe?.trim() ? user.acercaDe : 'Sin descripción disponible.' }}
-                  </p>
-                </div>
-
-                <div class="search-user-action">
-                  <span class="btn-outline-accent">Ver perfil</span>
-                </div>
-              </a>
+              <button class="btn-change-cover" type="button" (click)="portadaInput.click()">
+                Cambiar portada
+              </button>
             }
           </div>
-        }
+
+          <div class="profile-picture-wrapper">
+            <div class="profile-picture">
+              @if (profileImageSrc) {
+                <img
+                  [src]="profileImageSrc"
+                  alt="Foto de perfil"
+                  class="profile-img"
+                />
+              } @else {
+                <div class="profile-placeholder">PF</div>
+              }
+
+              @if (isEditing) {
+                <input
+                  type="file"
+                  #perfilInput
+                  hidden
+                  accept="image/*"
+                  (change)="onPerfilSelected($event)"
+                />
+
+                <button class="btn-change-photo" type="button" (click)="perfilInput.click()">
+                  Editar
+                </button>
+              }
+            </div>
+          </div>
+        </div>
+
+        <div class="profile-main-content">
+          <div class="profile-main-top">
+            <div class="user-details">
+              @if (!isEditing) {
+                <p class="profile-kicker">Perfil social</p>
+                <h1 class="user-name">{{ getUserName() }}</h1>
+                <p class="user-username">{{ getDisplayHandle() }}</p>
+              } @else {
+                <div class="edit-grid">
+                  <div class="edit-field">
+                    <label class="edit-label">Nombre</label>
+                    <input class="edit-input" type="text" [(ngModel)]="editForm.nombre" />
+                  </div>
+
+                  <div class="edit-field">
+                    <label class="edit-label">Correo</label>
+                    <input class="edit-input" type="email" [(ngModel)]="editForm.correo" />
+                  </div>
+                </div>
+
+                @if (saveError) {
+                  <div class="edit-error">{{ saveError }}</div>
+                }
+              }
+
+              <div class="user-meta">
+                <span class="meta-pill">
+                  {{ isEditing ? editForm.correo : (userData?.correo || 'No disponible') }}
+                </span>
+              </div>
+
+              @if (!isEditing) {
+                <p class="hero-bio">
+                  {{ userData?.acercaDe?.trim() ? userData?.acercaDe : 'Haz que tu perfil cuente lo que te mueve: gustos, estilo y planes favoritos.' }}
+                </p>
+              }
+            </div>
+
+            <div class="profile-quick-actions">
+              @if (userData?.id) {
+                <a class="btn-outline-accent" [routerLink]="['/usuarios', userData?.id]">
+                  Ver perfil público
+                </a>
+              }
+
+              <button class="btn-soft" type="button" (click)="setActiveTab('events')">
+                Ver eventos
+              </button>
+            </div>
+          </div>
+
+          <div class="social-stats-bar">
+            <button type="button" class="social-stat social-stat-static" (click)="setActiveTab('events')">
+              <span class="social-stat-value">{{ getTotalEventosPerfil() }}</span>
+              <span class="social-stat-label">Eventos</span>
+            </button>
+
+            <button type="button" class="social-stat" (click)="openSeguidoresModal()">
+              <span class="social-stat-value">{{ totalSeguidores }}</span>
+              <span class="social-stat-label">Seguidores</span>
+            </button>
+
+            <button type="button" class="social-stat" (click)="openSiguiendoModal()">
+              <span class="social-stat-value">{{ totalSiguiendo }}</span>
+              <span class="social-stat-label">Siguiendo</span>
+            </button>
+          </div>
+        </div>
       </div>
-    </div>
+
+      <aside class="profile-side-rail">
+        <div class="section-card spotlight-card">
+          <div class="section-head">
+            <div>
+              <p class="section-kicker">Descubrir</p>
+              <h2 class="section-title">Buscar perfiles</h2>
+              <p class="section-text profile-search-subtext">
+                Encuentra otros usuarios de ParchaFace y entra directo a sus perfiles públicos.
+              </p>
+            </div>
+          </div>
+
+          <div class="profile-search-box">
+            <input
+              type="text"
+              class="profile-search-input"
+              placeholder="Busca por nombre o correo..."
+              [(ngModel)]="searchQuery"
+              (keyup.enter)="buscarPerfiles()"
+            />
+
+            <div class="search-actions">
+              <button type="button" class="btn-save" (click)="buscarPerfiles()">
+                Buscar
+              </button>
+
+              @if (searchQuery) {
+                <button type="button" class="btn-cancel" (click)="clearBusqueda()">
+                  Limpiar
+                </button>
+              }
+            </div>
+          </div>
+
+          @if (searchLoading) {
+            <p class="section-text">Buscando perfiles...</p>
+          }
+
+          @if (searchError) {
+            <p class="section-text error-text">{{ searchError }}</p>
+          }
+
+          @if (!searchLoading && !searchError && searchTouched && searchQuery.trim() && searchResults.length === 0) {
+            <div class="empty-state">No se encontraron perfiles con ese criterio.</div>
+          }
+
+          @if (searchResults.length > 0) {
+            <div class="search-user-list">
+              @for (user of searchResults; track user.idUsuario) {
+                <a class="search-user-card" [routerLink]="['/usuarios', user.idUsuario]">
+                  <div class="search-user-avatar">
+                    @if (user.fotoPerfil) {
+                      <img
+                        [src]="getSearchUserImage(user.fotoPerfil)"
+                        [alt]="user.nombre"
+                        class="search-user-avatar-img"
+                      />
+                    } @else {
+                      <div class="search-user-placeholder">PF</div>
+                    }
+                  </div>
+
+                  <div class="search-user-body">
+                    <h3>{{ user.nombre }}</h3>
+                    <p class="search-user-handle">{{ user.correo }}</p>
+                    <p class="search-user-bio">
+                      {{ user.acercaDe?.trim() ? user.acercaDe : 'Sin descripción disponible.' }}
+                    </p>
+                  </div>
+
+                  <div class="search-user-action">
+                    <span class="btn-outline-accent">Ver perfil</span>
+                  </div>
+                </a>
+              }
+            </div>
+          }
+        </div>
+
+        <div class="section-card compact-card">
+          <div class="section-head section-head-tight">
+            <div>
+              <p class="section-kicker">Preferencias</p>
+              <h2 class="section-title">Tus intereses</h2>
+            </div>
+
+            <a
+              class="btn-soft"
+              [routerLink]="['/preferencias']"
+              [queryParams]="{ returnTo: 'profile' }"
+            >
+              Editar
+            </a>
+          </div>
+
+          @if (hasInterests) {
+            <div class="interests-list interests-list-top">
+              @for (interest of topInterests; track interest) {
+                <span class="interest-tag">
+                  {{ interest }}
+                </span>
+              }
+
+              @if (remainingInterestsCount > 0) {
+                <span class="interest-tag interest-tag-more">+{{ remainingInterestsCount }}</span>
+              }
+            </div>
+          } @else {
+            <p class="section-text">Aún no has seleccionado intereses.</p>
+          }
+
+          <div class="quick-links">
+            <button type="button" class="quick-link" (click)="setActiveTab('profile')">
+              Perfil
+            </button>
+            <button type="button" class="quick-link" (click)="setActiveTab('activity')">
+              Actividad
+            </button>
+            <button type="button" class="quick-link" (click)="setActiveTab('settings')">
+              Ajustes
+            </button>
+          </div>
+        </div>
+      </aside>
+    </section>
 
     <div class="profile-tabs">
       @for (tab of tabs; track tab.id) {
@@ -221,7 +290,6 @@
 
     <div class="profile-content">
       @switch (activeTab) {
-
         @case ('profile') {
           <div class="content-section">
             <div class="section-card">
@@ -243,38 +311,10 @@
 
               <div class="contact-info">
                 <div class="contact-item">
-                  <span class="contact-icon"></span>
+                  <span class="contact-dot"></span>
                   <span>{{ getUserEmail() || 'No disponible' }}</span>
                 </div>
               </div>
-            </div>
-          </div>
-
-          <div class="content-section">
-            <div class="section-card">
-              <div class="section-title-row">
-                <h2 class="section-title">Intereses</h2>
-
-                <button
-                  type="button"
-                  class="btn-cancel btn-small"
-                  [routerLink]="['/preferencias']"
-                  [queryParams]="{ returnTo: 'profile' }">
-                  Editar intereses
-                </button>
-              </div>
-
-              <div class="interests-list">
-                @for (interest of userData?.categoriasPreferidas; track interest) {
-                  <span class="interest-tag">
-                    {{ interest }}
-                  </span>
-                }
-              </div>
-
-              @if (!((userData?.categoriasPreferidas?.length || 0) > 0)) {
-                <p class="section-text">No tienes intereses seleccionados todavía.</p>
-              }
             </div>
           </div>
 
@@ -287,8 +327,8 @@
                   <div class="social-list">
                     @for (social of userData?.redesSociales; track social) {
                       <div class="social-item">
-                        <span class="social-icon"></span>
-                        <span><b>{{ social.platform }}</b>: {{ social.handle }}</span>
+                        <span class="social-platform-pill">{{ social.platform }}</span>
+                        <span class="social-item-text">{{ social.handle }}</span>
                       </div>
                     }
                   </div>
@@ -330,7 +370,12 @@
 
         @case ('events') {
           <div class="section-card full-width tab-full-width events-panel">
-            <h2 class="section-title">Tus eventos</h2>
+            <div class="panel-head">
+              <div>
+                <p class="section-kicker">Movimiento</p>
+                <h2 class="section-title">Tus eventos</h2>
+              </div>
+            </div>
 
             @if (loadingEvents) {
               <p class="section-text">Cargando tus eventos...</p>
@@ -357,7 +402,7 @@
                         <div class="event-image-box">
                           @if (event.imagenPortadaUrl) {
                             <img
-                              [src]="event.imagenPortadaUrl"
+                              [src]="getEventImage(event.imagenPortadaUrl)"
                               [alt]="event.titulo"
                               class="event-image"
                             />
@@ -401,7 +446,7 @@
                         <div class="event-image-box">
                           @if (event.imagenPortadaUrl) {
                             <img
-                              [src]="event.imagenPortadaUrl"
+                              [src]="getEventImage(event.imagenPortadaUrl)"
                               [alt]="event.titulo"
                               class="event-image"
                             />
@@ -437,7 +482,12 @@
 
         @case ('activity') {
           <div class="section-card full-width tab-full-width activity-panel">
-            <h2 class="section-title">Actividad reciente</h2>
+            <div class="panel-head">
+              <div>
+                <p class="section-kicker">Timeline</p>
+                <h2 class="section-title">Actividad reciente</h2>
+              </div>
+            </div>
 
             @if (loadingActivity) {
               <p class="section-text">Cargando tu actividad...</p>
@@ -477,11 +527,37 @@
         }
 
         @case ('settings') {
-          <div class="section-card full-width">
-            <h2 class="section-title">Configuración</h2>
-            <p class="section-text">
-              Esta pestaña la dejamos libre para preferencias, privacidad y ajustes de cuenta.
-            </p>
+          <div class="section-card full-width settings-panel">
+            <div class="panel-head">
+              <div>
+                <p class="section-kicker">Cuenta</p>
+                <h2 class="section-title">Configuración</h2>
+                <p class="section-text">
+                  Organiza tus ajustes, preferencias y acceso rápido a las zonas clave del perfil.
+                </p>
+              </div>
+            </div>
+
+            <div class="settings-grid">
+              <a
+                class="settings-action-card"
+                [routerLink]="['/preferencias']"
+                [queryParams]="{ returnTo: 'profile' }"
+              >
+                <h3>Editar preferencias</h3>
+                <p>Ajusta categorías, intereses y afinidad con eventos.</p>
+              </a>
+
+              <button class="settings-action-card" type="button" (click)="setActiveTab('profile')">
+                <h3>Editar perfil</h3>
+                <p>Actualiza nombre, descripción y redes sociales.</p>
+              </button>
+
+              <button class="settings-action-card" type="button" (click)="setActiveTab('events')">
+                <h3>Ver mis eventos</h3>
+                <p>Revisa lo que has creado y a lo que te has inscrito.</p>
+              </button>
+            </div>
           </div>
         }
       }
@@ -523,12 +599,12 @@
                 <div class="follow-user-avatar">
                   @if (user.fotoPerfil) {
                     <img
-                      [src]="'http://localhost:8080' + user.fotoPerfil"
+                      [src]="getSearchUserImage(user.fotoPerfil)"
                       [alt]="user.nombre"
                       class="follow-user-avatar-img"
                     />
                   } @else {
-                    <div class="follow-user-placeholder">👤</div>
+                    <div class="follow-user-placeholder">PF</div>
                   }
                 </div>
 

@@ -10,6 +10,11 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { EventoService } from '../services/evento';
 
+interface RedSocialEvento {
+  plataforma: string;
+  url: string;
+}
+
 @Component({
   selector: 'app-create-event',
   standalone: true,
@@ -30,13 +35,26 @@ export class CreateEventComponent implements AfterViewInit, OnDestroy {
   private readonly defaultLat = 4.60971;
   private readonly defaultLng = -74.08175;
   private readonly defaultZoom = 12;
+  private readonly maxImagenes = 3;
+  private readonly maxRedesSociales = 5;
 
-  selectedImageFile: File | null = null;
-  imagePreviewUrl: string | null = null;
+  readonly plataformasSociales = [
+    { value: 'INSTAGRAM', label: 'Instagram' },
+    { value: 'FACEBOOK', label: 'Facebook' },
+    { value: 'TIKTOK', label: 'TikTok' },
+    { value: 'X', label: 'X / Twitter' },
+    { value: 'YOUTUBE', label: 'YouTube' },
+    { value: 'WHATSAPP', label: 'WhatsApp' },
+    { value: 'TELEGRAM', label: 'Telegram' }
+  ];
+
+  selectedImages: File[] = [];
+  imagePreviewUrls: string[] = [];
 
   isSubmitting = false;
   submitError = '';
   submitSuccess = '';
+  validationErrors: string[] = [];
 
   eventData = {
     titulo: '',
@@ -52,7 +70,6 @@ export class CreateEventComponent implements AfterViewInit, OnDestroy {
     nombreLugar: '',
     latitud: null as number | null,
     longitud: null as number | null,
-    direccionCompleta: '',
     ciudad: '',
     cupo: '' as number | string,
     eventoGratuito: true,
@@ -63,7 +80,8 @@ export class CreateEventComponent implements AfterViewInit, OnDestroy {
     recordatoriosAutomaticos: true,
     emailContacto: '',
     telefonoContacto: '',
-    sitioWeb: ''
+    sitioWeb: '',
+    redesSociales: [] as RedSocialEvento[]
   };
 
   newTag = '';
@@ -90,12 +108,13 @@ export class CreateEventComponent implements AfterViewInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.destroyMap();
-    this.revokePreviewUrl();
+    this.revokeAllPreviewUrls();
   }
 
   addTag(): void {
-    if (this.newTag.trim() && !this.eventData.tags.includes(this.newTag.trim())) {
-      this.eventData.tags.push(this.newTag.trim());
+    const valor = this.newTag.trim();
+    if (valor && !this.eventData.tags.includes(valor)) {
+      this.eventData.tags.push(valor);
       this.newTag = '';
     }
   }
@@ -104,11 +123,34 @@ export class CreateEventComponent implements AfterViewInit, OnDestroy {
     this.eventData.tags = this.eventData.tags.filter(t => t !== tag);
   }
 
-  nextStep(): void {
-    this.submitError = '';
-    this.submitSuccess = '';
+  addRedSocial(): void {
+    this.clearMessages();
 
-    if (!this.validateCurrentStep()) {
+    if (this.eventData.redesSociales.length >= this.maxRedesSociales) {
+      this.submitError = `Puedes agregar máximo ${this.maxRedesSociales} redes sociales.`;
+      return;
+    }
+
+    this.eventData.redesSociales.push({
+      plataforma: '',
+      url: ''
+    });
+  }
+
+  removeRedSocial(index: number): void {
+    if (index < 0 || index >= this.eventData.redesSociales.length) {
+      return;
+    }
+
+    this.eventData.redesSociales.splice(index, 1);
+  }
+
+  nextStep(): void {
+    this.clearMessages();
+
+    const errors = this.getStepErrors(this.currentStep);
+    if (errors.length > 0) {
+      this.validationErrors = errors;
       return;
     }
 
@@ -124,8 +166,7 @@ export class CreateEventComponent implements AfterViewInit, OnDestroy {
   }
 
   previousStep(): void {
-    this.submitError = '';
-    this.submitSuccess = '';
+    this.clearMessages();
 
     if (this.currentStep > 1) {
       this.currentStep--;
@@ -137,13 +178,11 @@ export class CreateEventComponent implements AfterViewInit, OnDestroy {
   }
 
   onEventModeChange(): void {
-    this.submitError = '';
-    this.submitSuccess = '';
+    this.clearMessages();
 
     if (this.eventData.eventoEnLinea) {
       this.eventData.ubicacion = '';
       this.eventData.nombreLugar = '';
-      this.eventData.direccionCompleta = '';
       this.eventData.ciudad = '';
       this.eventData.latitud = null;
       this.eventData.longitud = null;
@@ -155,37 +194,71 @@ export class CreateEventComponent implements AfterViewInit, OnDestroy {
     }
   }
 
-  onImageSelected(event: Event): void {
+  openFileSelector(input: HTMLInputElement): void {
+    input.click();
+  }
+
+  onFilesSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
-    const file = input.files?.[0] ?? null;
+    const files = input.files ? Array.from(input.files) : [];
 
-    this.selectedImageFile = file;
-    this.submitError = '';
-    this.submitSuccess = '';
+    this.clearMessages();
 
-    this.revokePreviewUrl();
-
-    if (!file) {
-      this.imagePreviewUrl = null;
+    if (!files.length) {
       return;
     }
 
-    if (!this.isValidImageFile(file)) {
-      this.selectedImageFile = null;
-      this.imagePreviewUrl = null;
-      this.submitError = 'La imagen debe ser JPG, JPEG, PNG o WEBP.';
+    for (const file of files) {
+      if (!this.isValidImageFile(file)) {
+        this.submitError = 'Todas las imágenes deben ser JPG, JPEG, PNG o WEBP.';
+        input.value = '';
+        return;
+      }
+    }
+
+    const nuevas = files.filter(file => {
+      return !this.selectedImages.some(existing =>
+        existing.name === file.name &&
+        existing.size === file.size &&
+        existing.lastModified === file.lastModified
+      );
+    });
+
+    const total = this.selectedImages.length + nuevas.length;
+
+    if (total > this.maxImagenes) {
+      this.submitError = `Solo puedes subir máximo ${this.maxImagenes} imágenes.`;
       input.value = '';
       return;
     }
 
-    this.imagePreviewUrl = URL.createObjectURL(file);
+    this.selectedImages = [...this.selectedImages, ...nuevas];
+
+    this.revokeAllPreviewUrls();
+    this.imagePreviewUrls = this.selectedImages.map(file => URL.createObjectURL(file));
+
+    input.value = '';
+  }
+
+  removeSelectedImage(index: number, event?: Event): void {
+    event?.stopPropagation();
+
+    if (index < 0 || index >= this.selectedImages.length) {
+      return;
+    }
+
+    this.selectedImages.splice(index, 1);
+
+    this.revokeAllPreviewUrls();
+    this.imagePreviewUrls = this.selectedImages.map(file => URL.createObjectURL(file));
   }
 
   createEvent(): void {
-    this.submitError = '';
-    this.submitSuccess = '';
+    this.clearMessages();
 
-    if (!this.validateAllSteps()) {
+    const allErrors = this.getAllErrors();
+    if (allErrors.length > 0) {
+      this.validationErrors = allErrors;
       return;
     }
 
@@ -201,7 +274,6 @@ export class CreateEventComponent implements AfterViewInit, OnDestroy {
     this.appendIfNotEmpty(formData, 'urlVirtual', this.eventData.urlVirtual);
     this.appendIfNotEmpty(formData, 'ubicacion', this.eventData.ubicacion);
     this.appendIfNotEmpty(formData, 'nombreLugar', this.eventData.nombreLugar);
-    this.appendIfNotEmpty(formData, 'direccionCompleta', this.eventData.direccionCompleta);
     this.appendIfNotEmpty(formData, 'ciudad', this.eventData.ciudad);
     this.appendIfNotEmpty(formData, 'latitud', this.eventData.latitud);
     this.appendIfNotEmpty(formData, 'longitud', this.eventData.longitud);
@@ -216,13 +288,18 @@ export class CreateEventComponent implements AfterViewInit, OnDestroy {
     this.appendIfNotEmpty(formData, 'permitirComentarios', this.eventData.permitirComentarios);
     this.appendIfNotEmpty(formData, 'recordatoriosAutomaticos', this.eventData.recordatoriosAutomaticos);
 
-    if (this.selectedImageFile) {
-      formData.append('imagenPortada', this.selectedImageFile);
-    }
+    this.selectedImages.forEach(file => {
+      formData.append('imagenes', file);
+    });
+
+    this.eventData.redesSociales
+      .filter(red => red.plataforma?.trim() && red.url?.trim())
+      .forEach((red, index) => {
+        formData.append(`redesSociales[${index}].plataforma`, red.plataforma.trim());
+        formData.append(`redesSociales[${index}].url`, red.url.trim());
+      });
 
     this.isSubmitting = true;
-
-    console.log('Enviando evento...', this.eventData);
 
     this.eventoService.crearEvento(formData).subscribe({
       next: () => {
@@ -234,107 +311,195 @@ export class CreateEventComponent implements AfterViewInit, OnDestroy {
         this.isSubmitting = false;
         console.error('Error creando evento', err);
 
-        const backendMessage =
-          err?.error?.message ||
-          err?.error?.error ||
-          err?.error?.detalle ||
-          err?.message;
+        this.validationErrors = this.extractBackendErrors(err);
 
-        this.submitError = backendMessage || 'No se pudo crear el evento. Revisa los campos e inténtalo de nuevo.';
-        alert(this.submitError);
+        if (this.validationErrors.length === 0) {
+          const backendMessage =
+            err?.error?.message ||
+            err?.error?.error ||
+            err?.error?.detalle ||
+            err?.message;
+
+          this.submitError = backendMessage || 'No se pudo crear el evento. Revisa los campos e inténtalo de nuevo.';
+        }
       }
     });
   }
 
-  private validateCurrentStep(): boolean {
-    switch (this.currentStep) {
+  private getStepErrors(step: number): string[] {
+    switch (step) {
       case 1:
-        return this.validateStepOne();
+        return this.getStepOneErrors();
       case 2:
-        return this.validateStepTwo();
+        return this.getStepTwoErrors();
       case 3:
-        return this.validateStepThree();
+        return this.getStepThreeErrors();
       case 4:
-        return this.validateStepFour();
+        return this.getStepFourErrors();
       default:
-        return true;
+        return [];
     }
   }
 
-  private validateAllSteps(): boolean {
-    return this.validateStepOne()
-      && this.validateStepTwo()
-      && this.validateStepThree()
-      && this.validateStepFour();
+  private getAllErrors(): string[] {
+    return [
+      ...this.getStepOneErrors(),
+      ...this.getStepTwoErrors(),
+      ...this.getStepThreeErrors(),
+      ...this.getStepFourErrors()
+    ];
   }
 
-  private validateStepOne(): boolean {
+  private getStepOneErrors(): string[] {
+    const errors: string[] = [];
+
     if (!this.eventData.titulo.trim()) {
-      alert('Debes ingresar el título del evento.');
-      return false;
+      errors.push('Debes ingresar el título del evento.');
     }
 
-    return true;
+    if (this.selectedImages.length < 1) {
+      errors.push('Debes subir al menos una imagen.');
+    }
+
+    if (this.selectedImages.length > this.maxImagenes) {
+      errors.push(`Solo puedes subir máximo ${this.maxImagenes} imágenes.`);
+    }
+
+    return errors;
   }
 
-  private validateStepTwo(): boolean {
+  private getStepTwoErrors(): string[] {
+    const errors: string[] = [];
+
     if (!this.eventData.fecha) {
-      alert('Debes seleccionar una fecha.');
-      return false;
+      errors.push('Debes seleccionar una fecha.');
     }
 
     if (!this.eventData.horaInicio) {
-      alert('Debes seleccionar la hora de inicio.');
-      return false;
+      errors.push('Debes seleccionar la hora de inicio.');
     }
 
     if (!this.eventData.horaFin) {
-      alert('Debes seleccionar la hora de finalización.');
-      return false;
+      errors.push('Debes seleccionar la hora de finalización.');
     }
 
     if (this.eventData.eventoEnLinea) {
       if (!this.eventData.urlVirtual.trim()) {
-        alert('Debes ingresar la URL del evento en línea.');
-        return false;
+        errors.push('Debes ingresar la URL del evento en línea.');
       }
-      return true;
+      return errors;
     }
 
     if (!this.eventData.ubicacion.trim()) {
-      alert('Debes ingresar la ubicación del evento.');
-      return false;
+      errors.push('Debes ingresar la ubicación del evento.');
     }
 
     if (this.eventData.latitud == null || this.eventData.longitud == null) {
-      alert('Debes seleccionar la ubicación exacta en el mapa.');
-      return false;
+      errors.push('Debes seleccionar la ubicación exacta en el mapa.');
     }
 
-    return true;
+    return errors;
   }
 
-  private validateStepThree(): boolean {
+  private getStepThreeErrors(): string[] {
+    const errors: string[] = [];
+
     if (!this.eventData.cupo || Number(this.eventData.cupo) <= 0) {
-      alert('Debes ingresar un cupo válido.');
-      return false;
+      errors.push('Debes ingresar un cupo válido.');
     }
 
     if (!this.eventData.eventoGratuito && (!this.eventData.precio || Number(this.eventData.precio) <= 0)) {
-      alert('Debes ingresar un precio válido.');
-      return false;
+      errors.push('Debes ingresar un precio válido.');
     }
 
-    return true;
+    const plataformasUsadas = new Set<string>();
+
+    this.eventData.redesSociales.forEach((red, index) => {
+      const fila = index + 1;
+
+      const tienePlataforma = !!red.plataforma?.trim();
+      const tieneUrl = !!red.url?.trim();
+
+      if (tienePlataforma && !tieneUrl) {
+        errors.push(`Debes ingresar la URL en la red social #${fila}.`);
+      }
+
+      if (!tienePlataforma && tieneUrl) {
+        errors.push(`Debes seleccionar la plataforma en la red social #${fila}.`);
+      }
+
+      if (tieneUrl && !this.isValidUrl(red.url)) {
+        errors.push(`La URL de la red social #${fila} no es válida. Debe iniciar con http:// o https://`);
+      }
+
+      if (tienePlataforma) {
+        const plataformaNormalizada = red.plataforma.trim().toUpperCase();
+
+        if (plataformasUsadas.has(plataformaNormalizada)) {
+          errors.push(`No puedes repetir la plataforma ${red.plataforma}.`);
+        }
+
+        plataformasUsadas.add(plataformaNormalizada);
+      }
+    });
+
+    return errors;
   }
 
-  private validateStepFour(): boolean {
+  private getStepFourErrors(): string[] {
+    const errors: string[] = [];
+
     if (!this.eventData.eventoPublico && !this.eventData.detallePrivado.trim()) {
-      alert('Debes indicar el detalle del evento privado.');
+      errors.push('Debes indicar el detalle del evento privado.');
+    }
+
+    return errors;
+  }
+
+  private extractBackendErrors(err: any): string[] {
+    const out: string[] = [];
+    const body = err?.error;
+
+    if (Array.isArray(body?.errors)) {
+      return body.errors.map((e: any) => String(e));
+    }
+
+    if (body?.errors && typeof body.errors === 'object') {
+      Object.values(body.errors).forEach((val: any) => {
+        if (Array.isArray(val)) {
+          val.forEach(v => out.push(String(v)));
+        } else {
+          out.push(String(val));
+        }
+      });
+      return out;
+    }
+
+    if (body?.message) {
+      out.push(String(body.message));
+      return out;
+    }
+
+    return out;
+  }
+
+  private clearMessages(): void {
+    this.submitError = '';
+    this.submitSuccess = '';
+    this.validationErrors = [];
+  }
+
+  private isValidUrl(value: string): boolean {
+    if (!value || !value.trim()) {
       return false;
     }
 
-    return true;
+    try {
+      const url = new URL(value.trim());
+      return url.protocol === 'http:' || url.protocol === 'https:';
+    } catch {
+      return false;
+    }
   }
 
   private async initLocationMap(): Promise<void> {
@@ -469,10 +634,8 @@ export class CreateEventComponent implements AfterViewInit, OnDestroy {
     return allowed.includes((file.type || '').toLowerCase());
   }
 
-  private revokePreviewUrl(): void {
-    if (this.imagePreviewUrl) {
-      URL.revokeObjectURL(this.imagePreviewUrl);
-      this.imagePreviewUrl = null;
-    }
+  private revokeAllPreviewUrls(): void {
+    this.imagePreviewUrls.forEach(url => URL.revokeObjectURL(url));
+    this.imagePreviewUrls = [];
   }
 }

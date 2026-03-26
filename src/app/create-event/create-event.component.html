@@ -34,20 +34,28 @@
   </div>
 
   <div class="form-card">
-    <div *ngIf="submitError" class="map-status error" style="margin-bottom: 20px;">
+    <div *ngIf="submitError" class="form-message error-message">
       {{ submitError }}
     </div>
 
-    <div *ngIf="submitSuccess" class="map-status notice" style="margin-bottom: 20px;">
+    <div *ngIf="submitSuccess" class="form-message success-message">
       {{ submitSuccess }}
     </div>
 
+    <div *ngIf="validationErrors.length > 0" class="form-message error-message">
+      <strong>Revisa estos campos:</strong>
+      <ul class="error-list">
+        <li *ngFor="let err of validationErrors">{{ err }}</li>
+      </ul>
+    </div>
+
+    <!-- PASO 1 -->
     <div *ngIf="currentStep === 1" class="step-content">
       <div class="step-header">
         <span class="step-icon"></span>
         <div>
           <h2 class="step-title-form">Información Básica</h2>
-          <p class="step-subtitle-form">Paso 1 de 4 - Título, descripción y categoría</p>
+          <p class="step-subtitle-form">Paso 1 de 4 - Título, descripción, categoría e imágenes</p>
         </div>
       </div>
 
@@ -106,40 +114,56 @@
       </div>
 
       <div class="form-group">
-        <label class="form-label">Imagen de Portada</label>
+        <label class="form-label">Imágenes del Evento *</label>
 
         <input
+          #fileInput
           type="file"
           accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
-          class="form-input"
-          (change)="onImageSelected($event)"
+          multiple
+          class="hidden-file-input"
+          (change)="onFilesSelected($event)"
         >
+
+        <div class="image-uploader-card" (click)="openFileSelector(fileInput)">
+          <div class="image-uploader-icon">+</div>
+          <h3>Sube hasta 3 imágenes</h3>
+          <p>Haz clic aquí para seleccionar imágenes atractivas para tu evento.</p>
+          <span class="uploader-badge">JPG, PNG, WEBP</span>
+        </div>
 
         <p class="form-hint">
-          Formatos permitidos: JPG, JPEG, PNG y WEBP.
+          Debes subir mínimo 1 y máximo 3 imágenes.
         </p>
 
-        <p class="form-hint">
-          Recomendación visual: imagen horizontal, idealmente 1920 × 1080 px.
-        </p>
+        <div class="selected-counter" *ngIf="selectedImages.length > 0">
+          {{ selectedImages.length }} imagen(es) seleccionada(s)
+        </div>
 
-        <p
-          class="form-hint"
-          *ngIf="selectedImageFile && !submitError"
-          style="color: #1f7a3d; font-weight: 600;"
-        >
-          Imagen seleccionada correctamente: {{ selectedImageFile.name }}
-        </p>
+        <div class="preview-grid" *ngIf="imagePreviewUrls.length > 0">
+          <div class="preview-card" *ngFor="let preview of imagePreviewUrls; let i = index">
+            <img
+              [src]="preview"
+              [alt]="'Vista previa ' + (i + 1)"
+              class="cover-preview-multi"
+            >
 
-        <img
-          *ngIf="imagePreviewUrl"
-          [src]="imagePreviewUrl"
-          alt="Vista previa de la imagen de portada"
-          class="cover-preview"
-        >
+            <div class="preview-footer">
+              <span class="preview-name">{{ selectedImages[i]?.name }}</span>
+              <button
+                type="button"
+                class="remove-preview-btn"
+                (click)="removeSelectedImage(i, $event)"
+              >
+                Eliminar
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
+    <!-- PASO 2 -->
     <div *ngIf="currentStep === 2" class="step-content">
       <div class="step-header">
         <span class="step-icon"></span>
@@ -210,16 +234,6 @@
         </div>
 
         <div class="form-group">
-          <label class="form-label">Dirección Completa</label>
-          <input
-            type="text"
-            [(ngModel)]="eventData.direccionCompleta"
-            placeholder="Calle, número, barrio, referencia"
-            class="form-input"
-          >
-        </div>
-
-        <div class="form-group">
           <label class="form-label">Ciudad</label>
           <input
             type="text"
@@ -242,12 +256,13 @@
       </ng-container>
     </div>
 
+    <!-- PASO 3 -->
     <div *ngIf="currentStep === 3" class="step-content">
       <div class="step-header">
         <span class="step-icon"></span>
         <div>
           <h2 class="step-title-form">Detalles</h2>
-          <p class="step-subtitle-form">Paso 3 de 4 - Capacidad, precio y contacto</p>
+          <p class="step-subtitle-form">Paso 3 de 4 - Capacidad, precio, contacto y redes</p>
         </div>
       </div>
 
@@ -304,8 +319,52 @@
           class="form-input"
         >
       </div>
+
+      <div class="form-group">
+        <div class="section-header-inline">
+          <h3 class="section-title">Redes Sociales del Evento</h3>
+          <button type="button" class="btn-add-social" (click)="addRedSocial()">
+            + Agregar red
+          </button>
+        </div>
+
+        <p class="form-hint">
+          Opcional. Agrega las redes del evento o del organizador para que la gente conecte más fácil.
+        </p>
+
+        <div class="social-links-list" *ngIf="eventData.redesSociales.length > 0">
+          <div class="social-link-row" *ngFor="let red of eventData.redesSociales; let i = index">
+            <select [(ngModel)]="red.plataforma" class="form-select social-platform-select">
+              <option value="">Selecciona plataforma</option>
+              <option *ngFor="let plataforma of plataformasSociales" [value]="plataforma.value">
+                {{ plataforma.label }}
+              </option>
+            </select>
+
+            <input
+              type="url"
+              [(ngModel)]="red.url"
+              placeholder="https://..."
+              class="form-input social-url-input"
+            >
+
+            <button
+              type="button"
+              class="btn-remove-social"
+              (click)="removeRedSocial(i)"
+            >
+              Eliminar
+            </button>
+          </div>
+        </div>
+
+        <div class="empty-social-state" *ngIf="eventData.redesSociales.length === 0">
+          No has agregado redes sociales. Este campo es opcional.
+        </div>
+      </div>
     </div>
 
+    <!-- PASO 4 -->
     <div *ngIf="currentStep === 4" class="step-content">
       <div class="step-header">
         <span class="step-icon"></span>
@@ -402,6 +461,11 @@
             <span class="summary-label">Visibilidad:</span>
             <span class="summary-value">{{ eventData.eventoPublico ? 'Público' : 'Privado' }}</span>
           </div>
+
+          <div class="summary-item" *ngIf="eventData.redesSociales.length > 0">
+            <span class="summary-label">Redes:</span>
+            <span class="summary-value">{{ eventData.redesSociales.length }} agregada(s)</span>
+          </div>
         </div>
       </div>
     </div>
@@ -430,8 +494,9 @@
         class="btn-create"
         (click)="createEvent()"
         *ngIf="currentStep === totalSteps"
+        [disabled]="isSubmitting"
       >
-        Crear Evento
+        {{ isSubmitting ? 'Creando...' : 'Crear Evento' }}
       </button>
     </div>
   </div>

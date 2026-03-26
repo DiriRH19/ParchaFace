@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { EventoService } from '../services/evento';
@@ -23,6 +23,8 @@ type EventoVM = {
   descripcion: string;
   categoria: string;
   imagenUrl: string;
+  imageUrls?: string[];
+  socialLinks?: Record<string, string> | null;
 
   fecha: string;
   horaInicio: string;
@@ -53,6 +55,13 @@ type EventoVM = {
   idOrganizador?: number | null;
 };
 
+type SocialEntry = {
+  key: string;
+  label: string;
+  icon: string;
+  url: string;
+};
+
 @Component({
   selector: 'app-event-detail',
   standalone: true,
@@ -60,7 +69,7 @@ type EventoVM = {
   templateUrl: './event-detail.component.html',
   styleUrls: ['./event-detail.component.css']
 })
-export class EventDetailComponent implements OnInit {
+export class EventDetailComponent implements OnInit, OnDestroy {
   isLoading = true;
   errorMsg = '';
 
@@ -90,6 +99,10 @@ export class EventDetailComponent implements OnInit {
   nuevaImagenComentario: File | null = null;
   nuevoComentarioPreviewUrl = '';
 
+  currentImageIndex = 0;
+  private imageRotationTimer: ReturnType<typeof setInterval> | null = null;
+  private readonly imageRotationMs = 4000;
+
   private getEmptyForm(): EventoVM {
     return {
       id: undefined,
@@ -97,6 +110,8 @@ export class EventDetailComponent implements OnInit {
       descripcion: '',
       categoria: '',
       imagenUrl: '',
+      imageUrls: [],
+      socialLinks: null,
 
       fecha: '',
       horaInicio: '',
@@ -174,8 +189,74 @@ export class EventDetailComponent implements OnInit {
     this.loadEvento(id);
   }
 
+  ngOnDestroy(): void {
+    this.stopImageRotation();
+  }
+
   volver(): void {
     this.router.navigate(['/explore']);
+  }
+
+  get displayedImage(): string | null {
+    return this.evento?.imageUrls?.[this.currentImageIndex] || this.evento?.imagenUrl || null;
+  }
+
+  get hasMultipleImages(): boolean {
+    return (this.evento?.imageUrls?.length || 0) > 1;
+  }
+
+  get socialEntries(): SocialEntry[] {
+    const links = this.evento?.socialLinks;
+    if (!links) return [];
+
+    return Object.entries(links)
+      .map(([rawKey, rawUrl]) => {
+        const key = this.normalizeSocialKey(rawKey);
+        if (!key || !rawUrl) return null;
+
+        const meta = this.getSocialMeta(key);
+        return {
+          key,
+          url: rawUrl,
+          label: meta.label,
+          icon: meta.icon
+        };
+      })
+      .filter((entry): entry is SocialEntry => !!entry);
+  }
+
+  goToImage(index: number): void {
+    const total = this.evento?.imageUrls?.length || 0;
+    if (index < 0 || index >= total) return;
+
+    this.currentImageIndex = index;
+    this.restartImageRotation();
+  }
+
+  onMainImageError(): void {
+    if (!this.evento?.imageUrls?.length) {
+      if (this.evento) this.evento.imagenUrl = '';
+      return;
+    }
+
+    this.evento.imageUrls = this.evento.imageUrls.filter(
+      (_, index) => index !== this.currentImageIndex
+    );
+
+    if (!this.evento.imageUrls.length) {
+      this.evento.imagenUrl = '';
+      this.currentImageIndex = 0;
+      this.stopImageRotation();
+      return;
+    }
+
+    this.evento.imagenUrl = this.evento.imageUrls[0] || '';
+
+    if (this.currentImageIndex >= this.evento.imageUrls.length) {
+      this.currentImageIndex = 0;
+    }
+
+    this.restartImageRotation();
   }
 
   private loadEvento(id: number): void {
@@ -195,6 +276,7 @@ export class EventDetailComponent implements OnInit {
         this.evento = this.mapToVM(e);
         this.canManage = this.isOrganizer;
         this.form = { ...this.getEmptyForm(), ...this.evento };
+        this.syncImageGallery();
         this.isLoading = false;
 
         this.loadClimaForEvento();
@@ -275,18 +357,8 @@ export class EventDetailComponent implements OnInit {
   }
 
   private mapToVM(e: any): EventoVM {
-    const rawImg =
-      e?.imagenPortadaUrl ||
-      e?.imagenPortadaURL ||
-      e?.imagenPortada ||
-      e?.portada ||
-      e?.portadaUrl ||
-      e?.imagenUrl ||
-      e?.imageUrl ||
-      e?.image ||
-      '';
-
-    const imagenUrl = this.eventoService.getFullImageUrl(String(rawImg || ''));
+    const imageUrls = this.extractImageUrls(e);
+    const imagenUrl = imageUrls[0] || '';
 
     const idEvento = e?.idEvento ?? e?.id ?? e?.id_evento ?? undefined;
 
@@ -302,6 +374,8 @@ export class EventDetailComponent implements OnInit {
       descripcion: e?.descripcion ?? '',
       categoria: e?.categoria ?? '',
       imagenUrl,
+      imageUrls,
+      socialLinks: this.extractSocialLinks(e),
 
       fecha: e?.fecha ? String(e.fecha) : '',
       horaInicio: e?.horaInicio ? String(e.horaInicio) : '',
@@ -331,6 +405,176 @@ export class EventDetailComponent implements OnInit {
 
       idOrganizador: idOrganizador != null ? Number(idOrganizador) : null
     };
+  }
+
+  private extractImageUrls(e: any): string[] {
+    const fromArray = Array.isArray(e?.imagenes)
+      ? e.imagenes
+        .map((img: any) =>
+          this.eventoService.getFullImageUrl(
+            String(img?.imageUrl || img?.imagenUrl || img?.url || '')
+          )
+        )
+        .filter((url: string) => !!url)
+      : [];
+
+    const fromDirectArrays = [
+      ...(Array.isArray(e?.imageUrls) ? e.imageUrls : []),
+      ...(Array.isArray(e?.images) ? e.images : []),
+      ...(Array.isArray(e?.galleryImages) ? e.galleryImages : [])
+    ]
+      .map((img: any) =>
+        this.eventoService.getFullImageUrl(
+          String(img?.imageUrl || img?.imagenUrl || img?.url || img || '')
+        )
+      )
+      .filter((url: string) => !!url);
+
+    const portada = this.eventoService.getFullImageUrl(
+      String(
+        e?.imagenPortadaUrl ||
+        e?.imagenPortadaURL ||
+        e?.imagenPortada ||
+        e?.portada ||
+        e?.portadaUrl ||
+        e?.imagenUrl ||
+        e?.imageUrl ||
+        e?.image ||
+        ''
+      )
+    );
+
+    return Array.from(
+      new Set([
+        ...fromArray,
+        ...fromDirectArrays,
+        ...(portada ? [portada] : [])
+      ].filter(Boolean))
+    );
+  }
+
+  private extractSocialLinks(e: any): Record<string, string> | null {
+    const links: Record<string, string> = {};
+
+    const objectSources = [e?.socialLinks, e?.redesSociales, e?.socialMedia];
+
+    for (const source of objectSources) {
+      if (!source || typeof source !== 'object') continue;
+
+      for (const [key, value] of Object.entries(source)) {
+        if (typeof value === 'string' && value.trim()) {
+          links[key] = value.trim();
+        }
+      }
+    }
+
+    const flatSources: Record<string, unknown> = {
+      facebook: e?.facebookUrl ?? e?.facebook,
+      instagram: e?.instagramUrl ?? e?.instagram,
+      whatsapp: e?.whatsappUrl ?? e?.whatsapp,
+      x: e?.xUrl ?? e?.twitterUrl ?? e?.x ?? e?.twitter,
+      tiktok: e?.tiktokUrl ?? e?.tiktok,
+      youtube: e?.youtubeUrl ?? e?.youtube,
+      website: e?.websiteUrl ?? e?.website ?? e?.web ?? e?.sitioWeb ?? e?.paginaWeb,
+      linkedin: e?.linkedinUrl ?? e?.linkedin
+    };
+
+    for (const [key, value] of Object.entries(flatSources)) {
+      if (typeof value === 'string' && value.trim()) {
+        links[key] = value.trim();
+      }
+    }
+
+    return Object.keys(links).length ? links : null;
+  }
+
+  private normalizeSocialKey(rawKey: string): string | null {
+    const key = rawKey.toLowerCase().trim().replace(/[\s_-]/g, '');
+
+    const aliases: Record<string, string> = {
+      facebook: 'facebook',
+      facebookurl: 'facebook',
+
+      instagram: 'instagram',
+      instagramurl: 'instagram',
+      ig: 'instagram',
+
+      whatsapp: 'whatsapp',
+      whatsappurl: 'whatsapp',
+      wa: 'whatsapp',
+
+      x: 'x',
+      xurl: 'x',
+      twitter: 'x',
+      twitterurl: 'x',
+
+      tiktok: 'tiktok',
+      tiktokurl: 'tiktok',
+
+      youtube: 'youtube',
+      youtubeurl: 'youtube',
+
+      website: 'website',
+      websiteurl: 'website',
+      web: 'website',
+      url: 'website',
+      sitioweb: 'website',
+      paginaweb: 'website',
+      link: 'website',
+
+      linkedin: 'linkedin',
+      linkedinurl: 'linkedin'
+    };
+
+    return aliases[key] ?? null;
+  }
+
+  private getSocialMeta(key: string): { label: string; icon: string } {
+    switch (key) {
+      case 'facebook':
+        return { label: 'Facebook', icon: 'f' };
+      case 'instagram':
+        return { label: 'Instagram', icon: '◎' };
+      case 'whatsapp':
+        return { label: 'WhatsApp', icon: '✆' };
+      case 'x':
+        return { label: 'X', icon: '𝕏' };
+      case 'tiktok':
+        return { label: 'TikTok', icon: '♪' };
+      case 'youtube':
+        return { label: 'YouTube', icon: '▶' };
+      case 'website':
+        return { label: 'Sitio web', icon: '↗' };
+      case 'linkedin':
+        return { label: 'LinkedIn', icon: 'in' };
+      default:
+        return { label: 'Enlace', icon: '↗' };
+    }
+  }
+
+  private syncImageGallery(): void {
+    this.currentImageIndex = 0;
+    this.restartImageRotation();
+  }
+
+  private restartImageRotation(): void {
+    this.stopImageRotation();
+
+    if ((this.evento?.imageUrls?.length || 0) <= 1) return;
+
+    this.imageRotationTimer = setInterval(() => {
+      const total = this.evento?.imageUrls?.length || 0;
+      if (!total) return;
+
+      this.currentImageIndex = (this.currentImageIndex + 1) % total;
+    }, this.imageRotationMs);
+  }
+
+  private stopImageRotation(): void {
+    if (this.imageRotationTimer) {
+      clearInterval(this.imageRotationTimer);
+      this.imageRotationTimer = null;
+    }
   }
 
   get isOrganizer(): boolean {
@@ -384,83 +628,81 @@ export class EventDetailComponent implements OnInit {
     });
   }
 
-
-
   onJoin(): void {
-  if (!this.evento?.id) return;
+    if (!this.evento?.id) return;
 
-  if (!this.isLoggedIn) {
-    Swal.fire({
-      icon: 'info',
-      title: 'Inicia sesión',
-      text: 'Debes iniciar sesión para inscribirte.',
-      confirmButtonText: 'Ok'
-    });
-    return;
-  }
+    if (!this.isLoggedIn) {
+      Swal.fire({
+        icon: 'info',
+        title: 'Inicia sesión',
+        text: 'Debes iniciar sesión para inscribirte.',
+        confirmButtonText: 'Ok'
+      });
+      return;
+    }
 
-  if (this.isOrganizer) {
+    if (this.isOrganizer) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Eres el organizador',
+        text: 'No puedes inscribirte a tu propio evento.',
+        confirmButtonText: 'Entendido'
+      });
+      return;
+    }
+
+    if (this.isRegistered || this.isJoining) return;
+
     Swal.fire({
+      title: '¿Inscribirte al evento?',
+      text: 'Aparecerás como inscrito en este evento.',
       icon: 'warning',
-      title: 'Eres el organizador',
-      text: 'No puedes inscribirte a tu propio evento.',
-      confirmButtonText: 'Entendido'
-    });
-    return;
-  }
+      showCancelButton: true,
+      confirmButtonText: 'Sí, inscribirme',
+      cancelButtonText: 'No'
+    }).then((result) => {
+      if (!result.isConfirmed) return;
 
-  if (this.isRegistered || this.isJoining) return;
+      this.isJoining = true;
 
-  Swal.fire({
-    title: '¿Inscribirte al evento?',
-    text: 'Aparecerás como inscrito en este evento.',
-    icon: 'warning',
-    showCancelButton: true,
-    confirmButtonText: 'Sí, inscribirme',
-    cancelButtonText: 'No'
-  }).then((result) => {
-    if (!result.isConfirmed) return;
-
-    this.isJoining = true;
-
-    this.inscripcionService.inscribirme(Number(this.evento!.id)).subscribe({
-      next: () => {
-        this.inscripcionService.marcarComoInscrito(Number(this.evento!.id));
-        this.isRegistered = true;
-
-        Swal.fire({
-          icon: 'success',
-          title: '¡Inscripción exitosa!',
-          text: 'Ya quedaste inscrito al evento.',
-          timer: 1600,
-          showConfirmButton: false
-        });
-      },
-      error: (err) => {
-        const msg =
-          err?.error?.message ||
-          err?.error?.error ||
-          err?.error ||
-          'No se pudo inscribir. Intenta de nuevo.';
-
-        Swal.fire({
-          icon: 'error',
-          title: 'No se pudo inscribir',
-          text: msg,
-          confirmButtonText: 'Ok'
-        });
-
-        if (err?.status === 409) {
+      this.inscripcionService.inscribirme(Number(this.evento!.id)).subscribe({
+        next: () => {
           this.inscripcionService.marcarComoInscrito(Number(this.evento!.id));
           this.isRegistered = true;
+
+          Swal.fire({
+            icon: 'success',
+            title: '¡Inscripción exitosa!',
+            text: 'Ya quedaste inscrito al evento.',
+            timer: 1600,
+            showConfirmButton: false
+          });
+        },
+        error: (err) => {
+          const msg =
+            err?.error?.message ||
+            err?.error?.error ||
+            err?.error ||
+            'No se pudo inscribir. Intenta de nuevo.';
+
+          Swal.fire({
+            icon: 'error',
+            title: 'No se pudo inscribir',
+            text: msg,
+            confirmButtonText: 'Ok'
+          });
+
+          if (err?.status === 409) {
+            this.inscripcionService.marcarComoInscrito(Number(this.evento!.id));
+            this.isRegistered = true;
+          }
+        },
+        complete: () => {
+          this.isJoining = false;
         }
-      },
-      complete: () => {
-        this.isJoining = false;
-      }
+      });
     });
-  });
-}
+  }
 
   get fechaHoraLabel(): string {
     if (!this.evento) return '';
@@ -612,6 +854,7 @@ export class EventDetailComponent implements OnInit {
         this.evento = this.mapToVM(actualizado);
         this.editMode = false;
         this.form = { ...this.evento };
+        this.syncImageGallery();
         this.toast.show('¡Editado exitosamente! ✨', 'success');
       },
       error: (err) => {
@@ -866,5 +1109,4 @@ export class EventDetailComponent implements OnInit {
       });
     });
   }
-
 }

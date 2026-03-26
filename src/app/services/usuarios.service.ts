@@ -1,6 +1,8 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { API_CONFIG, buildApiUrl, withPathParam } from '../config/api.config';
+import { AuthService } from './auth.service';
 
 export interface PerfilUsuarioDto {
   idUsuario: number;
@@ -35,37 +37,78 @@ export interface UsuarioBusquedaDto {
   providedIn: 'root'
 })
 export class UsuariosService {
-  private baseUrl = 'http://localhost:8080/usuarios';
+  private readonly baseUrl = buildApiUrl(API_CONFIG.endpoints.usuarios.base);
 
-  constructor(private http: HttpClient) {}
+  constructor(
+    private http: HttpClient,
+    private authService: AuthService
+  ) {}
+
+  private getAuthHeaders(): HttpHeaders {
+    const token = this.authService.getToken();
+    let headers = new HttpHeaders();
+
+    if (token) {
+      headers = headers.set('Authorization', `Bearer ${token}`);
+    }
+
+    return headers;
+  }
 
   obtenerPerfil(idUsuario: number): Observable<PerfilUsuarioDto> {
-    return this.http.get<PerfilUsuarioDto>(`${this.baseUrl}/${idUsuario}/perfil`);
+    const path = withPathParam(API_CONFIG.endpoints.usuarios.perfil, { id: idUsuario });
+    return this.http.get<PerfilUsuarioDto>(
+      buildApiUrl(path),
+      { headers: this.getAuthHeaders() }
+    );
   }
 
   seguirUsuario(idUsuario: number): Observable<string> {
-    return this.http.post(`${this.baseUrl}/${idUsuario}/seguir`, null, {
-      responseType: 'text' as const
-    });
+    const path = withPathParam(API_CONFIG.endpoints.usuarios.seguir, { id: idUsuario });
+    return this.http.post(
+      buildApiUrl(path),
+      null,
+      {
+        headers: this.getAuthHeaders(),
+        responseType: 'text' as const
+      }
+    );
   }
 
   dejarDeSeguirUsuario(idUsuario: number): Observable<string> {
-    return this.http.delete(`${this.baseUrl}/${idUsuario}/seguir`, {
-      responseType: 'text' as const
-    });
+    const path = withPathParam(API_CONFIG.endpoints.usuarios.seguir, { id: idUsuario });
+    return this.http.delete(
+      buildApiUrl(path),
+      {
+        headers: this.getAuthHeaders(),
+        responseType: 'text' as const
+      }
+    );
   }
 
   obtenerSeguidores(idUsuario: number): Observable<UsuarioResumenDto[]> {
-    return this.http.get<UsuarioResumenDto[]>(`${this.baseUrl}/${idUsuario}/seguidores`);
+    const path = withPathParam(API_CONFIG.endpoints.usuarios.seguidores, { id: idUsuario });
+    return this.http.get<UsuarioResumenDto[]>(
+      buildApiUrl(path),
+      { headers: this.getAuthHeaders() }
+    );
   }
 
   obtenerSiguiendo(idUsuario: number): Observable<UsuarioResumenDto[]> {
-    return this.http.get<UsuarioResumenDto[]>(`${this.baseUrl}/${idUsuario}/siguiendo`);
+    const path = withPathParam(API_CONFIG.endpoints.usuarios.siguiendo, { id: idUsuario });
+    return this.http.get<UsuarioResumenDto[]>(
+      buildApiUrl(path),
+      { headers: this.getAuthHeaders() }
+    );
   }
 
   buscarUsuarios(q: string): Observable<UsuarioBusquedaDto[]> {
-    return this.http.get<UsuarioBusquedaDto[]>(`${this.baseUrl}/buscar`, {
-      params: { q }
-    });
+    return this.http.get<UsuarioBusquedaDto[]>(
+      buildApiUrl(API_CONFIG.endpoints.usuarios.buscar),
+      {
+        headers: this.getAuthHeaders(),
+        params: { q }
+      }
+    );
   }
 }

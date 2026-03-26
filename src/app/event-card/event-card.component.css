@@ -53,6 +53,7 @@
   box-sizing: border-box;
   z-index: 0;
   filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.25));
+  border-radius: 18px;
 }
 
 .event-img-placeholder {
@@ -110,6 +111,11 @@
   cursor: pointer;
 }
 
+.icon-btn span {
+  line-height: 1;
+  font-size: 14px;
+}
+
 .icon-btn:hover {
   background: white;
   transform: scale(1.08);
@@ -152,6 +158,63 @@
   font-weight: 600;
 }
 
+.image-counter {
+  position: absolute;
+  right: 14px;
+  bottom: 14px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 52px;
+  min-height: 34px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(23, 50, 72, 0.10);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+  color: #173248;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.image-dots {
+  position: absolute;
+  left: 50%;
+  bottom: 18px;
+  transform: translateX(-50%);
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.22);
+  backdrop-filter: blur(10px);
+}
+
+.image-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.55);
+  cursor: pointer;
+  transition:
+    transform 0.2s ease,
+    background 0.2s ease;
+}
+
+.image-dot:hover {
+  transform: scale(1.15);
+}
+
+.image-dot.active {
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.18);
+}
+
 /* content */
 .event-content {
   padding: 20px;
@@ -186,7 +249,7 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  margin-bottom: 16px;
+  margin-bottom: 8px;
 }
 
 .detail-item {
@@ -198,7 +261,58 @@
 }
 
 .detail-item .icon {
+  width: 20px;
+  text-align: center;
   font-size: 16px;
+  flex-shrink: 0;
+}
+
+.social-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.social-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: rgba(23, 50, 72, 0.06);
+  border: 1px solid rgba(23, 50, 72, 0.10);
+  text-decoration: none;
+  color: #173248;
+  transition:
+    transform 0.2s ease,
+    background 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.social-chip:hover {
+  transform: translateY(-1px);
+  background: rgba(23, 50, 72, 0.10);
+  border-color: rgba(23, 50, 72, 0.18);
+}
+
+.social-icon {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(23, 50, 72, 0.12);
+  font-size: 11px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.social-text {
+  font-size: 13px;
+  font-weight: 600;
 }
 
 .event-footer {
@@ -255,7 +369,8 @@
 
 :host-context(.dark) .event-description,
 :host-context(.dark) .detail-item,
-:host-context(.dark) .capacity-label {
+:host-context(.dark) .capacity-label,
+:host-context(.dark) .social-text {
   color: rgba(255, 255, 255, 0.74);
 }
 
@@ -267,7 +382,8 @@
   background: rgba(255, 255, 255, 0.9);
 }
 
-:host-context(.dark) .capacity-badge {
+:host-context(.dark) .capacity-badge,
+:host-context(.dark) .image-counter {
   background: rgba(23, 50, 72, 0.32);
   border-color: rgba(23, 50, 72, 0.22);
 }
@@ -276,8 +392,37 @@
   background: #dce7f2;
 }
 
-:host-context(.dark) .capacity-value {
+:host-context(.dark) .capacity-value,
+:host-context(.dark) .image-counter {
   color: #dce7f2;
+}
+
+:host-context(.dark) .image-dots {
+  background: rgba(0, 0, 0, 0.22);
+}
+
+:host-context(.dark) .image-dot {
+  background: rgba(255, 255, 255, 0.38);
+}
+
+:host-context(.dark) .image-dot.active {
+  background: #ffffff;
+}
+
+:host-context(.dark) .social-chip {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.10);
+  color: #dce7f2;
+}
+
+:host-context(.dark) .social-chip:hover {
+  background: rgba(255, 255, 255, 0.10);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+:host-context(.dark) .social-icon {
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
 }
 
 :host-context(.dark) .btn-details {
@@ -287,4 +432,29 @@
 
 :host-context(.dark) .btn-details:hover {
   background: #d79a24;
+}
+
+@media (max-width: 768px) {
+  .event-image {
+    height: 300px;
+    min-height: 300px;
+  }
+
+  .event-footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .btn-details {
+    width: 100%;
+  }
+
+  .social-links {
+    gap: 6px;
+  }
+
+  .social-chip {
+    min-height: 34px;
+    padding: 0 10px;
+  }
 }

@@ -1,19 +1,47 @@
 <app-navbar></app-navbar>
 
 <div class="map-page">
-  <section class="map-hero map-card-shell">
-    <div class="map-hero-copy">
-      <p class="section-tag">Mapa social</p>
-      <h1>Encuentra eventos y explóralos desde una sola vista</h1>
-      <p>
-        Busca por nombre, lugar o categoría, selecciona un evento del listado
-        y ubícalo automáticamente en el mapa con una experiencia más clara y visual.
-      </p>
-    </div>
+  <section class="hero-carousel-shell" *ngIf="currentHeroSlide as slide">
+    <div class="hero-carousel-card">
+      <img
+        [src]="slide.imageUrl"
+        [alt]="slide.titulo"
+        class="hero-carousel-image"
+      />
 
-    <div class="map-hero-actions">
-      <a class="btn-light" routerLink="/explore">Volver al inicio</a>
-      <a class="btn-dark" routerLink="/create-event">Crear evento</a>
+      <div class="hero-carousel-gradient"></div>
+
+      <div class="hero-carousel-content">
+        <span class="hero-slide-tag">{{ slide.categoria || 'Evento' }}</span>
+        <h1>{{ slide.titulo }}</h1>
+        <p>{{ slide.lugar }} · {{ slide.fecha }}</p>
+
+        <div class="hero-carousel-actions">
+          <button
+            type="button"
+            class="btn-dark"
+            (click)="openHeroEvent()"
+            *ngIf="slide.eventId != null"
+          >
+            Ver evento
+          </button>
+
+          <a class="btn-light" routerLink="/create-event">
+            Crear evento
+          </a>
+        </div>
+      </div>
+
+      <div class="hero-carousel-dots" *ngIf="heroSlides.length > 1">
+        <button
+          type="button"
+          *ngFor="let item of heroSlides; let i = index"
+          class="hero-dot"
+          [class.active]="i === heroIndex"
+          (click)="setHeroIndex(i)"
+          [attr.aria-label]="'Ir al slide ' + (i + 1)"
+        ></button>
+      </div>
     </div>
   </section>
 
@@ -80,8 +108,16 @@
           [class.active]="isSelected(evento)"
           (click)="selectEvent(evento)"
         >
-          <div class="event-item-thumb" *ngIf="getEventImage(evento)">
-            <img [src]="getEventImage(evento)" [alt]="evento.titulo" />
+          <div class="event-item-thumb" *ngIf="getCurrentItemImage(evento)">
+            <img [src]="getCurrentItemImage(evento)" [alt]="evento.titulo" />
+
+            <div class="thumb-dots" *ngIf="getEventImages(evento).length > 1">
+              <span
+                *ngFor="let img of getEventImages(evento); let i = index"
+                class="thumb-dot"
+                [class.active]="i === getCurrentItemImageIndex(evento)"
+              ></span>
+            </div>
           </div>
 
           <div class="event-item-content">
@@ -115,6 +151,6 @@
       <div #mapContainer class="leaflet-map"></div>
     </div>
   </section>
-
-  <app-footer></app-footer>
 </div>
+
+<app-footer></app-footer>

@@ -1,9 +1,9 @@
 import { Injectable, inject, PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { BehaviorSubject, Observable, tap, catchError, throwError, map, of } from 'rxjs';
+import { BehaviorSubject, Observable, catchError, map, of, tap, throwError } from 'rxjs';
 import { Router } from '@angular/router';
-import { API_CONFIG } from '../config/api.config';
+import { API_CONFIG, buildApiUrl, withPathParam } from '../config/api.config';
 
 export interface LoginRequest {
   correo: string;
@@ -25,8 +25,16 @@ export interface UserData {
   nombre?: string;
   usuario?: string;
   correo?: string;
+
   fotoPerfil?: string;
   fotoPortada?: string;
+
+  fotoPerfilUrl?: string;
+  fotoPortadaUrl?: string;
+
+  fotoPerfilPublicId?: string;
+  fotoPortadaPublicId?: string;
+
   acercaDe?: string;
   redesSociales?: SocialLink[];
   categoriasPreferidas?: string[];
@@ -37,13 +45,13 @@ export interface UserData {
   providedIn: 'root'
 })
 export class AuthService {
-  private isLoggedIn = new BehaviorSubject<boolean>(false);
-  public isLoggedIn$ = this.isLoggedIn.asObservable();
+  private readonly platformId = inject(PLATFORM_ID);
 
-  private userData = new BehaviorSubject<UserData | null>(null);
-  public userData$ = this.userData.asObservable();
+  private readonly isLoggedIn = new BehaviorSubject<boolean>(false);
+  public readonly isLoggedIn$ = this.isLoggedIn.asObservable();
 
-  private platformId = inject(PLATFORM_ID);
+  private readonly userData = new BehaviorSubject<UserData | null>(null);
+  public readonly userData$ = this.userData.asObservable();
 
   constructor(
     private http: HttpClient,
@@ -61,62 +69,74 @@ export class AuthService {
 
     if (token && this.isTokenValid(token)) {
       this.isLoggedIn.next(true);
-      const userData = this.decodeToken(token);
-      if (userData) {
-        this.userData.next(userData);
+      const decoded = this.decodeToken(token);
+      if (decoded) {
+        this.userData.next(decoded);
       }
-    } else {
-      this.isLoggedIn.next(false);
-      this.userData.next(null);
-      this.removeStoredToken();
+      return;
     }
+
+    this.removeStoredToken();
+    this.isLoggedIn.next(false);
+    this.userData.next(null);
   }
 
-  private decodeToken(token: string): UserData | null {
+  private decodeJwtPayload(token: string): Record<string, unknown> | null {
     try {
       const payload = token.split('.')[1];
       if (!payload) return null;
 
-      const decoded: Record<string, unknown> = JSON.parse(atob(payload));
-
-      const correo = (decoded['sub'] ?? decoded['correo']) as string | undefined;
-      const nombreFromToken = (decoded['nombre'] ?? decoded['usuario']) as string | undefined;
-      const fallbackNombre =
-        typeof correo === 'string' && correo.includes('@') ? correo.split('@')[0] : undefined;
-
-      const nombre = nombreFromToken ?? fallbackNombre;
-      const usuario = (decoded['usuario'] ?? decoded['nombre'] ?? fallbackNombre) as string | undefined;
-
-      return {
-        ...decoded,
-        correo: correo ?? undefined,
-        nombre: nombre ?? undefined,
-        usuario: usuario ?? nombre ?? undefined
-      } as UserData;
+      const normalized = payload.replace(/-/g, '+').replace(/_/g, '/');
+      const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, '=');
+      return JSON.parse(atob(padded));
     } catch (error) {
-      console.error('Error decodificando token:', error);
+      console.error('Error decodificando payload JWT:', error);
       return null;
     }
+  }
+
+  private decodeToken(token: string): UserData | null {
+    const decoded = this.decodeJwtPayload(token);
+    if (!decoded) return null;
+
+    const correo = (decoded['sub'] ?? decoded['correo']) as string | undefined;
+    const nombreFromToken = (decoded['nombre'] ?? decoded['usuario']) as string | undefined;
+    const fallbackNombre =
+      typeof correo === 'string' && correo.includes('@') ? correo.split('@')[0] : undefined;
+
+    const nombre = nombreFromToken ?? fallbackNombre;
+    const usuario = (decoded['usuario'] ?? decoded['nombre'] ?? fallbackNombre) as string | undefined;
+
+    const rawId =
+      decoded['id'] ??
+      decoded['idUsuario'] ??
+      decoded['userId'] ??
+      decoded['usuarioId'];
+
+    const normalizedId =
+      rawId != null && !Number.isNaN(Number(rawId)) ? Number(rawId) : undefined;
+
+    return {
+      ...decoded,
+      id: normalizedId,
+      idUsuario: normalizedId,
+      correo: correo ?? undefined,
+      nombre: nombre ?? undefined,
+      usuario: usuario ?? nombre ?? undefined
+    } as UserData;
   }
 
   private isTokenValid(token: string | null): boolean {
     if (!token) return false;
 
-    try {
-      const payload = token.split('.')[1];
-      if (!payload) return false;
+    const decoded = this.decodeJwtPayload(token);
+    const exp = decoded?.['exp'];
 
-      const decoded = JSON.parse(atob(payload));
-      const exp = decoded?.exp;
-
-      if (!exp) {
-        return false;
-      }
-
-      return Date.now() < exp * 1000;
-    } catch {
+    if (!exp || Number.isNaN(Number(exp))) {
       return false;
     }
+
+    return Date.now() < Number(exp) * 1000;
   }
 
   private saveToken(token: string, rememberMe: boolean): void {
@@ -147,82 +167,106 @@ export class AuthService {
     sessionStorage.removeItem('jwt');
   }
 
+  private applyAuthenticatedSession(token: string, rememberMe: boolean): void {
+    if (!token || !isPlatformBrowser(this.platformId)) {
+      return;
+    }
+
+    this.saveToken(token, rememberMe);
+    this.isLoggedIn.next(true);
+
+    const decoded = this.decodeToken(token);
+    if (decoded) {
+      this.userData.next(decoded);
+    }
+  }
+
+  private extractTokenFromResponse(response: string): string {
+    const raw = (response ?? '').trim();
+
+    if (!raw) {
+      throw new Error('Respuesta vacía del servidor.');
+    }
+
+    if (raw.startsWith('<')) {
+      throw new Error('El servidor devolvió HTML en lugar de un token o JSON válido.');
+    }
+
+    if (!raw.startsWith('{') && !raw.startsWith('"')) {
+      return raw;
+    }
+
+    try {
+      const parsed = JSON.parse(raw);
+
+      if (typeof parsed === 'string') {
+        return parsed;
+      }
+
+      if (parsed?.token && typeof parsed.token === 'string') {
+        return parsed.token;
+      }
+
+      if (parsed?.error) {
+        throw new Error(parsed.error);
+      }
+
+      if (parsed?.message) {
+        throw new Error(parsed.message);
+      }
+
+      throw new Error('La respuesta del servidor no contiene un token válido.');
+    } catch (error) {
+      if (error instanceof Error) {
+        throw error;
+      }
+      return raw;
+    }
+  }
+
+  private getAuthHeaders(): HttpHeaders {
+    const token = this.getToken();
+    let headers = new HttpHeaders();
+
+    if (token) {
+      headers = headers.set('Authorization', `Bearer ${token}`);
+    }
+
+    return headers;
+  }
+
   login(correo: string, contrasena: string, rememberMe: boolean = false): Observable<string> {
     const loginData: LoginRequest = { correo, contrasena };
 
     return this.http.post(
-      `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.auth.login}`,
+      buildApiUrl(API_CONFIG.endpoints.auth.login),
       loginData,
       { responseType: 'text' }
     ).pipe(
-      map((response: string) => {
-        let token = response.trim();
-        console.log('Respuesta cruda del backend:', response);
-
-        try {
-          if (token.startsWith('"') && token.endsWith('"')) {
-            token = JSON.parse(token);
-          } else {
-            const parsed = JSON.parse(token);
-            if (typeof parsed === 'string') {
-              token = parsed;
-            } else if ((parsed as any).error) {
-              throw new Error((parsed as any).error);
-            } else if ((parsed as any).token) {
-              token = (parsed as any).token;
-            }
-          }
-        } catch (e) {
-          if (token.includes('error') || token.includes('Error')) {
-            try {
-              const errorObj = JSON.parse(token);
-              if (errorObj.error) {
-                throw new Error(errorObj.error);
-              }
-            } catch {
-              throw new Error('Error al procesar respuesta del servidor');
-            }
-          }
-        }
-
-        return token;
-      }),
-      tap((token: string) => {
-        if (token && isPlatformBrowser(this.platformId)) {
-          this.saveToken(token, rememberMe);
-          this.isLoggedIn.next(true);
-
-          const userData = this.decodeToken(token);
-          if (userData) {
-            this.userData.next(userData);
-          }
-        }
-      }),
+      map((response: string) => this.extractTokenFromResponse(response)),
+      tap((token: string) => this.applyAuthenticatedSession(token, rememberMe)),
       catchError((error) => {
         console.error('Error en login:', error);
 
         let errorMessage = 'Error al iniciar sesión';
-        if (error.error) {
+
+        if (error?.error) {
           try {
             const errorObj = typeof error.error === 'string' ? JSON.parse(error.error) : error.error;
-            if (errorObj.error) {
-              errorMessage = errorObj.error;
-            } else if (errorObj.message) {
-              errorMessage = errorObj.message;
-            }
+            errorMessage = errorObj?.error || errorObj?.message || errorMessage;
           } catch {
             if (typeof error.error === 'string') {
               errorMessage = error.error;
             }
           }
+        } else if (error?.message) {
+          errorMessage = error.message;
         }
 
-        const customError = {
+        return throwError(() => ({
           ...error,
           error: { error: errorMessage, message: errorMessage }
-        };
-
-        return throwError(() => customError);
+        }));
       })
     );
   }
@@ -236,103 +280,127 @@ export class AuthService {
     const registerData: RegisterRequest = { usuario, correo, contrasena, confirmarContrasena };
 
     return this.http.post(
-      `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.auth.register}`,
+      buildApiUrl(API_CONFIG.endpoints.auth.register),
       registerData,
       { responseType: 'text' }
     ).pipe(
       map((response: string) => {
         const raw = (response || '').trim();
 
+        if (!raw) {
+          throw new Error('Respuesta vacía del servidor.');
+        }
+
         if (raw.startsWith('<')) {
-          throw new Error('El servidor devolvió una página. Arranca el backend (puerto 8080) y usa ng serve para el front.');
+          throw new Error('El servidor devolvió HTML. Verifica que el backend esté levantado en 8080.');
         }
 
-        let data: any;
         try {
-          data = JSON.parse(raw);
-        } catch {
-          throw new Error('El servidor no respondió con JSON. ¿Está el backend en marcha en el puerto 8080?');
-        }
+          const data = JSON.parse(raw);
 
-        let token = data?.token;
-
-        if (!token && typeof data === 'string') {
-          token = data;
-        }
-
-        if (!token && data?.mensaje) {
-          const error: any = new Error('NEED_AUTO_LOGIN');
-          error.credentials = { correo, contrasena };
-          throw error;
-        }
-
-        if (!token || typeof token !== 'string') {
-          throw new Error(data?.error || 'El servidor no devolvió un token válido.');
-        }
-
-        return token;
-      }),
-      tap((token: string) => {
-        if (token && isPlatformBrowser(this.platformId)) {
-          this.saveToken(token, true);
-          this.isLoggedIn.next(true);
-
-          const userData = this.decodeToken(token);
-          if (userData) {
-            this.userData.next(userData);
+          if (typeof data === 'string' && data.trim()) {
+            return data.trim();
           }
+
+          if (data?.token && typeof data.token === 'string') {
+            return data.token;
+          }
+
+          if (data?.mensaje || data?.message) {
+            const autoLoginError: any = new Error('NEED_AUTO_LOGIN');
+            autoLoginError.credentials = { correo, contrasena };
+            throw autoLoginError;
+          }
+
+          if (data?.error) {
+            throw new Error(data.error);
+          }
+
+          throw new Error('El servidor no devolvió un token válido.');
+        } catch (error: any) {
+          if (error?.message === 'NEED_AUTO_LOGIN') {
+            throw error;
+          }
+
+          if (!raw.startsWith('{') && !raw.startsWith('"')) {
+            return raw;
+          }
+
+          throw error instanceof Error
+            ? error
+            : new Error('No se pudo procesar la respuesta del registro.');
         }
       }),
+      tap((token: string) => this.applyAuthenticatedSession(token, true)),
       catchError((error) => {
-        if (error.message === 'NEED_AUTO_LOGIN' && error.credentials) {
+        if (error?.message === 'NEED_AUTO_LOGIN' && error?.credentials) {
           const { correo: loginCorreo, contrasena: loginContrasena } = error.credentials;
           return this.login(loginCorreo, loginContrasena, true);
         }
 
         let token: string | null = null;
 
-        if (error.error) {
+        if (error?.error) {
           try {
             const errorResponse = typeof error.error === 'string' ? JSON.parse(error.error) : error.error;
-            token = errorResponse?.token || errorResponse?.data?.token;
+            token = errorResponse?.token || errorResponse?.data?.token || null;
           } catch {}
         }
 
-        if (token && typeof token === 'string') {
-          if (isPlatformBrowser(this.platformId)) {
-            this.saveToken(token, true);
-            this.isLoggedIn.next(true);
-
-            const userData = this.decodeToken(token);
-            if (userData) {
-              this.userData.next(userData);
-            }
-          }
+        if (token) {
+          this.applyAuthenticatedSession(token, true);
           return of(token);
         }
 
         let errorMessage = 'Error al registrar usuario';
-        if (error.error) {
+
+        if (error?.error) {
           try {
             const errorObj = typeof error.error === 'string' ? JSON.parse(error.error) : error.error;
-            if (errorObj.error) {
-              errorMessage = errorObj.error;
-            } else if (errorObj.message) {
-              errorMessage = errorObj.message;
-            }
+            errorMessage = errorObj?.error || errorObj?.message || errorMessage;
           } catch {
             if (typeof error.error === 'string') {
               errorMessage = error.error;
             }
           }
+        } else if (error?.message) {
+          errorMessage = error.message;
         }
 
-        const customError = {
+        return throwError(() => ({
           ...error,
           error: { error: errorMessage, message: errorMessage }
-        };
+        }));
+      })
+    );
+  }
 
-        return throwError(() => customError);
+  googleLogin(credential: string): Observable<string> {
+    return this.http.post(
+      buildApiUrl(API_CONFIG.endpoints.auth.google),
+      { credential },
+      { responseType: 'text' }
+    ).pipe(
+      map((response: string) => this.extractTokenFromResponse(response)),
+      tap((token: string) => this.applyAuthenticatedSession(token, true)),
+      catchError((error) => {
+        let errorMessage = 'Error al iniciar con Google';
+
+        if (error?.error) {
+          try {
+            const errorObj = typeof error.error === 'string'
+              ? JSON.parse(error.error)
+              : error.error;
+            errorMessage = errorObj?.error || errorObj?.message || errorMessage;
+          } catch {}
+        } else if (error?.message) {
+          errorMessage = error.message;
+        }
+
+        return throwError(() => ({
+          ...error,
+          error: { error: errorMessage, message: errorMessage }
+        }));
       })
     );
   }
@@ -370,35 +438,14 @@ export class AuthService {
     return this.userData.value;
   }
 
-  uploadPerfil(id: number, formData: FormData) {
-    const token = this.getToken();
-    return this.http.post(
-      `http://localhost:8080/usuarios/${id}/foto-perfil`,
+  uploadPerfil(id: number, formData: FormData): Observable<{ idUsuario: number; fotoPerfil?: string; fotoPerfilPublicId?: string }> {
+    const url = buildApiUrl(withPathParam(API_CONFIG.endpoints.usuarios.fotoPerfil, { id }));
+
+    return this.http.post<{ idUsuario: number; fotoPerfil?: string; fotoPerfilPublicId?: string }>(
+      url,
       formData,
-      { headers: token ? { Authorization: `Bearer ${token}` } : {} }
-    );
-  }
-
-  uploadPortada(id: number, formData: FormData) {
-    const token = this.getToken();
-    return this.http.post(
-      `http://localhost:8080/usuarios/${id}/foto-portada`,
-      formData,
-      { headers: token ? { Authorization: `Bearer ${token}` } : {} }
-    );
-  }
-
-  getUsuarioById(id: number) {
-    const token = this.getToken();
-    const headers = token ? new HttpHeaders({ Authorization: `Bearer ${token}` }) : undefined;
-    return this.http.get<UserData>(`http://localhost:8080/usuarios/${id}`, { headers });
-  }
-
-  updateUsuario(id: number, payload: Partial<UserData>): Observable<UserData> {
-    const token = this.getToken();
-    const headers = token ? new HttpHeaders({ Authorization: `Bearer ${token}` }) : undefined;
-
-    return this.http.put<UserData>(`http://localhost:8080/usuarios/${id}`, payload, { headers }).pipe(
+      { headers: this.getAuthHeaders() }
+    ).pipe(
       tap((u) => {
         const current = this.userData.value;
         this.userData.next({ ...(current || {}), ...(u || {}) });
@@ -406,59 +453,33 @@ export class AuthService {
     );
   }
 
-  googleLogin(credential: string): Observable<string> {
-    return this.http.post(
-      `${API_CONFIG.baseUrl}/auth/google`,
-      { credential },
-      { responseType: 'text' }
+  uploadPortada(id: number, formData: FormData): Observable<{ idUsuario: number; fotoPortada?: string; fotoPortadaPublicId?: string }> {
+    const url = buildApiUrl(withPathParam(API_CONFIG.endpoints.usuarios.fotoPortada, { id }));
+
+    return this.http.post<{ idUsuario: number; fotoPortada?: string; fotoPortadaPublicId?: string }>(
+      url,
+      formData,
+      { headers: this.getAuthHeaders() }
     ).pipe(
-      map((response: string) => {
-        let token = response.trim();
+      tap((u) => {
+        const current = this.userData.value;
+        this.userData.next({ ...(current || {}), ...(u || {}) });
+      })
+    );
+  }
 
-        try {
-          const parsed = JSON.parse(token);
-          if (parsed?.token) {
-            token = parsed.token;
-          } else if (parsed?.error) {
-            throw new Error(parsed.error);
-          }
-        } catch (e) {
-          if (!token || token.startsWith('<')) {
-            throw new Error('Respuesta inválida del servidor');
-          }
-        }
+  getUsuarioById(id: number): Observable<UserData> {
+    const url = buildApiUrl(withPathParam(API_CONFIG.endpoints.usuarios.byId, { id }));
+    return this.http.get<UserData>(url, { headers: this.getAuthHeaders() });
+  }
 
-        return token;
-      }),
-      tap((token: string) => {
-        if (token && isPlatformBrowser(this.platformId)) {
-          this.saveToken(token, true);
-          this.isLoggedIn.next(true);
+  updateUsuario(id: number, payload: Partial<UserData>): Observable<UserData> {
+    const url = buildApiUrl(withPathParam(API_CONFIG.endpoints.usuarios.byId, { id }));
 
-          const userData = this.decodeToken(token);
-          if (userData) {
-            this.userData.next(userData);
-          }
-        }
-      }),
-      catchError((error) => {
-        let errorMessage = 'Error al iniciar con Google';
-
-        if (error.error) {
-          try {
-            const errorObj = typeof error.error === 'string'
-              ? JSON.parse(error.error)
-              : error.error;
-            errorMessage = errorObj.error || errorObj.message || errorMessage;
-          } catch {}
-        } else if (error.message) {
-          errorMessage = error.message;
-        }
-
-        return throwError(() => ({
-          ...error,
-          error: { error: errorMessage, message: errorMessage }
-        }));
+    return this.http.put<UserData>(url, payload, { headers: this.getAuthHeaders() }).pipe(
+      tap((u) => {
+        const current = this.userData.value;
+        this.userData.next({ ...(current || {}), ...(u || {}) });
       })
     );
   }

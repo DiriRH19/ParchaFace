@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { forkJoin } from 'rxjs';
+import { buildMediaUrl } from '../config/api.config';
 
 import { AuthService, UserData } from '../services/auth.service';
 import {
@@ -27,7 +28,6 @@ type SocialLink = { platform: string; handle: string };
   styleUrls: ['./profile.component.css']
 })
 export class ProfileComponent implements OnInit {
-
   activeTab = 'profile';
   userData: UserData | null = null;
 
@@ -53,6 +53,9 @@ export class ProfileComponent implements OnInit {
 
   selectedPerfil: File | null = null;
   selectedPortada: File | null = null;
+
+  perfilPreviewUrl = '';
+  portadaPreviewUrl = '';
 
   isEditing = false;
   isSaving = false;
@@ -83,9 +86,6 @@ export class ProfileComponent implements OnInit {
   followModalLoading = false;
   followModalError = '';
 
-  // =========================
-  // Búsqueda de perfiles
-  // =========================
   searchQuery = '';
   searchLoading = false;
   searchError = '';
@@ -100,38 +100,16 @@ export class ProfileComponent implements OnInit {
 
   ngOnInit(): void {
     this.userData = this.authService.getUserData();
+    this.syncFormFromUser();
+    this.refreshCurrentUserData();
 
     this.authService.userData$.subscribe(userData => {
       this.userData = userData;
-
-      if (this.userData?.id) {
-        this.authService.getUsuarioById(this.userData.id).subscribe(u => {
-          this.userData = { ...this.userData, ...u };
-
-          if (!this.isEditing) {
-            this.syncFormFromUser();
-          }
-
-          this.loadSocialStats();
-        });
-      } else {
+      if (!this.isEditing) {
         this.syncFormFromUser();
       }
+      this.refreshCurrentUserData();
     });
-
-    if (this.userData?.id) {
-      this.authService.getUsuarioById(this.userData.id).subscribe(u => {
-        this.userData = { ...this.userData, ...u };
-
-        if (!this.isEditing) {
-          this.syncFormFromUser();
-        }
-
-        this.loadSocialStats();
-      });
-    } else {
-      this.syncFormFromUser();
-    }
   }
 
   setActiveTab(tabId: string): void {
@@ -146,10 +124,38 @@ export class ProfileComponent implements OnInit {
     }
   }
 
-  loadSocialStats(): void {
-    if (!this.userData?.id) return;
+  get profileImageSrc(): string {
+    return this.perfilPreviewUrl || this.getMediaUrl(
+      this.userData?.fotoPerfil ||
+      this.userData?.fotoPerfilUrl
+    );
+  }
 
-    this.usuariosService.obtenerPerfil(this.userData.id).subscribe({
+  get coverImageSrc(): string {
+    return this.portadaPreviewUrl || this.getMediaUrl(
+      this.userData?.fotoPortada ||
+      this.userData?.fotoPortadaUrl
+    );
+  }
+
+  get topInterests(): string[] {
+    return (this.userData?.categoriasPreferidas || []).slice(0, 6);
+  }
+
+  get remainingInterestsCount(): number {
+    const total = this.userData?.categoriasPreferidas?.length || 0;
+    return total > 6 ? total - 6 : 0;
+  }
+
+  get hasInterests(): boolean {
+    return (this.userData?.categoriasPreferidas?.length || 0) > 0;
+  }
+
+  loadSocialStats(): void {
+    const userId = this.getCurrentUserId();
+    if (!userId) return;
+
+    this.usuariosService.obtenerPerfil(userId).subscribe({
       next: (perfil) => {
         this.perfilPublico = perfil;
         this.totalSeguidores = perfil.totalSeguidores ?? 0;
@@ -166,7 +172,8 @@ export class ProfileComponent implements OnInit {
   }
 
   openSeguidoresModal(): void {
-    if (!this.userData?.id) return;
+    const userId = this.getCurrentUserId();
+    if (!userId) return;
 
     this.showFollowModal = true;
     this.followModalTitle = 'Seguidores';
@@ -174,7 +181,7 @@ export class ProfileComponent implements OnInit {
     this.followModalError = '';
     this.followModalLoading = true;
 
-    this.usuariosService.obtenerSeguidores(this.userData.id).subscribe({
+    this.usuariosService.obtenerSeguidores(userId).subscribe({
       next: (users) => {
         this.followModalUsers = users ?? [];
         this.followModalLoading = false;
@@ -188,7 +195,8 @@ export class ProfileComponent implements OnInit {
   }
 
   openSiguiendoModal(): void {
-    if (!this.userData?.id) return;
+    const userId = this.getCurrentUserId();
+    if (!userId) return;
 
     this.showFollowModal = true;
     this.followModalTitle = 'Siguiendo';
@@ -196,7 +204,7 @@ export class ProfileComponent implements OnInit {
     this.followModalError = '';
     this.followModalLoading = true;
 
-    this.usuariosService.obtenerSiguiendo(this.userData.id).subscribe({
+    this.usuariosService.obtenerSiguiendo(userId).subscribe({
       next: (users) => {
         this.followModalUsers = users ?? [];
         this.followModalLoading = false;
@@ -253,11 +261,11 @@ export class ProfileComponent implements OnInit {
   }
 
   getSearchUserImage(path?: string | null): string {
-    if (!path) return '';
-    if (path.startsWith('http://') || path.startsWith('https://')) {
-      return path;
-    }
-    return `http://localhost:8080${path}`;
+    return this.getMediaUrl(path);
+  }
+
+  getEventImage(path?: string | null): string {
+    return this.getMediaUrl(path);
   }
 
   startEdit(): void {
@@ -316,7 +324,8 @@ export class ProfileComponent implements OnInit {
   }
 
   saveProfile(): void {
-    if (!this.userData?.id) return;
+    const userId = this.getCurrentUserId();
+    if (!userId) return;
 
     const nombre = this.normalize(this.editForm.nombre);
     const correo = this.normalize(this.editForm.correo);
@@ -347,10 +356,9 @@ export class ProfileComponent implements OnInit {
     this.isSaving = true;
     this.saveError = '';
 
-    this.authService.updateUsuario(this.userData.id, { nombre, correo, acercaDe, redesSociales }).subscribe({
+    this.authService.updateUsuario(userId, { nombre, correo, acercaDe, redesSociales }).subscribe({
       next: (u: any) => {
         this.userData = { ...this.userData, ...u };
-
         this.isSaving = false;
         this.isEditing = false;
         this.showDiscardModal = false;
@@ -437,45 +445,78 @@ export class ProfileComponent implements OnInit {
   onPerfilSelected(event: any): void {
     const file = event?.target?.files?.[0];
     if (!file) return;
+
+    if (!file.type?.startsWith('image/')) {
+      return;
+    }
+
+    const userId = this.getCurrentUserId();
+    if (!userId) return;
+
     this.selectedPerfil = file;
-    this.subirFotoPerfil();
+    this.setPreview(file, 'perfil');
+
+    this.authService.uploadPerfil(userId, this.buildSingleFileFormData(file)).subscribe({
+      next: (u: any) => {
+        this.userData = { ...this.userData, ...u };
+        this.selectedPerfil = null;
+        this.perfilPreviewUrl = '';
+        this.refreshCurrentUserData();
+      },
+      error: (err) => {
+        console.error('Error subiendo foto perfil:', err);
+        this.selectedPerfil = null;
+        this.perfilPreviewUrl = '';
+      }
+    });
   }
 
   onPortadaSelected(event: any): void {
     const file = event?.target?.files?.[0];
     if (!file) return;
+
+    if (!file.type?.startsWith('image/')) {
+      return;
+    }
+
+    const userId = this.getCurrentUserId();
+    if (!userId) return;
+
     this.selectedPortada = file;
-    this.subirFotoPortada();
-  }
+    this.setPreview(file, 'portada');
 
-  subirFotoPerfil(): void {
-    if (!this.selectedPerfil || !this.userData?.id) return;
-
-    const formData = new FormData();
-    formData.append('file', this.selectedPerfil);
-
-    this.authService.uploadPerfil(this.userData.id, formData).subscribe({
+    this.authService.uploadPortada(userId, this.buildSingleFileFormData(file)).subscribe({
       next: (u: any) => {
         this.userData = { ...this.userData, ...u };
-        this.loadSocialStats();
+        this.selectedPortada = null;
+        this.portadaPreviewUrl = '';
+        this.refreshCurrentUserData();
       },
-      error: (err) => console.error('Error subiendo foto perfil:', err.status, err)
+      error: (err) => {
+        console.error('Error subiendo foto portada:', err);
+        this.selectedPortada = null;
+        this.portadaPreviewUrl = '';
+      }
     });
   }
 
-  subirFotoPortada(): void {
-    if (!this.selectedPortada || !this.userData?.id) return;
-
+  private buildSingleFileFormData(file: File): FormData {
     const formData = new FormData();
-    formData.append('file', this.selectedPortada);
+    formData.append('file', file);
+    return formData;
+  }
 
-    this.authService.uploadPortada(this.userData.id, formData).subscribe({
-      next: (u: any) => {
-        this.userData = { ...this.userData, ...u };
-        this.loadSocialStats();
-      },
-      error: (err) => console.error('Error subiendo foto portada:', err.status, err)
-    });
+  private setPreview(file: File, target: 'perfil' | 'portada'): void {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = String(reader.result || '');
+      if (target === 'perfil') {
+        this.perfilPreviewUrl = result;
+      } else {
+        this.portadaPreviewUrl = result;
+      }
+    };
+    reader.readAsDataURL(file);
   }
 
   getUserName(): string {
@@ -483,7 +524,8 @@ export class ProfileComponent implements OnInit {
   }
 
   getDisplayHandle(): string {
-    return this.userData?.nombre || this.userData?.usuario || this.getFallbackName() || 'usuario';
+    const value = this.userData?.usuario || this.getFallbackName() || 'usuario';
+    return value.startsWith('@') ? value : `@${value}`;
   }
 
   getUserEmail(): string {
@@ -496,6 +538,36 @@ export class ProfileComponent implements OnInit {
       return correo.split('@')[0];
     }
     return '';
+  }
+
+  private getCurrentUserId(): number | null {
+    const rawId = this.userData?.id ?? this.userData?.idUsuario;
+    const id = Number(rawId);
+    return Number.isNaN(id) || id <= 0 ? null : id;
+  }
+
+  private refreshCurrentUserData(): void {
+    const userId = this.getCurrentUserId();
+    if (!userId) return;
+
+    this.authService.getUsuarioById(userId).subscribe({
+      next: (u) => {
+        this.userData = { ...(this.userData || {}), ...(u || {}) };
+
+        if (!this.isEditing) {
+          this.syncFormFromUser();
+        }
+
+        this.loadSocialStats();
+      },
+      error: (err) => {
+        console.error('Error cargando perfil:', err);
+      }
+    });
+  }
+
+  private getMediaUrl(path?: string | null): string {
+    return buildMediaUrl(path);
   }
 
   private loadEventsTab(): void {

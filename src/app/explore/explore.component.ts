@@ -203,7 +203,7 @@ export class ExploreComponent implements OnInit {
 
     const attendees = e?.cupo ? `${e.cupo} asistentes` : '';
     const category = e?.categoria ?? e?.category ?? '';
-    const tags = e?.tags ?? [];
+    const tags = Array.isArray(e?.tags) ? e.tags : [];
 
     const price =
       e?.eventoGratuito === true
@@ -212,18 +212,9 @@ export class ExploreComponent implements OnInit {
           ? (typeof e.precio === 'number' ? `$${e.precio}` : String(e.precio))
           : (e?.price ?? 'Gratis'));
 
-    const rawImg =
-      e?.imagenPortadaUrl ||
-      e?.imagenPortadaURL ||
-      e?.imagenPortada ||
-      e?.portada ||
-      e?.portadaUrl ||
-      e?.imagenUrl ||
-      e?.imageUrl ||
-      e?.image ||
-      '';
+    const imageUrls = this.getEventImages(e);
+    const imageUrl = imageUrls[0] || '';
 
-    const imageUrl = this.eventoService.getFullImageUrl(String(rawImg || ''));
     const id = e?.idEvento ?? e?.id ?? e?.id_evento ?? null;
 
     return {
@@ -239,6 +230,7 @@ export class ExploreComponent implements OnInit {
       price,
       rating: Number(e?.rating ?? 0),
       imageUrl,
+      imageUrls,
 
       registeredCount:
         e?.inscritos != null
@@ -260,8 +252,91 @@ export class ExploreComponent implements OnInit {
             ? Number(e.capacidad)
             : e?.capacity != null
               ? Number(e.capacity)
-              : null
+              : null,
+
+      socialLinks: this.extractSocialLinks(e)
     };
+  }
+
+  private getEventImages(e: any): string[] {
+    const fromArray = Array.isArray(e?.imagenes)
+      ? e.imagenes
+        .map((img: any) =>
+          this.eventoService.getFullImageUrl(
+            String(img?.imageUrl || img?.imagenUrl || img?.url || '')
+          )
+        )
+        .filter((url: string) => !!url)
+      : [];
+
+    const fromDirectArrays = [
+      ...(Array.isArray(e?.imageUrls) ? e.imageUrls : []),
+      ...(Array.isArray(e?.images) ? e.images : []),
+      ...(Array.isArray(e?.galleryImages) ? e.galleryImages : [])
+    ]
+      .map((img: any) =>
+        this.eventoService.getFullImageUrl(
+          String(img?.imageUrl || img?.imagenUrl || img?.url || img || '')
+        )
+      )
+      .filter((url: string) => !!url);
+
+    const portada = this.eventoService.getFullImageUrl(
+      String(
+        e?.imagenPortadaUrl ||
+        e?.imagenPortadaURL ||
+        e?.imagenPortada ||
+        e?.portada ||
+        e?.portadaUrl ||
+        e?.imagenUrl ||
+        e?.imageUrl ||
+        e?.image ||
+        ''
+      )
+    );
+
+    return Array.from(
+      new Set([
+        ...fromArray,
+        ...fromDirectArrays,
+        ...(portada ? [portada] : [])
+      ].filter(Boolean))
+    );
+  }
+
+  private extractSocialLinks(e: any): Record<string, string> | null {
+    const links: Record<string, string> = {};
+
+    const objectSources = [e?.socialLinks, e?.redesSociales, e?.socialMedia];
+
+    for (const source of objectSources) {
+      if (!source || typeof source !== 'object') continue;
+
+      for (const [key, value] of Object.entries(source)) {
+        if (typeof value === 'string' && value.trim()) {
+          links[key] = value.trim();
+        }
+      }
+    }
+
+    const flatSources: Record<string, unknown> = {
+      facebook: e?.facebookUrl ?? e?.facebook,
+      instagram: e?.instagramUrl ?? e?.instagram,
+      whatsapp: e?.whatsappUrl ?? e?.whatsapp,
+      x: e?.xUrl ?? e?.twitterUrl ?? e?.x ?? e?.twitter,
+      tiktok: e?.tiktokUrl ?? e?.tiktok,
+      youtube: e?.youtubeUrl ?? e?.youtube,
+      website: e?.websiteUrl ?? e?.website ?? e?.web ?? e?.sitioWeb ?? e?.paginaWeb,
+      linkedin: e?.linkedinUrl ?? e?.linkedin
+    };
+
+    for (const [key, value] of Object.entries(flatSources)) {
+      if (typeof value === 'string' && value.trim()) {
+        links[key] = value.trim();
+      }
+    }
+
+    return Object.keys(links).length ? links : null;
   }
 
   private removeDuplicate(list: Event[], rawCreated: any): Event[] {

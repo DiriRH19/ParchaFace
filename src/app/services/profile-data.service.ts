@@ -1,6 +1,8 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { API_CONFIG, buildApiUrl } from '../config/api.config';
+import { AuthService } from './auth.service';
 
 export interface ProfileEventItem {
   idEvento: number;
@@ -26,19 +28,42 @@ export interface ProfileActivityItem {
 
 @Injectable({ providedIn: 'root' })
 export class ProfileDataService {
-  private baseUrl = 'http://localhost:8080/perfil';
+  private readonly baseUrl = buildApiUrl(API_CONFIG.endpoints.perfil.base);
 
-  constructor(private http: HttpClient) {}
+  constructor(
+    private http: HttpClient,
+    private authService: AuthService
+  ) {}
+
+  private getAuthHeaders(): HttpHeaders {
+    const token = this.authService.getToken();
+    let headers = new HttpHeaders();
+
+    if (token) {
+      headers = headers.set('Authorization', `Bearer ${token}`);
+    }
+
+    return headers;
+  }
 
   getMisEventosCreados(): Observable<ProfileEventItem[]> {
-    return this.http.get<ProfileEventItem[]>(`${this.baseUrl}/mis-eventos-creados`);
+    return this.http.get<ProfileEventItem[]>(
+      buildApiUrl(API_CONFIG.endpoints.perfil.misEventosCreados),
+      { headers: this.getAuthHeaders() }
+    );
   }
 
   getMisEventosInscritos(): Observable<ProfileEventItem[]> {
-    return this.http.get<ProfileEventItem[]>(`${this.baseUrl}/mis-eventos-inscritos`);
+    return this.http.get<ProfileEventItem[]>(
+      buildApiUrl(API_CONFIG.endpoints.perfil.misEventosInscritos),
+      { headers: this.getAuthHeaders() }
+    );
   }
 
   getMiActividad(): Observable<ProfileActivityItem[]> {
-    return this.http.get<ProfileActivityItem[]>(`${this.baseUrl}/actividad`);
+    return this.http.get<ProfileActivityItem[]>(
+      buildApiUrl(API_CONFIG.endpoints.perfil.actividad),
+      { headers: this.getAuthHeaders() }
+    );
   }
 }
