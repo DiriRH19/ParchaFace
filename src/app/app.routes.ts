@@ -52,6 +52,13 @@ export const routes: Routes = [
   // Eventos
   { path: 'event/:id', component: EventDetailComponent },
 
+  {
+  path: 'pago/simulado/:idPago',
+  canActivate: [authGuard],
+  loadComponent: () =>
+    import('./payment-simulator/payment-simulator.component').then(m => m.PaymentSimulatorComponent)
+},
+
   // Password reset
   { path: 'forgot-password', component: ForgotPasswordComponent },
   { path: 'verify-code', component: VerifyCodeComponent },

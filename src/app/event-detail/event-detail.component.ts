@@ -9,6 +9,7 @@ import { ToastService } from '../shared/toast/toast.service';
 import Swal from 'sweetalert2';
 import { AuthService, UserData } from '../services/auth.service';
 import { InscripcionService } from '../services/inscripcion.service';
+import { PagoService } from '../services/pago.service';
 import { FormsModule } from '@angular/forms';
 
 import {
@@ -151,6 +152,7 @@ export class EventDetailComponent implements OnInit, OnDestroy {
     private toast: ToastService,
     private auth: AuthService,
     private inscripcionService: InscripcionService,
+    private pagoService: PagoService,
     private commentService: EventoCommentService
   ) {}
 
@@ -653,52 +655,83 @@ export class EventDetailComponent implements OnInit, OnDestroy {
 
     if (this.isRegistered || this.isJoining) return;
 
+    const esGratis = this.evento.eventoGratuito === true;
+
     Swal.fire({
-      title: '¿Inscribirte al evento?',
-      text: 'Aparecerás como inscrito en este evento.',
+      title: esGratis ? '¿Inscribirte al evento?' : '¿Continuar al pago?',
+      text: esGratis
+        ? 'Aparecerás como inscrito en este evento.'
+        : `Vas a pagar ${this.precioLabel} en una pasarela simulada.`,
       icon: 'warning',
       showCancelButton: true,
-      confirmButtonText: 'Sí, inscribirme',
+      confirmButtonText: esGratis ? 'Sí, inscribirme' : 'Sí, continuar',
       cancelButtonText: 'No'
     }).then((result) => {
       if (!result.isConfirmed) return;
 
       this.isJoining = true;
 
-      this.inscripcionService.inscribirme(Number(this.evento!.id)).subscribe({
-        next: () => {
-          this.inscripcionService.marcarComoInscrito(Number(this.evento!.id));
-          this.isRegistered = true;
+      if (esGratis) {
+        this.inscripcionService.inscribirme(Number(this.evento!.id)).subscribe({
+          next: () => {
+            this.inscripcionService.marcarComoInscrito(Number(this.evento!.id));
+            this.isRegistered = true;
 
-          Swal.fire({
-            icon: 'success',
-            title: '¡Inscripción exitosa!',
-            text: 'Ya quedaste inscrito al evento.',
-            timer: 1600,
-            showConfirmButton: false
-          });
+            Swal.fire({
+              icon: 'success',
+              title: '¡Inscripción exitosa!',
+              text: 'Ya quedaste inscrito al evento.',
+              timer: 1600,
+              showConfirmButton: false
+            });
+          },
+          error: (err) => {
+            const msg =
+              err?.error?.message ||
+              err?.error?.error ||
+              err?.error ||
+              'No se pudo inscribir. Intenta de nuevo.';
+
+            Swal.fire({
+              icon: 'error',
+              title: 'No se pudo inscribir',
+              text: msg,
+              confirmButtonText: 'Ok'
+            });
+
+            if (err?.status === 409) {
+              this.inscripcionService.marcarComoInscrito(Number(this.evento!.id));
+              this.isRegistered = true;
+            }
+          },
+          complete: () => {
+            this.isJoining = false;
+          }
+        });
+
+        return;
+      }
+
+      this.pagoService.crearPago(Number(this.evento!.id)).subscribe({
+        next: (resp) => {
+          this.isJoining = false;
+          this.router.navigate(['/pago/simulado', resp.idPago]);
         },
         error: (err) => {
+          this.isJoining = false;
+
           const msg =
             err?.error?.message ||
             err?.error?.error ||
             err?.error ||
-            'No se pudo inscribir. Intenta de nuevo.';
+            'No se pudo iniciar el pago simulado.';
 
           Swal.fire({
             icon: 'error',
-            title: 'No se pudo inscribir',
+            title: 'No se pudo iniciar el pago',
             text: msg,
             confirmButtonText: 'Ok'
           });
-
-          if (err?.status === 409) {
-            this.inscripcionService.marcarComoInscrito(Number(this.evento!.id));
-            this.isRegistered = true;
-          }
-        },
-        complete: () => {
-          this.isJoining = false;
         }
       });
     });

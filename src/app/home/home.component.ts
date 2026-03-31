@@ -2,6 +2,7 @@ import {
   Component,
   ElementRef,
   OnInit,
+  OnDestroy,
   PLATFORM_ID,
   ViewChild,
   inject
@@ -21,7 +22,7 @@ import { EventoMapa, EventoService } from '../services/evento';
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.css']
 })
-export class HomeComponent implements OnInit {
+export class HomeComponent implements OnInit, OnDestroy {
   private eventoService = inject(EventoService);
   private router = inject(Router);
   private platformId = inject(PLATFORM_ID);
@@ -37,11 +38,15 @@ export class HomeComponent implements OnInit {
 
   events: EventoMapa[] = [];
 
+  heroIndex = 0;
+  itemImageIndexes = new Map<number, number>();
+
   private leaflet?: typeof import('leaflet');
   private map?: import('leaflet').Map;
   private eventMarkersLayer?: import('leaflet').LayerGroup;
   private userMarker?: import('leaflet').Marker;
   private markerByEventId = new Map<number, import('leaflet').Marker>();
+  private mapInitializing = false;
 
   private eventMarkerIcon?: import('leaflet').Icon;
   private activeEventMarkerIcon?: import('leaflet').Icon;
@@ -53,7 +58,7 @@ export class HomeComponent implements OnInit {
   set mapContainerSetter(element: ElementRef<HTMLDivElement> | undefined) {
     this.mapContainer = element;
 
-    if (element) {
+    if (element && !this.map && !this.mapInitializing) {
       setTimeout(() => {
         this.initializeMap();
       }, 0);
@@ -62,6 +67,18 @@ export class HomeComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadEvents();
+  }
+
+  ngOnDestroy(): void {
+    if (this.map) {
+      this.map.remove();
+      this.map = undefined;
+    }
+
+    this.eventMarkersLayer = undefined;
+    this.userMarker = undefined;
+    this.markerByEventId.clear();
+    this.mapInitializing = false;
   }
 
   get uniqueCategories(): string[] {
@@ -104,11 +121,53 @@ export class HomeComponent implements OnInit {
     return list.sort((a, b) => String(a.fecha || '').localeCompare(String(b.fecha || '')));
   }
 
+  get heroSlides(): Array<{
+    eventId: number | null;
+    titulo: string;
+    lugar: string;
+    fecha: string;
+    categoria: string;
+    imageUrl: string;
+  }> {
+    return this.filteredEvents
+      .slice(0, 5)
+      .map(evento => ({
+        eventId: evento.idEvento ?? null,
+        titulo: evento.titulo || 'Evento',
+        lugar: this.getEventLocation(evento),
+        fecha: this.getEventDateLabel(evento),
+        categoria: evento.categoria || 'Evento',
+        imageUrl: this.getEventImage(evento)
+      }))
+      .filter(slide => !!slide.imageUrl);
+  }
+
+  get currentHeroSlide():
+    | {
+        eventId: number | null;
+        titulo: string;
+        lugar: string;
+        fecha: string;
+        categoria: string;
+        imageUrl: string;
+      }
+    | null {
+    const slides = this.heroSlides;
+    if (!slides.length) return null;
+
+    const safeIndex = Math.min(this.heroIndex, slides.length - 1);
+    return slides[safeIndex];
+  }
+
   async onFiltersChanged(): Promise<void> {
     const selectedExists = this.filteredEvents.some(evento => evento.idEvento === this.selectedEventId);
 
     if (!selectedExists) {
       this.selectedEventId = null;
+    }
+
+    if (this.heroIndex >= this.heroSlides.length) {
+      this.heroIndex = 0;
     }
 
     await this.renderEventMarkers(true);
@@ -118,6 +177,7 @@ export class HomeComponent implements OnInit {
     this.searchText = '';
     this.categoriaFiltro = '';
     this.selectedEventId = null;
+    this.heroIndex = 0;
 
     await this.renderEventMarkers(true);
   }
@@ -147,11 +207,58 @@ export class HomeComponent implements OnInit {
     return evento.idEvento === this.selectedEventId;
   }
 
+  setHeroIndex(index: number): void {
+    if (index >= 0 && index < this.heroSlides.length) {
+      this.heroIndex = index;
+    }
+  }
+
+  openHeroEvent(): void {
+    const slide = this.currentHeroSlide;
+    if (slide?.eventId != null) {
+      this.router.navigate(['/event', slide.eventId]);
+    }
+  }
+
   goToEventDetail(evento: EventoMapa, domEvent?: MouseEvent): void {
     domEvent?.stopPropagation();
     if (evento.idEvento != null) {
       this.router.navigate(['/event', evento.idEvento]);
     }
+  }
+
+  getEventImages(evento: EventoMapa): string[] {
+    const anyEvento = evento as any;
+
+    const rawImages = [
+      anyEvento?.imagenPortadaUrl,
+      anyEvento?.imagenPortadaURL,
+      anyEvento?.imagenPortada,
+      anyEvento?.portada,
+      anyEvento?.portadaUrl,
+      anyEvento?.imagenUrl,
+      anyEvento?.imageUrl
+    ].filter(Boolean);
+
+    const normalized = rawImages
+      .map((img: string) => this.eventoService.getFullImageUrl(String(img)))
+      .filter(Boolean);
+
+    return [...new Set(normalized)];
+  }
+
+  getCurrentItemImage(evento: EventoMapa): string {
+    const images = this.getEventImages(evento);
+    if (!images.length) return '';
+
+    const eventId = evento.idEvento ?? 0;
+    const currentIndex = this.itemImageIndexes.get(eventId) ?? 0;
+    return images[currentIndex] || images[0];
+  }
+
+  getCurrentItemImageIndex(evento: EventoMapa): number {
+    const eventId = evento.idEvento ?? 0;
+    return this.itemImageIndexes.get(eventId) ?? 0;
   }
 
   getEventImage(evento: EventoMapa): string {
@@ -201,6 +308,8 @@ export class HomeComponent implements OnInit {
       next: async (list: EventoMapa[]) => {
         this.events = list || [];
         this.eventsLoading = false;
+        this.heroIndex = 0;
+        this.itemImageIndexes.clear();
 
         if (this.events.length === 0) {
           this.mapNotice = 'Aún no hay eventos públicos con ubicación para mostrar.';
@@ -219,6 +328,9 @@ export class HomeComponent implements OnInit {
 
         this.events = [];
         this.eventsLoading = false;
+        this.heroIndex = 0;
+        this.itemImageIndexes.clear();
+
         await this.renderEventMarkers(true);
       }
     });
@@ -227,6 +339,7 @@ export class HomeComponent implements OnInit {
   private async initializeMap(): Promise<void> {
     if (!isPlatformBrowser(this.platformId)) return;
     if (!this.mapContainer) return;
+    if (this.mapInitializing) return;
 
     if (this.map) {
       this.map.invalidateSize();
@@ -234,6 +347,7 @@ export class HomeComponent implements OnInit {
       return;
     }
 
+    this.mapInitializing = true;
     this.mapLoading = true;
     this.mapError = '';
     this.mapNotice = '';
@@ -250,7 +364,13 @@ export class HomeComponent implements OnInit {
         this.mapNotice = 'No pude obtener tu ubicación exacta. Centré el mapa en Bogotá por defecto.';
       }
 
-      this.map = L.map(this.mapContainer.nativeElement, {
+      const container = this.mapContainer.nativeElement;
+
+      if ((container as any)._leaflet_id) {
+        (container as any)._leaflet_id = null;
+      }
+
+      this.map = L.map(container, {
         center: [center.lat, center.lng],
         zoom: 12,
         zoomControl: true
@@ -274,6 +394,7 @@ export class HomeComponent implements OnInit {
       this.mapError = 'No se pudo cargar el mapa.';
     } finally {
       this.mapLoading = false;
+      this.mapInitializing = false;
     }
   }
 
