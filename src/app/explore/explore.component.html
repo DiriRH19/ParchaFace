@@ -121,11 +121,11 @@
       Cargando eventos...
     </div>
 
-    <div *ngIf="!isLoading && featuredEvents.length === 0" class="empty-state">
+    <div *ngIf="!isLoading && hasActiveFilters && eventsFiltrados.length === 0" class="empty-state">
       No encontramos eventos con esos filtros.
     </div>
 
-    <div class="events-grid" *ngIf="!isLoading && featuredEvents.length > 0">
+    <div class="events-grid" *ngIf="!isLoading && eventsFiltrados.length > 0">
       <app-event-card
         *ngFor="let event of featuredEvents"
         [event]="event"

@@ -26,14 +26,14 @@ export interface UserData {
   usuario?: string;
   correo?: string;
 
-  fotoPerfil?: string;
-  fotoPortada?: string;
+  fotoPerfil?: string | null;
+  fotoPortada?: string | null;
 
-  fotoPerfilUrl?: string;
-  fotoPortadaUrl?: string;
+  fotoPerfilUrl?: string | null;
+  fotoPortadaUrl?: string | null;
 
-  fotoPerfilPublicId?: string;
-  fotoPortadaPublicId?: string;
+  fotoPerfilPublicId?: string | null;
+  fotoPortadaPublicId?: string | null;
 
   acercaDe?: string;
   redesSociales?: SocialLink[];
@@ -438,32 +438,66 @@ export class AuthService {
     return this.userData.value;
   }
 
-  uploadPerfil(id: number, formData: FormData): Observable<{ idUsuario: number; fotoPerfil?: string; fotoPerfilPublicId?: string }> {
+  uploadPerfil(id: number, formData: FormData): Observable<{ idUsuario: number; fotoPerfil?: string; fotoPerfilUrl?: string; fotoPerfilPublicId?: string }> {
     const url = buildApiUrl(withPathParam(API_CONFIG.endpoints.usuarios.fotoPerfil, { id }));
 
-    return this.http.post<{ idUsuario: number; fotoPerfil?: string; fotoPerfilPublicId?: string }>(
+    return this.http.post<{ idUsuario: number; fotoPerfil?: string; fotoPerfilUrl?: string; fotoPerfilPublicId?: string }>(
       url,
       formData,
       { headers: this.getAuthHeaders() }
     ).pipe(
       tap((u) => {
         const current = this.userData.value;
-        this.userData.next({ ...(current || {}), ...(u || {}) });
+        const foto = u?.fotoPerfilUrl || u?.fotoPerfil || null;
+
+        this.userData.next({
+          ...(current || {}),
+          ...(u || {}),
+          fotoPerfil: foto,
+          fotoPerfilUrl: foto
+        });
       })
     );
   }
 
-  uploadPortada(id: number, formData: FormData): Observable<{ idUsuario: number; fotoPortada?: string; fotoPortadaPublicId?: string }> {
+  uploadPortada(id: number, formData: FormData): Observable<{ idUsuario: number; fotoPortada?: string; fotoPortadaUrl?: string; fotoPortadaPublicId?: string }> {
     const url = buildApiUrl(withPathParam(API_CONFIG.endpoints.usuarios.fotoPortada, { id }));
 
-    return this.http.post<{ idUsuario: number; fotoPortada?: string; fotoPortadaPublicId?: string }>(
+    return this.http.post<{ idUsuario: number; fotoPortada?: string; fotoPortadaUrl?: string; fotoPortadaPublicId?: string }>(
       url,
       formData,
       { headers: this.getAuthHeaders() }
     ).pipe(
       tap((u) => {
         const current = this.userData.value;
-        this.userData.next({ ...(current || {}), ...(u || {}) });
+        const foto = u?.fotoPortadaUrl || u?.fotoPortada || null;
+
+        this.userData.next({
+          ...(current || {}),
+          ...(u || {}),
+          fotoPortada: foto,
+          fotoPortadaUrl: foto
+        });
+      })
+    );
+  }
+
+  deletePerfilPhoto(id: number): Observable<{ idUsuario: number; fotoPerfil?: string | null; fotoPerfilUrl?: string | null; fotoPerfilPublicId?: string | null }> {
+    const url = buildApiUrl(withPathParam(API_CONFIG.endpoints.usuarios.eliminarFotoPerfil, { id }));
+
+    return this.http.delete<{ idUsuario: number; fotoPerfil?: string | null; fotoPerfilUrl?: string | null; fotoPerfilPublicId?: string | null }>(
+      url,
+      { headers: this.getAuthHeaders() }
+    ).pipe(
+      tap((u) => {
+        const current = this.userData.value;
+        this.userData.next({
+          ...(current || {}),
+          ...(u || {}),
+          fotoPerfil: null,
+          fotoPerfilUrl: null,
+          fotoPerfilPublicId: null
+        });
       })
     );
   }

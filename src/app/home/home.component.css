@@ -663,3 +663,8 @@
   background: rgba(232, 169, 47, 0.10);
   border-color: rgba(232, 169, 47, 0.26);
 }
+
+.leaflet-div-icon.user-photo-marker-clean {
+  background: transparent !important;
+  border: none !important;
+}

@@ -72,9 +72,29 @@
                   (change)="onPerfilSelected($event)"
                 />
 
-                <button class="btn-change-photo" type="button" (click)="perfilInput.click()">
-                  Editar
-                </button>
+                <div class="profile-photo-actions">
+                  <button
+                    class="btn-change-photo"
+                    type="button"
+                    (click)="perfilInput.click()"
+                    [disabled]="isDeletingProfilePhoto"
+                  >
+                    Editar
+                  </button>
+
+                  @if (hasStoredProfilePhoto()) {
+                    <button
+                      class="btn-remove-photo"
+                      type="button"
+                      (click)="removeProfilePhoto()"
+                      [disabled]="isDeletingProfilePhoto"
+                      aria-label="Eliminar foto de perfil"
+                      title="Eliminar foto de perfil"
+                    >
+                      🗑️
+                    </button>
+                  }
+                </div>
               }
             </div>
           </div>

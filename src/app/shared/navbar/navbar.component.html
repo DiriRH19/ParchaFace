@@ -46,9 +46,25 @@
         }
 
         @if (isLoggedIn) {
-          <a routerLink="/profile" class="btn-profile-nav">
-            {{ userData?.nombre || userData?.usuario || 'Mi perfil' }}
+          <a
+            routerLink="/profile"
+            class="profile-avatar-link"
+            aria-label="Ir a mi perfil"
+            title="Mi perfil"
+          >
+            @if (navbarProfileImage) {
+              <img
+                [src]="navbarProfileImage"
+                alt="Foto de perfil"
+                class="profile-avatar-img"
+              >
+            } @else {
+              <span class="profile-avatar-fallback">
+        {{ getUserInitials() }}
+      </span>
+            }
           </a>
+
           <button type="button" (click)="onLogoutClick()" class="btn-logout-nav">
             Cerrar sesión
           </button>

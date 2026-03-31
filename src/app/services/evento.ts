@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { buildApiUrl, buildMediaUrl } from '../config/api.config';
 
 export interface EventoMapa {
   idEvento: number;
@@ -18,8 +19,8 @@ export interface EventoMapa {
   providedIn: 'root'
 })
 export class EventoService {
-  private apiUrl = '/eventos';
-  private uploadsBaseUrl = '';
+  // Cambia este valor si tu backend no corre en 8080
+  private readonly apiUrl = buildApiUrl('/eventos');
 
   constructor(private http: HttpClient) {}
 
@@ -52,17 +53,7 @@ export class EventoService {
   }
 
   getFullImageUrl(path: string): string {
-    if (!path) return '';
-
-    if (path.startsWith('http://') || path.startsWith('https://')) {
-      return path;
-    }
-
-    if (path.startsWith('/')) {
-      return `${this.uploadsBaseUrl}${path}`;
-    }
-
-    return `${this.uploadsBaseUrl}/${path}`;
+    return buildMediaUrl(path);
   }
 
   getSeedEvents(): any[] {

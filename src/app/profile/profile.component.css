@@ -178,9 +178,6 @@
 }
 
 .btn-change-photo {
-  position: absolute;
-  bottom: 2px;
-  right: 2px;
   min-width: 42px;
   height: 42px;
   border-radius: 999px;
@@ -196,6 +193,46 @@
   cursor: pointer;
   transition: all 0.25s ease;
   box-shadow: 0 10px 22px rgba(232, 169, 47, 0.24);
+}
+
+.profile-photo-actions {
+  position: absolute;
+  right: 2px;
+  bottom: 2px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-remove-photo {
+  width: 42px;
+  height: 42px;
+  min-width: 42px;
+  border-radius: 50%;
+  background: #ef4444;
+  border: 4px solid rgba(255, 255, 255, 0.92);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #ffffff;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  box-shadow: 0 10px 22px rgba(239, 68, 68, 0.24);
+  line-height: 1;
+}
+
+.btn-remove-photo:hover {
+  transform: scale(1.04);
+  background: #dc2626;
+}
+
+.btn-change-photo:disabled,
+.btn-remove-photo:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+  transform: none;
 }
 
 .btn-change-photo:hover {
@@ -1666,4 +1703,8 @@
 
 :host-context(.dark) .error-text {
   color: #ffb4b4;
+}
+
+:host-context(.dark) .btn-remove-photo {
+  border-color: rgba(18, 18, 18, 0.92);
 }

@@ -14,6 +14,9 @@ import { Router, RouterLink } from '@angular/router';
 import { FooterComponent } from '../shared/footer/footer.component';
 import { NavbarComponent } from '../shared/navbar/navbar.component';
 import { EventoMapa, EventoService } from '../services/evento';
+import { AuthService, UserData } from '../services/auth.service';
+import { Subscription } from 'rxjs';
+import { buildMediaUrl } from '../config/api.config';
 
 @Component({
   selector: 'app-home',
@@ -24,6 +27,7 @@ import { EventoMapa, EventoService } from '../services/evento';
 })
 export class HomeComponent implements OnInit, OnDestroy {
   private eventoService = inject(EventoService);
+  private authService = inject(AuthService);
   private router = inject(Router);
   private platformId = inject(PLATFORM_ID);
 
@@ -35,6 +39,8 @@ export class HomeComponent implements OnInit, OnDestroy {
   searchText = '';
   categoriaFiltro = '';
   selectedEventId: number | null = null;
+
+
 
   events: EventoMapa[] = [];
 
@@ -54,9 +60,16 @@ export class HomeComponent implements OnInit, OnDestroy {
   private readonly defaultCenter = { lat: 4.711, lng: -74.0721 };
   private mapContainer?: ElementRef<HTMLDivElement>;
 
+  userData: UserData | null = null;
+  userMapProfileImage = '';
+  private profileImageRequested = false;
+  private subscriptions = new Subscription();
+
   @ViewChild('mapContainer')
   set mapContainerSetter(element: ElementRef<HTMLDivElement> | undefined) {
     this.mapContainer = element;
+
+
 
     if (element && !this.map && !this.mapInitializing) {
       setTimeout(() => {
@@ -65,11 +78,21 @@ export class HomeComponent implements OnInit, OnDestroy {
     }
   }
 
+
   ngOnInit(): void {
-    this.loadEvents();
+     this.loadEvents();
+
+    const userSub = this.authService.userData$.subscribe(userData => {
+      this.userData = userData;
+      this.syncMapProfileImage();
+    });
+
+    this.subscriptions.add(userSub);
   }
 
   ngOnDestroy(): void {
+    this.subscriptions.unsubscribe();
+
     if (this.map) {
       this.map.remove();
       this.map = undefined;
@@ -381,7 +404,9 @@ export class HomeComponent implements OnInit, OnDestroy {
         attribution: '&copy; OpenStreetMap contributors'
       }).addTo(this.map);
 
-      this.userMarker = L.marker([center.lat, center.lng]).addTo(this.map).bindPopup('Tu ubicación actual');
+      this.userMarker = L.marker([center.lat, center.lng], {
+        icon: this.getUserMarkerIcon(L)
+      }).addTo(this.map).bindPopup('Tu ubicación actual');
       this.eventMarkersLayer = L.layerGroup().addTo(this.map);
 
       await this.renderEventMarkers(true);
@@ -594,5 +619,115 @@ export class HomeComponent implements OnInit, OnDestroy {
     }
 
     return this.activeEventMarkerIcon;
+  }
+
+  private syncMapProfileImage(): void {
+    const currentPhoto = this.userData?.fotoPerfil || this.userData?.fotoPerfilUrl;
+
+    if (currentPhoto) {
+      this.userMapProfileImage = buildMediaUrl(currentPhoto);
+      this.profileImageRequested = false;
+      this.updateUserMarkerIcon();
+      return;
+    }
+
+    const userId = this.userData?.id || this.userData?.idUsuario;
+
+    if (!userId || this.profileImageRequested) {
+      this.userMapProfileImage = '';
+      this.updateUserMarkerIcon();
+      return;
+    }
+
+    this.profileImageRequested = true;
+
+    this.authService.getUsuarioById(userId).subscribe({
+      next: (user) => {
+        this.userData = { ...(this.userData || {}), ...(user || {}) };
+
+        const freshPhoto = user?.fotoPerfil || user?.fotoPerfilUrl;
+        this.userMapProfileImage = freshPhoto ? buildMediaUrl(freshPhoto) : '';
+        this.profileImageRequested = false;
+        this.updateUserMarkerIcon();
+      },
+      error: (err) => {
+        console.error('Error cargando foto para el marcador del mapa:', err);
+        this.userMapProfileImage = '';
+        this.profileImageRequested = false;
+        this.updateUserMarkerIcon();
+      }
+    });
+  }
+
+  private updateUserMarkerIcon(): void {
+    if (!this.map || !this.userMarker || !this.leaflet) return;
+    this.userMarker.setIcon(this.getUserMarkerIcon(this.leaflet));
+  }
+
+  private getUserMarkerIcon(
+    L: typeof import('leaflet')
+  ): import('leaflet').Icon | import('leaflet').DivIcon {
+    if (!this.userMapProfileImage) {
+      return new L.Icon.Default();
+    }
+
+    return L.divIcon({
+      className: 'user-photo-marker-clean',
+      html: this.buildUserMarkerHtml(this.userMapProfileImage),
+      iconSize: [36, 48],
+      iconAnchor: [18, 48],
+      popupAnchor: [0, -42]
+    });
+  }
+
+  private buildUserMarkerHtml(imageUrl: string): string {
+    const safeUrl = this.escapeHtml(imageUrl);
+
+    return `
+    <div style="
+      position: relative;
+      width: 34px;
+      height: 46px;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+    ">
+      <div style="
+        position: absolute;
+        left: 50%;
+        bottom: 2px;
+        width: 12px;
+        height: 12px;
+        background: #ffffff;
+        transform: translateX(-50%) rotate(45deg);
+        border-radius: 2px 50% 50% 50%;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.18);
+      "></div>
+
+      <div style="
+        position: relative;
+        z-index: 2;
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        overflow: hidden;
+        border: 2px solid #ffffff;
+        background: #ffffff;
+        box-shadow: 0 6px 14px rgba(0,0,0,0.22);
+      ">
+        <img
+          src="${safeUrl}"
+          alt="Tu foto de perfil"
+          style="
+            width: 100%;
+            height: 100%;
+            display: block;
+            object-fit: cover;
+            border-radius: 50%;
+          "
+        />
+      </div>
+    </div>
+  `;
   }
 }

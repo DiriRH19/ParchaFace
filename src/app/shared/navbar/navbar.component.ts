@@ -6,6 +6,7 @@ import { ThemeToggleComponent } from '../theme-toggle/theme-toggle.component';
 import { Subscription } from 'rxjs';
 import { NotificationBellComponent } from '../../shared/notification-bell/notification-bell.component';
 import { NotificacionesStore } from '../../services/notificaciones-store.service';
+import { buildMediaUrl } from '../../config/api.config';
 
 type EmergencyItem = {
   icon: string;
@@ -38,6 +39,8 @@ export class NavbarComponent implements OnInit, OnDestroy {
   authChecked = false;
   userData: UserData | null = null;
   private subscriptions = new Subscription();
+  navbarProfileImage = '';
+  private profileImageRequested = false;
 
   // ✅ Notificaciones (store)
   constructor(
@@ -111,6 +114,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
 
     const userSub = this.authService.userData$.subscribe(userData => {
       this.userData = userData;
+      this.syncNavbarProfileImage();
     });
 
     this.subscriptions.add(loginSub);
@@ -177,5 +181,56 @@ export class NavbarComponent implements OnInit, OnDestroy {
 
   isExternal(href: string): boolean {
     return href.startsWith('http');
+  }
+
+
+  private syncNavbarProfileImage(): void {
+    const currentPhoto = this.userData?.fotoPerfil || this.userData?.fotoPerfilUrl;
+
+    if (currentPhoto) {
+      this.navbarProfileImage = buildMediaUrl(currentPhoto);
+      this.profileImageRequested = false;
+      return;
+    }
+
+    const userId = this.userData?.id || this.userData?.idUsuario;
+
+    if (!userId || this.profileImageRequested) {
+      this.navbarProfileImage = '';
+      return;
+    }
+
+    this.profileImageRequested = true;
+
+    this.authService.getUsuarioById(userId).subscribe({
+      next: (user) => {
+        this.userData = { ...(this.userData || {}), ...(user || {}) };
+
+        const freshPhoto = user?.fotoPerfil || user?.fotoPerfilUrl;
+        this.navbarProfileImage = freshPhoto ? buildMediaUrl(freshPhoto) : '';
+        this.profileImageRequested = false;
+      },
+      error: (err) => {
+        console.error('Error cargando foto del navbar:', err);
+        this.navbarProfileImage = '';
+        this.profileImageRequested = false;
+      }
+    });
+  }
+
+  getUserInitials(): string {
+    const base =
+      this.userData?.nombre ||
+      this.userData?.usuario ||
+      this.userData?.correo ||
+      'U';
+
+    return base
+      .trim()
+      .split(' ')
+      .filter(Boolean)
+      .slice(0, 2)
+      .map(part => part.charAt(0).toUpperCase())
+      .join('');
   }
 }

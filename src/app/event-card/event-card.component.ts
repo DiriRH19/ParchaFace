@@ -409,4 +409,19 @@ export class EventCardComponent implements OnChanges, OnDestroy {
       this.climaError = true;
     }
   }
+
+  get inscritosTexto(): string {
+    const inscritos = this.event?.registeredCount;
+    const cupo = this.event?.capacity;
+
+    if (typeof inscritos === 'number' && typeof cupo === 'number') {
+      return `${inscritos}/${cupo}`;
+    }
+
+    if (typeof cupo === 'number') {
+      return `0/${cupo}`;
+    }
+
+    return '-/-';
+  }
 }

@@ -26,6 +26,7 @@ export const API_CONFIG = {
     usuarios: {
       base: '/usuarios',
       fotoPerfil: '/usuarios/:id/foto-perfil',
+      eliminarFotoPerfil: '/usuarios/:id/foto-perfil',
       fotoPortada: '/usuarios/:id/foto-portada',
       byId: '/usuarios/:id',
       perfil: '/usuarios/:id/perfil',

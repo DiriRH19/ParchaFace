@@ -54,6 +54,8 @@ export class ProfileComponent implements OnInit {
   selectedPerfil: File | null = null;
   selectedPortada: File | null = null;
 
+  isDeletingProfilePhoto = false;
+
   perfilPreviewUrl = '';
   portadaPreviewUrl = '';
 
@@ -108,7 +110,6 @@ export class ProfileComponent implements OnInit {
       if (!this.isEditing) {
         this.syncFormFromUser();
       }
-      this.refreshCurrentUserData();
     });
   }
 
@@ -442,6 +443,7 @@ export class ProfileComponent implements OnInit {
     this.editForm.redesSociales = this.editForm.redesSociales.filter((_, i) => i !== index);
   }
 
+
   onPerfilSelected(event: any): void {
     const file = event?.target?.files?.[0];
     if (!file) return;
@@ -455,21 +457,72 @@ export class ProfileComponent implements OnInit {
 
     this.selectedPerfil = file;
     this.setPreview(file, 'perfil');
+    this.saveError = '';
 
     this.authService.uploadPerfil(userId, this.buildSingleFileFormData(file)).subscribe({
       next: (u: any) => {
-        this.userData = { ...this.userData, ...u };
+        const foto = u?.fotoPerfilUrl || u?.fotoPerfil || '';
+
+        this.userData = {
+          ...(this.userData || {}),
+          ...(u || {}),
+          fotoPerfil: foto,
+          fotoPerfilUrl: foto
+        };
+
         this.selectedPerfil = null;
         this.perfilPreviewUrl = '';
-        this.refreshCurrentUserData();
       },
       error: (err) => {
         console.error('Error subiendo foto perfil:', err);
+        this.saveError = 'No se pudo subir la foto de perfil.';
         this.selectedPerfil = null;
         this.perfilPreviewUrl = '';
       }
     });
   }
+
+  hasStoredProfilePhoto(): boolean {
+    return !!(this.userData?.fotoPerfil || this.userData?.fotoPerfilUrl);
+  }
+
+  removeProfilePhoto(): void {
+    const userId = this.getCurrentUserId();
+    if (!userId || this.isDeletingProfilePhoto || !this.hasStoredProfilePhoto()) {
+      return;
+    }
+
+    const confirmed = window.confirm('¿Seguro que quieres eliminar tu foto de perfil?');
+    if (!confirmed) {
+      return;
+    }
+
+    this.isDeletingProfilePhoto = true;
+
+    this.authService.deletePerfilPhoto(userId).subscribe({
+      next: (u: any) => {
+        this.userData = {
+          ...this.userData,
+          ...u,
+          fotoPerfil: null,
+          fotoPerfilUrl: null,
+          fotoPerfilPublicId: null
+        };
+
+        this.selectedPerfil = null;
+        this.perfilPreviewUrl = '';
+        this.isDeletingProfilePhoto = false;
+
+        this.refreshCurrentUserData();
+      },
+      error: (err) => {
+        console.error('Error eliminando foto perfil:', err);
+        this.isDeletingProfilePhoto = false;
+      }
+    });
+  }
+
+
 
   onPortadaSelected(event: any): void {
     const file = event?.target?.files?.[0];
@@ -484,16 +537,25 @@ export class ProfileComponent implements OnInit {
 
     this.selectedPortada = file;
     this.setPreview(file, 'portada');
+    this.saveError = '';
 
     this.authService.uploadPortada(userId, this.buildSingleFileFormData(file)).subscribe({
       next: (u: any) => {
-        this.userData = { ...this.userData, ...u };
+        const foto = u?.fotoPortadaUrl || u?.fotoPortada || '';
+
+        this.userData = {
+          ...(this.userData || {}),
+          ...(u || {}),
+          fotoPortada: foto,
+          fotoPortadaUrl: foto
+        };
+
         this.selectedPortada = null;
         this.portadaPreviewUrl = '';
-        this.refreshCurrentUserData();
       },
       error: (err) => {
         console.error('Error subiendo foto portada:', err);
+        this.saveError = 'No se pudo subir la foto de portada.';
         this.selectedPortada = null;
         this.portadaPreviewUrl = '';
       }

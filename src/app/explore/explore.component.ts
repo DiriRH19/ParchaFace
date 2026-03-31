@@ -1,5 +1,5 @@
-import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, Inject, PLATFORM_ID } from '@angular/core';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 
@@ -74,11 +74,12 @@ export class ExploreComponent implements OnInit {
 
   constructor(
     private eventoService: EventoService,
-    private router: Router
+    private router: Router,
+    @Inject(PLATFORM_ID) private platformId: Object
   ) {}
 
   ngOnInit(): void {
-    if (typeof window !== 'undefined') {
+    if (isPlatformBrowser(this.platformId)) {
       const w = window as any;
 
       this.newlyCreatedFromNav = w?.history?.state?.newlyCreatedEvent ?? null;
@@ -89,9 +90,9 @@ export class ExploreComponent implements OnInit {
           ''
         );
       } catch (_) {}
-    }
 
-    this.loadEvents();
+      this.loadEvents();
+    }
   }
 
   refreshEvents(): void {
@@ -243,7 +244,11 @@ export class ExploreComponent implements OnInit {
                 ? Number(e.registeredCount)
                 : e?.totalInscritos != null
                   ? Number(e.totalInscritos)
-                  : null,
+                  : Array.isArray(e?.inscripciones)
+                    ? e.inscripciones.length
+                    : Array.isArray(e?.usuariosInscritos)
+                      ? e.usuariosInscritos.length
+                      : 0,
 
       capacity:
         e?.cupo != null
@@ -252,7 +257,7 @@ export class ExploreComponent implements OnInit {
             ? Number(e.capacidad)
             : e?.capacity != null
               ? Number(e.capacity)
-              : null,
+              : 0,
 
       socialLinks: this.extractSocialLinks(e)
     };
@@ -390,23 +395,24 @@ export class ExploreComponent implements OnInit {
   get eventsFiltrados(): Event[] {
     let list = [...(this.events || [])];
 
-    const qSearch = (this.searchText || '').trim().toLowerCase();
+    const qSearch = this.normalizeText(this.searchText);
     if (qSearch) {
       list = list.filter(ev => {
-        const hay = [
+        const hay = this.normalizeText([
           ev.title,
           ev.description,
           ev.location,
           ev.ciudad || '',
           ev.category || ''
-        ].join(' ').toLowerCase();
+        ].join(' '));
+
         return hay.includes(qSearch);
       });
     }
 
-    const qCat = (this.categoriaFiltro || '').trim().toLowerCase();
+    const qCat = this.normalizeText(this.categoriaFiltro);
     if (qCat) {
-      list = list.filter(ev => (ev.category || '').toLowerCase() === qCat);
+      list = list.filter(ev => this.normalizeText(ev.category || '') === qCat);
     }
 
     const r = (this.priceRange || '').trim();
@@ -433,4 +439,41 @@ export class ExploreComponent implements OnInit {
   get feedEvents(): Event[] {
     return [...this.eventsFiltrados].slice(0, 3);
   }
+
+  private normalizeText(value: string): string {
+    return (value || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .trim()
+      .toLowerCase();
+  }
+
+  get hasActiveFilters(): boolean {
+    return !!(
+      this.searchText.trim() ||
+      this.categoriaFiltro.trim() ||
+      this.priceRange.trim()
+    );
+  }
+  updateRegisteredCount(eventId: number): void {
+    this.events = this.events.map(ev => {
+      if (ev.id !== eventId) return ev;
+
+      const inscritosActuales =
+        typeof ev.registeredCount === 'number' ? ev.registeredCount : 0;
+
+      const cupo =
+        typeof ev.capacity === 'number' ? ev.capacity : null;
+
+      if (cupo != null && inscritosActuales >= cupo) {
+        return ev;
+      }
+
+      return {
+        ...ev,
+        registeredCount: inscritosActuales + 1
+      };
+    });
+  }
+
 }
