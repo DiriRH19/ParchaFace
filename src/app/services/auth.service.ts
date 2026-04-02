@@ -438,6 +438,21 @@ export class AuthService {
     return this.userData.value;
   }
 
+  getUserRole(): string | null {
+    const data = this.userData.value as any;
+
+    if (typeof data?.rol === 'string' && data.rol.trim()) {
+      return data.rol.trim().toUpperCase();
+    }
+
+    if (Array.isArray(data?.roles) && data.roles.length > 0) {
+      const first = data.roles.find((role: unknown) => typeof role === 'string' && !!role.trim());
+      return typeof first === 'string' ? first.trim().toUpperCase() : null;
+    }
+
+    return null;
+  }
+
   uploadPerfil(id: number, formData: FormData): Observable<{ idUsuario: number; fotoPerfil?: string; fotoPerfilUrl?: string; fotoPerfilPublicId?: string }> {
     const url = buildApiUrl(withPathParam(API_CONFIG.endpoints.usuarios.fotoPerfil, { id }));
 
@@ -516,5 +531,36 @@ export class AuthService {
         this.userData.next({ ...(current || {}), ...(u || {}) });
       })
     );
+  }
+
+  private normalizeRole(value: unknown): string {
+    return String(value ?? '')
+      .trim()
+      .toUpperCase()
+      .replace(/^ROLE_/, '');
+  }
+
+  isAdmin(): boolean {
+    const currentUser = this.userData.value as any;
+
+    const singleRole = currentUser?.rol ?? currentUser?.role;
+    if (this.normalizeRole(singleRole) === 'ADMINISTRADOR') {
+      return true;
+    }
+
+    const roles = currentUser?.roles;
+
+    if (Array.isArray(roles)) {
+      return roles.some(role => this.normalizeRole(role) === 'ADMINISTRADOR');
+    }
+
+    if (typeof roles === 'string') {
+      return roles
+        .split(',')
+        .map(role => this.normalizeRole(role))
+        .includes('ADMINISTRADOR');
+    }
+
+    return false;
   }
 }

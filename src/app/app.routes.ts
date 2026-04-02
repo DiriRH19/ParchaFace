@@ -15,55 +15,54 @@ import { CreateEventComponent } from './create-event/create-event.component';
 import { EventDetailComponent } from './event-detail/event-detail.component';
 
 import { authGuard } from './guards/auth.guard';
+import { adminGuard } from './guards/admin.guard';
+import { adminSessionOnlyGuard } from './guards/admin-session-only.guard';
 
 import { ForgotPasswordComponent } from './password-reset/forgot-password/forgot-password';
 import { VerifyCodeComponent } from './password-reset/verify-code/verify-code';
 import { NewPasswordComponent } from './password-reset/new-password/new-password';
 
 export const routes: Routes = [
-  // Home principal visual
-  { path: '', component: ExploreComponent },
-  { path: 'explore', component: ExploreComponent },
-
-  // Mapa
-  { path: 'mapa', component: HomeComponent },
+  { path: '', component: ExploreComponent, canActivate: [adminSessionOnlyGuard] },
+  { path: 'explore', component: ExploreComponent, canActivate: [adminSessionOnlyGuard] },
+  { path: 'mapa', component: HomeComponent, canActivate: [adminSessionOnlyGuard] },
 
   {
     path: 'usuarios/:id',
+    canActivate: [adminSessionOnlyGuard],
     loadComponent: () =>
       import('./user-profile/user-profile.component').then(m => m.UserProfileComponent)
   },
 
-  // Comunidad
-  { path: 'community', component: CommunityComponent },
-  { path: 'community/discussions', component: DiscussionsComponent },
-  { path: 'community/discussions/:id', component: DiscussionDetailComponent },
-  { path: 'community/create-post', component: CreatePostComponent, canActivate: [authGuard] },
+  { path: 'community', component: CommunityComponent, canActivate: [adminSessionOnlyGuard] },
+  { path: 'community/discussions', component: DiscussionsComponent, canActivate: [adminSessionOnlyGuard] },
+  { path: 'community/discussions/:id', component: DiscussionDetailComponent, canActivate: [adminSessionOnlyGuard] },
+  { path: 'community/create-post', component: CreatePostComponent, canActivate: [authGuard, adminSessionOnlyGuard] },
 
-  // Auth
-  { path: 'login', component: LoginComponent },
-  { path: 'register', component: RegisterComponent },
+  { path: 'login', component: LoginComponent, canActivate: [adminSessionOnlyGuard] },
+  { path: 'register', component: RegisterComponent, canActivate: [adminSessionOnlyGuard] },
 
-  // Privadas
-  { path: 'preferencias', component: PreferenciasComponent, canActivate: [authGuard] },
-  { path: 'profile', component: ProfileComponent, canActivate: [authGuard] },
-  { path: 'create-event', component: CreateEventComponent, canActivate: [authGuard] },
-
-  // Eventos
-  { path: 'event/:id', component: EventDetailComponent },
+  { path: 'preferencias', component: PreferenciasComponent, canActivate: [authGuard, adminSessionOnlyGuard] },
+  { path: 'profile', component: ProfileComponent, canActivate: [authGuard, adminSessionOnlyGuard] },
+  { path: 'create-event', component: CreateEventComponent, canActivate: [authGuard, adminSessionOnlyGuard] },
+  { path: 'event/:id', component: EventDetailComponent, canActivate: [adminSessionOnlyGuard] },
 
   {
-  path: 'pago/simulado/:idPago',
-  canActivate: [authGuard],
-  loadComponent: () =>
-    import('./payment-simulator/payment-simulator.component').then(m => m.PaymentSimulatorComponent)
-},
+    path: 'pago/simulado/:idPago',
+    canActivate: [authGuard, adminSessionOnlyGuard],
+    loadComponent: () =>
+      import('./payment-simulator/payment-simulator.component').then(m => m.PaymentSimulatorComponent)
+  },
 
-  // Password reset
-  { path: 'forgot-password', component: ForgotPasswordComponent },
-  { path: 'verify-code', component: VerifyCodeComponent },
-  { path: 'new-password', component: NewPasswordComponent },
+  { path: 'forgot-password', component: ForgotPasswordComponent, canActivate: [adminSessionOnlyGuard] },
+  { path: 'verify-code', component: VerifyCodeComponent, canActivate: [adminSessionOnlyGuard] },
+  { path: 'new-password', component: NewPasswordComponent, canActivate: [adminSessionOnlyGuard] },
 
-  // Wildcard
+  {
+    path: 'admin',
+    canActivate: [adminGuard],
+    loadComponent: () => import('./admin/admin.component').then(m => m.AdminComponent)
+  },
+
   { path: '**', redirectTo: '', pathMatch: 'full' }
 ];

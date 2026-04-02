@@ -1,7 +1,7 @@
 <header class="navbar">
   <div class="navbar-content">
     <div class="navbar-left">
-      <a routerLink="/explore" class="logo">
+      <a [routerLink]="logoRoute" class="logo">
         <img
           src="https://res.cloudinary.com/dzjp34qp8/image/upload/v1773660533/event-marker_muuygp.png"
           alt="ParchaFace Logo"
@@ -11,70 +11,93 @@
       </a>
 
       <nav class="nav-links">
-        <a routerLink="/explore" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
-          Inicio
-        </a>
-        <a routerLink="/mapa" routerLinkActive="active">
-          Eventos
-        </a>
-        <a routerLink="/community" routerLinkActive="active">
-          Comunidad
-        </a>
-        <a routerLink="/create-event" routerLinkActive="active">
-          Crear evento
-        </a>
+        @if (isAdminOnlyNavbar) {
+          <a
+            routerLink="/admin"
+            routerLinkActive="active"
+            [routerLinkActiveOptions]="{ exact: true }"
+          >
+            Administrar
+          </a>
+        } @else {
+          <a
+            routerLink="/explore"
+            routerLinkActive="active"
+            [routerLinkActiveOptions]="{ exact: true }"
+          >
+            Inicio
+          </a>
+
+          <a routerLink="/mapa" routerLinkActive="active">
+            Eventos
+          </a>
+
+          <a routerLink="/community" routerLinkActive="active">
+            Comunidad
+          </a>
+
+          <a routerLink="/create-event" routerLinkActive="active">
+            Crear evento
+          </a>
+        }
       </nav>
     </div>
 
     <div class="navbar-right">
-      <button type="button" class="btn-transport-nav" (click)="toggleTransportModal()">
-        <span class="nav-btn-mark">◈</span>
-        Transporte
-      </button>
-
-
-      <app-theme-toggle></app-theme-toggle>
-
       @if (authChecked) {
-        @if (isLoggedIn) {
-          <app-notification-bell></app-notification-bell>
-        }
-
         @if (!isLoggedIn) {
+          <app-theme-toggle></app-theme-toggle>
           <a routerLink="/login" class="btn-login-nav">Iniciar sesión</a>
           <a routerLink="/register" class="btn-register-nav">Registrarse</a>
         }
 
         @if (isLoggedIn) {
-          <a
-            routerLink="/profile"
-            class="profile-avatar-link"
-            aria-label="Ir a mi perfil"
-            title="Mi perfil"
-          >
-            @if (navbarProfileImage) {
-              <img
-                [src]="navbarProfileImage"
-                alt="Foto de perfil"
-                class="profile-avatar-img"
-              >
-            } @else {
-              <span class="profile-avatar-fallback">
-        {{ getUserInitials() }}
-      </span>
-            }
-          </a>
+          @if (isAdminOnlyNavbar) {
+            <app-notification-bell></app-notification-bell>
+            <app-theme-toggle></app-theme-toggle>
 
-          <button type="button" (click)="onLogoutClick()" class="btn-logout-nav">
-            Cerrar sesión
-          </button>
+            <button type="button" (click)="onLogoutClick()" class="btn-logout-nav">
+              Cerrar sesión
+            </button>
+          } @else {
+            <button type="button" class="btn-transport-nav" (click)="toggleTransportModal()">
+              <span class="nav-btn-mark">◈</span>
+              Transporte
+            </button>
+
+            <app-theme-toggle></app-theme-toggle>
+            <app-notification-bell></app-notification-bell>
+
+            <a
+              routerLink="/profile"
+              class="profile-avatar-link"
+              aria-label="Ir a mi perfil"
+              title="Mi perfil"
+            >
+              @if (navbarProfileImage) {
+                <img
+                  [src]="navbarProfileImage"
+                  alt="Foto de perfil"
+                  class="profile-avatar-img"
+                >
+              } @else {
+                <span class="profile-avatar-fallback">
+                  {{ (userData?.nombre || userData?.usuario || 'PF').slice(0, 2).toUpperCase() }}
+                </span>
+              }
+            </a>
+
+            <button type="button" (click)="onLogoutClick()" class="btn-logout-nav">
+              Cerrar sesión
+            </button>
+          }
         }
       }
     </div>
   </div>
 </header>
 
-@if (showEmergencyModal) {
+@if (!isAdminOnlyNavbar && showEmergencyModal) {
   <div class="em-modal">
     <div class="em-backdrop" (click)="closeEmergencyModal()"></div>
 
@@ -96,11 +119,7 @@
             <h3 class="em-section-title">Colombia (Nacional)</h3>
 
             @for (item of colombia(); track item.tel) {
-              <a
-                class="em-item"
-                [class.primary]="item.primary"
-                [href]="'tel:' + item.tel"
-              >
+              <a class="em-item" [class.primary]="item.primary" [href]="'tel:' + item.tel">
                 <span class="em-icon">{{ item.icon }}</span>
                 <span class="em-main">
                   <span class="em-name">{{ item.name }}</span>
@@ -115,11 +134,7 @@
             <h3 class="em-section-title">Armenia (Quindío)</h3>
 
             @for (item of armenia(); track item.tel) {
-              <a
-                class="em-item"
-                [class.primary]="item.primary"
-                [href]="'tel:' + item.tel"
-              >
+              <a class="em-item" [class.primary]="item.primary" [href]="'tel:' + item.tel">
                 <span class="em-icon">{{ item.icon }}</span>
                 <span class="em-main">
                   <span class="em-name">{{ item.name }}</span>
@@ -130,17 +145,12 @@
             }
           </section>
         </div>
-
-        <div class="em-footer">
-          <span>© {{ year }} ParchaFace</span>
-          <span class="em-footer-note"></span>
-        </div>
       </div>
     </div>
   </div>
 }
 
-@if (showTransportModal) {
+@if (!isAdminOnlyNavbar && showTransportModal) {
   <div class="em-modal">
     <div class="em-backdrop" (click)="closeTransportModal()"></div>
 

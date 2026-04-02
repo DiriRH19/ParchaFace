@@ -40,14 +40,24 @@ export const API_CONFIG = {
       misEventosCreados: '/perfil/mis-eventos-creados',
       misEventosInscritos: '/perfil/mis-eventos-inscritos',
       actividad: '/perfil/actividad'
-
-
     },
-
     comentarios: {
       listarPorEvento: '/api/eventos/:eventoId/comentarios',
       crearPorEvento: '/api/eventos/:eventoId/comentarios',
       eliminar: '/api/comentarios/:commentId'
+    },
+    admin: {
+      eventosPendientes: '/admin/eventos/pendientes',
+      aprobarEvento: '/admin/eventos/:id/aprobar',
+      rechazarEvento: '/admin/eventos/:id/rechazar',
+      usuarios: '/admin/usuarios',
+      suspenderUsuario: '/admin/usuarios/:id/suspender',
+      activarUsuario: '/admin/usuarios/:id/activar',
+      eliminarUsuario: '/admin/usuarios/:id',
+      communityPosts: '/admin/community/posts',
+      eliminarCommunityPost: '/admin/community/posts/:id',
+      communityComments: '/admin/community/comments',
+      eliminarCommunityComment: '/admin/community/comments/:id'
     }
   }
 } as const;

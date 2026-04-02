@@ -9,6 +9,7 @@ import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { EventoService } from '../services/evento';
+import { ToastService } from '../shared/toast/toast.service';
 
 interface RedSocialEvento {
   plataforma: string;
@@ -95,7 +96,8 @@ export class CreateEventComponent implements AfterViewInit, OnDestroy {
 
   constructor(
     private eventoService: EventoService,
-    private router: Router
+    private router: Router,
+    private toast: ToastService
   ) {}
 
   ngAfterViewInit(): void {
@@ -302,10 +304,16 @@ export class CreateEventComponent implements AfterViewInit, OnDestroy {
     this.isSubmitting = true;
 
     this.eventoService.crearEvento(formData).subscribe({
-      next: () => {
+      next: (response: any) => {
         this.isSubmitting = false;
-        this.submitSuccess = 'Evento creado correctamente.';
-        this.router.navigate(['/explore']);
+
+        const mensaje = response?.mensaje || 'La solicitud de creación de evento fue enviada.';
+        this.submitSuccess = mensaje;
+        this.toast.show(mensaje, 'success', 3200);
+
+        setTimeout(() => {
+          this.router.navigate(['/profile']);
+        }, 900);
       },
       error: (err: any) => {
         this.isSubmitting = false;

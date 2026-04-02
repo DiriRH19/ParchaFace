@@ -705,4 +705,31 @@ export class ProfileComponent implements OnInit {
         return 'badge-default';
     }
   }
+
+  getEstadoEventoLabel(estado?: string | null): string {
+    if (!estado?.trim()) {
+      return 'sin_estado';
+    }
+
+    return estado.trim().toLowerCase();
+  }
+
+  getEstadoEventoBadgeClass(estado?: string | null): string {
+    const normalized = (estado || '').trim().toLowerCase();
+
+    switch (normalized) {
+      case 'activo':
+        return 'badge-status-activo';
+      case 'pendiente_aprobacion':
+        return 'badge-status-pendiente';
+      case 'rechazado':
+        return 'badge-status-rechazado';
+      case 'borrador':
+        return 'badge-status-borrador';
+      case 'cancelado':
+        return 'badge-status-cancelado';
+      default:
+        return 'badge-status-default';
+    }
+  }
 }

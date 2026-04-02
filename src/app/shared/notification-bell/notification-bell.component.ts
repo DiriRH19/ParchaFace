@@ -37,7 +37,7 @@ export class NotificationBellComponent implements OnInit {
   }
 
   esNavegable(n: Notificacion): boolean {
-    return n.tipo === 'EVENTO' && !!n.referenciaId;
+    return (n.tipo === 'EVENTO' && !!n.referenciaId) || n.tipo === 'ADMIN_EVENTO_PENDIENTE';
   }
 
   abrirNotificacion(n: Notificacion, ev: MouseEvent) {
@@ -49,7 +49,12 @@ export class NotificationBellComponent implements OnInit {
 
     this.close();
 
-    if (this.esNavegable(n)) {
+    if (n.tipo === 'ADMIN_EVENTO_PENDIENTE') {
+      this.router.navigate(['/admin']);
+      return;
+    }
+
+    if (this.esNavegable(n) && n.referenciaId) {
       this.router.navigate(['/event', n.referenciaId]);
     }
   }

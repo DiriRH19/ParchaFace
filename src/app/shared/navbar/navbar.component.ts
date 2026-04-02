@@ -1,5 +1,5 @@
 import { Component, OnInit, OnDestroy, signal } from '@angular/core';
-import { RouterLink, RouterLinkActive, Router } from '@angular/router';
+import { RouterLink, RouterLinkActive, Router, NavigationEnd } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AuthService, UserData } from '../../services/auth.service';
 import { ThemeToggleComponent } from '../theme-toggle/theme-toggle.component';
@@ -7,6 +7,7 @@ import { Subscription } from 'rxjs';
 import { NotificationBellComponent } from '../../shared/notification-bell/notification-bell.component';
 import { NotificacionesStore } from '../../services/notificaciones-store.service';
 import { buildMediaUrl } from '../../config/api.config';
+import { filter } from 'rxjs/operators';
 
 type EmergencyItem = {
   icon: string;
@@ -42,16 +43,12 @@ export class NavbarComponent implements OnInit, OnDestroy {
   navbarProfileImage = '';
   private profileImageRequested = false;
 
-  // ✅ Notificaciones (store)
   constructor(
     private authService: AuthService,
-    private router: Router,
+    public router: Router,
     private notificacionesStore: NotificacionesStore
   ) {}
 
-  // =========================
-  // ✅ Emergencias (modal)
-  // =========================
   showEmergencyModal = false;
   readonly year = new Date().getFullYear();
 
@@ -69,9 +66,6 @@ export class NavbarComponent implements OnInit, OnDestroy {
     { icon: '⛑️', name: 'Cruz Roja / Emergencias', number: '132', tel: '132', desc: 'Asistencia humanitaria' }
   ]);
 
-  // =========================
-  // ✅ Transporte (modal)
-  // =========================
   showTransportModal = false;
 
   readonly transportApps = signal<TransportItem[]>([
@@ -117,6 +111,11 @@ export class NavbarComponent implements OnInit, OnDestroy {
       this.syncNavbarProfileImage();
     });
 
+    const routerSub = this.router.events
+      .pipe(filter(event => event instanceof NavigationEnd))
+      .subscribe(() => {});
+
+    this.subscriptions.add(routerSub);
     this.subscriptions.add(loginSub);
     this.subscriptions.add(userSub);
   }
@@ -124,6 +123,14 @@ export class NavbarComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.subscriptions.unsubscribe();
     this.unlockScroll();
+  }
+
+  get isAdminOnlyNavbar(): boolean {
+    return this.isLoggedIn && this.authService.isAdmin();
+  }
+
+  get logoRoute(): string {
+    return this.isAdminOnlyNavbar ? '/admin' : '/explore';
   }
 
   onCreateEventClick(): void {
@@ -137,13 +144,8 @@ export class NavbarComponent implements OnInit, OnDestroy {
   onLogoutClick(): void {
     this.authService.logout();
     this.notificacionesStore.clear();
-    // opcional:
-    // this.notificacionesStore.stopPolling();
   }
 
-  // =========================
-  // ✅ Emergencias modal
-  // =========================
   toggleEmergencyModal(): void {
     this.showEmergencyModal = !this.showEmergencyModal;
     this.showEmergencyModal ? this.lockScroll() : this.unlockScroll();
@@ -165,9 +167,6 @@ export class NavbarComponent implements OnInit, OnDestroy {
     document.body.style.overflow = '';
   }
 
-  // =========================
-  // ✅ Transporte modal
-  // =========================
   toggleTransportModal(): void {
     this.showTransportModal = !this.showTransportModal;
     this.showTransportModal ? this.lockScroll() : this.unlockScroll();
@@ -182,7 +181,6 @@ export class NavbarComponent implements OnInit, OnDestroy {
   isExternal(href: string): boolean {
     return href.startsWith('http');
   }
-
 
   private syncNavbarProfileImage(): void {
     const currentPhoto = this.userData?.fotoPerfil || this.userData?.fotoPerfilUrl;
@@ -216,21 +214,5 @@ export class NavbarComponent implements OnInit, OnDestroy {
         this.profileImageRequested = false;
       }
     });
-  }
-
-  getUserInitials(): string {
-    const base =
-      this.userData?.nombre ||
-      this.userData?.usuario ||
-      this.userData?.correo ||
-      'U';
-
-    return base
-      .trim()
-      .split(' ')
-      .filter(Boolean)
-      .slice(0, 2)
-      .map(part => part.charAt(0).toUpperCase())
-      .join('');
   }
 }
