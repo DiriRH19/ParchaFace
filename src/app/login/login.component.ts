@@ -19,9 +19,7 @@ declare global {
   templateUrl: './login.component.html',
   styleUrls: ['./login.component.css']
 })
-
-
-export class LoginComponent implements AfterViewInit{
+export class LoginComponent implements AfterViewInit {
   showPassword = false;
   loginForm: FormGroup;
   isLoading = false;
@@ -39,7 +37,6 @@ export class LoginComponent implements AfterViewInit{
       rememberMe: [false]
     });
   }
-
 
   togglePassword(): void {
     this.showPassword = !this.showPassword;

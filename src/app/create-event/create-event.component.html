@@ -3,10 +3,10 @@
     <a routerLink="/" class="back-link">
       <span>←</span> Volver
     </a>
-    <div class="logo">ParchaFace</div>
-    <div class="header-actions">
-      <button type="button" class="btn-draft">Guardar Borrador</button>
-      <button type="button" class="btn-preview">Vista Previa</button>
+    
+    <div class="logo-wrap">
+      <div class="logo">ParchaFace</div>
+      <span class="logo-caption">Solicitud de evento</span>
     </div>
   </div>
 
@@ -500,4 +500,45 @@
       </button>
     </div>
   </div>
+</div>
+<div
+  class="center-alert-overlay"
+  *ngIf="showCenteredAlert"
+  (click)="dismissAlert()"
+></div>
+
+<div
+  class="center-alert-modal"
+  *ngIf="showCenteredAlert"
+  [ngClass]="{
+    'center-alert-modal--warning': alertType === 'warning',
+    'center-alert-modal--error': alertType === 'error',
+    'center-alert-modal--success': alertType === 'success'
+  }"
+  role="alertdialog"
+  aria-modal="true"
+>
+  <div class="center-alert-head">
+    <span class="center-alert-chip">
+      {{
+        alertType === 'success'
+          ? 'Éxito'
+          : alertType === 'error'
+            ? 'Error'
+            : 'Atención'
+      }}
+    </span>
+
+    <button type="button" class="center-alert-close" (click)="dismissAlert()">×</button>
+  </div>
+
+  <h3 class="center-alert-title">{{ alertTitle }}</h3>
+
+  <p class="center-alert-copy" *ngIf="alertMessage">
+    {{ alertMessage }}
+  </p>
+
+  <ul class="center-alert-list" *ngIf="validationErrors.length > 0">
+    <li *ngFor="let err of validationErrors">{{ err }}</li>
+  </ul>
 </div>

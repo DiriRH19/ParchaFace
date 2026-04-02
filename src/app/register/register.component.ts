@@ -19,7 +19,7 @@ declare global {
   templateUrl: './register.component.html',
   styleUrls: ['./register.component.css'],
 })
-export class RegisterComponent implements AfterViewInit{
+export class RegisterComponent implements AfterViewInit {
   showPassword = false;
   showConfirmPassword = false;
   registerForm: FormGroup;
@@ -35,16 +35,14 @@ export class RegisterComponent implements AfterViewInit{
       usuario: ['', [Validators.required]],
       correo: ['', [Validators.required, Validators.email]],
       contrasena: ['', [
-      Validators.required,
-      Validators.minLength(8),
-      Validators.pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/)
+        Validators.required,
+        Validators.minLength(8),
+        Validators.pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/)
       ]],
       confirmarContrasena: ['', [Validators.required]],
       acceptTerms: [false, [Validators.requiredTrue]]
     }, { validators: [this.passwordsMatchValidator] });
   }
-
-
 
   togglePassword() {
     this.showPassword = !this.showPassword;
@@ -77,7 +75,7 @@ export class RegisterComponent implements AfterViewInit{
     const { usuario, correo, contrasena, confirmarContrasena } = this.registerForm.value;
 
     this.authService.register(usuario, correo, contrasena, confirmarContrasena).subscribe({
-      next: (response) => {
+      next: () => {
         this.isLoading = false;
         this.router.navigate(['/preferencias']);
       },
@@ -85,10 +83,8 @@ export class RegisterComponent implements AfterViewInit{
         this.isLoading = false;
         console.error('Error completo de registro:', error && error.message ? error.message : error.status || error);
 
-        // Verificar si el token se guardó a pesar del error (registro exitoso pero respuesta del servidor problemática)
         const token = localStorage.getItem('token');
         if (token) {
-          console.log('Token encontrado en localStorage. Registro exitoso, navegando a preferencias...');
           this.router.navigate(['/preferencias']);
           return;
         }
@@ -167,4 +163,3 @@ export class RegisterComponent implements AfterViewInit{
     });
   }
 }
-

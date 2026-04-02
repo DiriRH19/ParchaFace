@@ -9,7 +9,6 @@ import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { EventoService } from '../services/evento';
-import { ToastService } from '../shared/toast/toast.service';
 
 interface RedSocialEvento {
   plataforma: string;
@@ -25,6 +24,15 @@ interface RedSocialEvento {
 })
 export class CreateEventComponent implements AfterViewInit, OnDestroy {
   private platformId = inject(PLATFORM_ID);
+
+  stepAlertStep = 1;
+  stepAlertTitle = '';
+
+  showCenteredAlert = false;
+  alertType: 'warning' | 'error' | 'success' = 'warning';
+  alertTitle = '';
+  alertMessage = '';
+  private alertTimeout: ReturnType<typeof setTimeout> | null = null;
 
   currentStep = 1;
   totalSteps = 4;
@@ -96,8 +104,7 @@ export class CreateEventComponent implements AfterViewInit, OnDestroy {
 
   constructor(
     private eventoService: EventoService,
-    private router: Router,
-    private toast: ToastService
+    private router: Router
   ) {}
 
   ngAfterViewInit(): void {
@@ -111,6 +118,11 @@ export class CreateEventComponent implements AfterViewInit, OnDestroy {
   ngOnDestroy(): void {
     this.destroyMap();
     this.revokeAllPreviewUrls();
+
+    if (this.alertTimeout) {
+      clearTimeout(this.alertTimeout);
+      this.alertTimeout = null;
+    }
   }
 
   addTag(): void {
@@ -129,7 +141,11 @@ export class CreateEventComponent implements AfterViewInit, OnDestroy {
     this.clearMessages();
 
     if (this.eventData.redesSociales.length >= this.maxRedesSociales) {
-      this.submitError = `Puedes agregar máximo ${this.maxRedesSociales} redes sociales.`;
+      this.showAlertModal(
+        'warning',
+        'No puedes agregar más redes sociales.',
+        `Puedes agregar máximo ${this.maxRedesSociales} redes sociales.`
+      );
       return;
     }
 
@@ -152,7 +168,15 @@ export class CreateEventComponent implements AfterViewInit, OnDestroy {
 
     const errors = this.getStepErrors(this.currentStep);
     if (errors.length > 0) {
-      this.validationErrors = errors;
+      this.stepAlertStep = this.currentStep;
+      this.stepAlertTitle = `No puedes continuar al paso ${this.currentStep + 1}.`;
+
+      this.showAlertModal(
+        'warning',
+        this.stepAlertTitle,
+        'Completa lo siguiente para poder avanzar:',
+        errors
+      );
       return;
     }
 
@@ -164,6 +188,8 @@ export class CreateEventComponent implements AfterViewInit, OnDestroy {
           this.initLocationMap();
         }, 0);
       }
+
+      this.scrollToTop();
     }
   }
 
@@ -172,6 +198,7 @@ export class CreateEventComponent implements AfterViewInit, OnDestroy {
 
     if (this.currentStep > 1) {
       this.currentStep--;
+      this.scrollToTop();
     }
   }
 
@@ -212,7 +239,11 @@ export class CreateEventComponent implements AfterViewInit, OnDestroy {
 
     for (const file of files) {
       if (!this.isValidImageFile(file)) {
-        this.submitError = 'Todas las imágenes deben ser JPG, JPEG, PNG o WEBP.';
+        this.showAlertModal(
+          'error',
+          'Formato de imagen no válido.',
+          'Todas las imágenes deben ser JPG, JPEG, PNG o WEBP.'
+        );
         input.value = '';
         return;
       }
@@ -229,7 +260,11 @@ export class CreateEventComponent implements AfterViewInit, OnDestroy {
     const total = this.selectedImages.length + nuevas.length;
 
     if (total > this.maxImagenes) {
-      this.submitError = `Solo puedes subir máximo ${this.maxImagenes} imágenes.`;
+      this.showAlertModal(
+        'warning',
+        'Límite de imágenes excedido.',
+        `Solo puedes subir máximo ${this.maxImagenes} imágenes.`
+      );
       input.value = '';
       return;
     }
@@ -260,7 +295,15 @@ export class CreateEventComponent implements AfterViewInit, OnDestroy {
 
     const allErrors = this.getAllErrors();
     if (allErrors.length > 0) {
-      this.validationErrors = allErrors;
+      this.stepAlertStep = this.totalSteps;
+      this.stepAlertTitle = 'No puedes enviar la solicitud todavía.';
+
+      this.showAlertModal(
+        'warning',
+        this.stepAlertTitle,
+        'Completa lo siguiente antes de enviar:',
+        allErrors
+      );
       return;
     }
 
@@ -308,8 +351,11 @@ export class CreateEventComponent implements AfterViewInit, OnDestroy {
         this.isSubmitting = false;
 
         const mensaje = response?.mensaje || 'La solicitud de creación de evento fue enviada.';
-        this.submitSuccess = mensaje;
-        this.toast.show(mensaje, 'success', 3200);
+        this.showAlertModal(
+          'success',
+          'Solicitud enviada correctamente.',
+          mensaje
+        );
 
         setTimeout(() => {
           this.router.navigate(['/profile']);
@@ -319,17 +365,33 @@ export class CreateEventComponent implements AfterViewInit, OnDestroy {
         this.isSubmitting = false;
         console.error('Error creando evento', err);
 
-        this.validationErrors = this.extractBackendErrors(err);
+        const backendErrors = this.extractBackendErrors(err);
 
-        if (this.validationErrors.length === 0) {
-          const backendMessage =
-            err?.error?.message ||
-            err?.error?.error ||
-            err?.error?.detalle ||
-            err?.message;
+        if (backendErrors.length > 0) {
+          this.stepAlertStep = this.currentStep;
+          this.stepAlertTitle = 'No se pudo enviar la solicitud.';
 
-          this.submitError = backendMessage || 'No se pudo crear el evento. Revisa los campos e inténtalo de nuevo.';
+          this.showAlertModal(
+            'error',
+            this.stepAlertTitle,
+            'Revisa la información del formulario:',
+            backendErrors
+          );
+          return;
         }
+
+        const backendMessage =
+          err?.error?.message ||
+          err?.error?.error ||
+          err?.error?.detalle ||
+          err?.message ||
+          'No se pudo crear el evento. Revisa los campos e inténtalo de nuevo.';
+
+        this.showAlertModal(
+          'error',
+          'No se pudo enviar la solicitud.',
+          backendMessage
+        );
       }
     });
   }
@@ -365,6 +427,14 @@ export class CreateEventComponent implements AfterViewInit, OnDestroy {
       errors.push('Debes ingresar el título del evento.');
     }
 
+    if (!this.eventData.descripcion.trim()) {
+      errors.push('Debes ingresar la descripción del evento.');
+    }
+
+    if (!this.eventData.categoria.trim()) {
+      errors.push('Debes seleccionar una categoría.');
+    }
+
     if (this.selectedImages.length < 1) {
       errors.push('Debes subir al menos una imagen.');
     }
@@ -391,15 +461,29 @@ export class CreateEventComponent implements AfterViewInit, OnDestroy {
       errors.push('Debes seleccionar la hora de finalización.');
     }
 
+    if (
+      this.eventData.horaInicio &&
+      this.eventData.horaFin &&
+      this.eventData.horaFin <= this.eventData.horaInicio
+    ) {
+      errors.push('La hora de finalización debe ser posterior a la hora de inicio.');
+    }
+
     if (this.eventData.eventoEnLinea) {
       if (!this.eventData.urlVirtual.trim()) {
         errors.push('Debes ingresar la URL del evento en línea.');
+      } else if (!this.isValidUrl(this.eventData.urlVirtual)) {
+        errors.push('La URL del evento en línea no es válida. Debe iniciar con http:// o https://');
       }
       return errors;
     }
 
     if (!this.eventData.ubicacion.trim()) {
       errors.push('Debes ingresar la ubicación del evento.');
+    }
+
+    if (!this.eventData.ciudad.trim()) {
+      errors.push('Debes ingresar la ciudad del evento.');
     }
 
     if (this.eventData.latitud == null || this.eventData.longitud == null) {
@@ -418,6 +502,17 @@ export class CreateEventComponent implements AfterViewInit, OnDestroy {
 
     if (!this.eventData.eventoGratuito && (!this.eventData.precio || Number(this.eventData.precio) <= 0)) {
       errors.push('Debes ingresar un precio válido.');
+    }
+
+    if (
+      this.eventData.emailContacto?.trim() &&
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.eventData.emailContacto.trim())
+    ) {
+      errors.push('El correo de contacto no es válido.');
+    }
+
+    if (this.eventData.sitioWeb?.trim() && !this.isValidUrl(this.eventData.sitioWeb)) {
+      errors.push('El sitio web no es válido. Debe iniciar con http:// o https://');
     }
 
     const plataformasUsadas = new Set<string>();
@@ -495,6 +590,7 @@ export class CreateEventComponent implements AfterViewInit, OnDestroy {
     this.submitError = '';
     this.submitSuccess = '';
     this.validationErrors = [];
+    this.stepAlertTitle = '';
   }
 
   private isValidUrl(value: string): boolean {
@@ -645,5 +741,51 @@ export class CreateEventComponent implements AfterViewInit, OnDestroy {
   private revokeAllPreviewUrls(): void {
     this.imagePreviewUrls.forEach(url => URL.revokeObjectURL(url));
     this.imagePreviewUrls = [];
+  }
+
+  dismissAlert(): void {
+    if (this.alertTimeout) {
+      clearTimeout(this.alertTimeout);
+      this.alertTimeout = null;
+    }
+
+    this.showCenteredAlert = false;
+    this.submitError = '';
+    this.submitSuccess = '';
+    this.validationErrors = [];
+    this.stepAlertTitle = '';
+    this.alertTitle = '';
+    this.alertMessage = '';
+  }
+
+  private showAlertModal(
+    type: 'warning' | 'error' | 'success',
+    title: string,
+    message = '',
+    errors: string[] = []
+  ): void {
+    if (this.alertTimeout) {
+      clearTimeout(this.alertTimeout);
+      this.alertTimeout = null;
+    }
+
+    this.alertType = type;
+    this.alertTitle = title;
+    this.alertMessage = message;
+    this.validationErrors = errors;
+    this.showCenteredAlert = true;
+
+    this.alertTimeout = setTimeout(() => {
+      this.dismissAlert();
+    }, 5000);
+  }
+
+  private scrollToTop(): void {
+    if (!isPlatformBrowser(this.platformId)) return;
+
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    });
   }
 }

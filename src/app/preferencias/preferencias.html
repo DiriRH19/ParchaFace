@@ -1,43 +1,54 @@
-<div class="preferencias-container">
-  <div class="back-link">
-    <a routerLink="/profile"><span>←</span> Volver</a>
-  </div>
+<div class="preferences-page">
+  <div class="preferences-shell">
+      <div class="back-link">
+        <a routerLink="/profile"><span>←</span> Volver</a>
+      </div>
+    <div class="preferences-card">
+      <div class="preferences-logo-wrap">
+        <img
+          src="https://res.cloudinary.com/dgaxlowpd/image/upload/v1765764539/logoParchaFace_fzz8sh.png"
+          alt="ParchaFace"
+          class="preferences-logo"
+        >
+      </div>
 
-  <div class="preferencias-card">
-    <div class="logo-section">
-      <img src="https://res.cloudinary.com/dgaxlowpd/image/upload/v1765764539/logoParchaFace_fzz8sh.png" alt="ParchaFace" class="logo-img">
-    </div>
-    <h1 class="preferencias-title">¿Qué te gusta?</h1>
-    <p class="preferencias-subtitle">Elige al menos una categoría. Así te mostraremos eventos que te interesan.</p>
+      <span class="preferences-kicker">Preferencias</span>
 
-    @if (loading) {
-      <p class="loading-text">Cargando...</p>
-    } @else {
-    <div class="categories-grid">
-      @for (category of preferencesService.categories; track category) {
+      <h1 class="preferences-title">¿Qué te gusta?</h1>
+      <p class="preferences-subtitle">
+        Elige al menos una categoría. Así te mostraremos eventos que te interesan.
+      </p>
+
+      @if (errorMessage) {
+        <div class="preferences-alert preferences-alert--error">
+          {{ errorMessage }}
+        </div>
+      }
+
+      <div class="preferences-grid">
         <button
           type="button"
-          class="category-chip"
-          [class.selected]="isSelected(category)"
-          (click)="toggle(category)">
-          {{ category }}
+          class="preference-chip"
+          *ngFor="let categoria of categorias"
+          [class.preference-chip--active]="isCategoriaSeleccionada(categoria)"
+          (click)="toggleCategoria(categoria)"
+        >
+          {{ categoria }}
         </button>
-      }
+      </div>
+
+      <p class="preferences-footnote">
+        Puedes cambiar tus preferencias más tarde en tu perfil.
+      </p>
+
+      <button
+        type="button"
+        class="preferences-btn"
+        (click)="continuar()"
+        [disabled]="isLoading"
+      >
+        {{ isLoading ? 'Guardando...' : 'Continuar' }}
+      </button>
     </div>
-
-    <p class="hint">Puedes cambiar tus preferencias más tarde en tu perfil.</p>
-
-    @if (errorMessage) {
-      <p class="error-message">{{ errorMessage }}</p>
-    }
-
-    <button
-      type="button"
-      class="btn-continue"
-      [disabled]="!canContinue()"
-      (click)="continue()">
-      {{ saving ? 'Guardando...' : 'Continuar' }}
-    </button>
-    }
   </div>
 </div>
