@@ -1,9 +1,8 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { finalize } from 'rxjs/operators';
-import { API_CONFIG, buildApiUrl } from '../config/api.config';
+import { PreferencesService } from '../services/preferences.service';
 
 @Component({
   selector: 'app-preferencias',
@@ -28,7 +27,7 @@ export class PreferenciasComponent implements OnInit {
   errorMessage = '';
 
   constructor(
-    private http: HttpClient,
+    private preferencesService: PreferencesService,
     private router: Router,
     private route: ActivatedRoute
   ) {}
@@ -62,12 +61,7 @@ export class PreferenciasComponent implements OnInit {
 
     this.isLoading = true;
 
-    const payload = {
-      categoriasPreferidas: this.categoriasSeleccionadas,
-      categorias: this.categoriasSeleccionadas
-    };
-
-    this.http.put(buildApiUrl(API_CONFIG.endpoints.preferencias.put), payload)
+    this.preferencesService.savePreferences(this.categoriasSeleccionadas)
       .pipe(finalize(() => this.isLoading = false))
       .subscribe({
         next: () => {
@@ -85,7 +79,7 @@ export class PreferenciasComponent implements OnInit {
   private cargarPreferencias(): void {
     this.isLoadingInitial = true;
 
-    this.http.get<any>(buildApiUrl(API_CONFIG.endpoints.preferencias.get))
+    this.preferencesService.getPreferencesFromApi()
       .pipe(finalize(() => this.isLoadingInitial = false))
       .subscribe({
         next: (response) => {
@@ -103,6 +97,10 @@ export class PreferenciasComponent implements OnInit {
 
     if (Array.isArray(response)) {
       return response;
+    }
+
+    if (Array.isArray(response.categories)) {
+      return response.categories;
     }
 
     if (Array.isArray(response.categoriasPreferidas)) {

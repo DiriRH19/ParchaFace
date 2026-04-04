@@ -3,7 +3,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { API_CONFIG, buildApiUrl, withPathParam } from '../config/api.config';
 
-export interface AdminEventoPendiente {
+export interface AdminEvento {
   idEvento: number;
   titulo: string;
   descripcion?: string;
@@ -27,6 +27,7 @@ export interface AdminUsuario {
   rol: string;
   estado: string;
   fotoPerfilUrl?: string | null;
+  suspensionHasta?: string | null;
 }
 
 export interface AdminCommunityPost {
@@ -60,8 +61,12 @@ export interface AdminCommunityComment {
 export class AdminService {
   constructor(private http: HttpClient) {}
 
-  listarEventosPendientes(): Observable<AdminEventoPendiente[]> {
-    return this.http.get<AdminEventoPendiente[]>(buildApiUrl(API_CONFIG.endpoints.admin.eventosPendientes));
+  listarEventosPendientes(): Observable<AdminEvento[]> {
+    return this.http.get<AdminEvento[]>(buildApiUrl(API_CONFIG.endpoints.admin.eventosPendientes));
+  }
+
+  listarEventos(): Observable<AdminEvento[]> {
+    return this.http.get<AdminEvento[]>(buildApiUrl(API_CONFIG.endpoints.admin.eventos));
   }
 
   aprobarEvento(id: number): Observable<any> {
@@ -81,16 +86,28 @@ export class AdminService {
     );
   }
 
+  eliminarEvento(id: number): Observable<void> {
+    return this.http.delete<void>(
+      buildApiUrl(withPathParam(API_CONFIG.endpoints.admin.eliminarEvento, { id }))
+    );
+  }
+
   listarUsuarios(): Observable<AdminUsuario[]> {
     return this.http.get<AdminUsuario[]>(buildApiUrl(API_CONFIG.endpoints.admin.usuarios));
   }
 
-  suspenderUsuario(id: number): Observable<AdminUsuario> {
-    return this.http.put<AdminUsuario>(buildApiUrl(withPathParam(API_CONFIG.endpoints.admin.suspenderUsuario, { id })), {});
+  suspenderUsuario(id: number, payload?: { duracion?: string }): Observable<AdminUsuario> {
+    return this.http.put<AdminUsuario>(
+      buildApiUrl(withPathParam(API_CONFIG.endpoints.admin.suspenderUsuario, { id })),
+      payload ?? {}
+    );
   }
 
   activarUsuario(id: number): Observable<AdminUsuario> {
-    return this.http.put<AdminUsuario>(buildApiUrl(withPathParam(API_CONFIG.endpoints.admin.activarUsuario, { id })), {});
+    return this.http.put<AdminUsuario>(
+      buildApiUrl(withPathParam(API_CONFIG.endpoints.admin.activarUsuario, { id })),
+      {}
+    );
   }
 
   eliminarUsuario(id: number): Observable<void> {

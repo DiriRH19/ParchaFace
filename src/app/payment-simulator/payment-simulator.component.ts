@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import Swal from 'sweetalert2';
+import { ParchaSwal } from '../shared/swal/parcha-swal';
 
 import {
   PagoDetalleResponse,
@@ -894,7 +894,7 @@ export class PaymentSimulatorComponent implements OnInit {
 
     const validationError = this.validarFormulario();
     if (validationError) {
-      Swal.fire({
+      ParchaSwal.fire({
         icon: 'warning',
         title: 'Datos incompletos',
         text: validationError,
@@ -920,7 +920,7 @@ export class PaymentSimulatorComponent implements OnInit {
         }
 
         if (resultado === 'PAGADO') {
-          Swal.fire({
+          ParchaSwal.fire({
             icon: 'success',
             title: 'Pago aprobado',
             text: 'Tu inscripción fue confirmada correctamente.'
@@ -928,7 +928,7 @@ export class PaymentSimulatorComponent implements OnInit {
           return;
         }
 
-        Swal.fire({
+        ParchaSwal.fire({
           icon: 'error',
           title: 'Pago rechazado',
           text: 'No fue posible aprobar el pago con la información ingresada.'
@@ -943,7 +943,7 @@ export class PaymentSimulatorComponent implements OnInit {
           err?.error ||
           'No se pudo procesar el pago.';
 
-        Swal.fire({
+        ParchaSwal.fire({
           icon: 'error',
           title: 'Error',
           text: msg,
@@ -956,7 +956,7 @@ export class PaymentSimulatorComponent implements OnInit {
   cancelarPago(): void {
     if (!this.pago?.idPago) return;
 
-    Swal.fire({
+    ParchaSwal.fire({
       icon: 'warning',
       title: '¿Cancelar pago?',
       text: 'El pago quedará marcado como cancelado.',
@@ -980,7 +980,7 @@ export class PaymentSimulatorComponent implements OnInit {
             this.pago.metodoPago = resp?.metodoPago || this.metodoPago;
           }
 
-          Swal.fire({
+          ParchaSwal.fire({
             icon: 'info',
             title: 'Pago cancelado',
             text: 'El pago fue cancelado correctamente.'
@@ -995,7 +995,7 @@ export class PaymentSimulatorComponent implements OnInit {
             err?.error ||
             'No se pudo cancelar el pago.';
 
-          Swal.fire({
+          ParchaSwal.fire({
             icon: 'error',
             title: 'Error',
             text: msg,

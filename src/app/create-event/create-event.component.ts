@@ -387,9 +387,13 @@ export class CreateEventComponent implements AfterViewInit, OnDestroy {
           err?.message ||
           'No se pudo crear el evento. Revisa los campos e inténtalo de nuevo.';
 
+        const title = err?.status === 403
+          ? 'No puedes crear eventos en este momento.'
+          : 'No se pudo enviar la solicitud.';
+
         this.showAlertModal(
           'error',
-          'No se pudo enviar la solicitud.',
+          title,
           backendMessage
         );
       }

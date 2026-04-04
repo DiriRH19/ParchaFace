@@ -45,7 +45,7 @@ export const routes: Routes = [
   { path: 'preferencias', component: PreferenciasComponent, canActivate: [authGuard, adminSessionOnlyGuard] },
   { path: 'profile', component: ProfileComponent, canActivate: [authGuard, adminSessionOnlyGuard] },
   { path: 'create-event', component: CreateEventComponent, canActivate: [authGuard, adminSessionOnlyGuard] },
-  { path: 'event/:id', component: EventDetailComponent, canActivate: [adminSessionOnlyGuard] },
+  { path: 'event/:id', component: EventDetailComponent, canActivate: [adminSessionOnlyGuard], data: { allowAdminSession: true } },
 
   {
     path: 'pago/simulado/:idPago',

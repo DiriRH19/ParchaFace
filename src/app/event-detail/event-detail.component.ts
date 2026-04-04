@@ -6,7 +6,7 @@ import { NavbarComponent } from '../shared/navbar/navbar.component';
 import { WeatherService, ClimaResponse } from '../services/weather.service';
 import { ToastService } from '../shared/toast/toast.service';
 
-import Swal from 'sweetalert2';
+import { ParchaSwal } from '../shared/swal/parcha-swal';
 import { AuthService, UserData } from '../services/auth.service';
 import { InscripcionService } from '../services/inscripcion.service';
 import { PagoService } from '../services/pago.service';
@@ -71,6 +71,8 @@ type SocialEntry = {
   styleUrls: ['./event-detail.component.css']
 })
 export class EventDetailComponent implements OnInit, OnDestroy {
+  isAdmin = false;
+
   isLoading = true;
   errorMsg = '';
 
@@ -172,7 +174,8 @@ export class EventDetailComponent implements OnInit, OnDestroy {
 
     this.auth.userData$.subscribe(u => {
       this.user = u;
-      this.canManage = this.isOrganizer;
+      this.isAdmin = this.auth.isAdmin();
+      this.canManage = this.isOrganizer || this.isAdmin;
 
       if (this.isLoggedIn && this.evento?.id) {
         this.loadIsRegistered();
@@ -193,6 +196,7 @@ export class EventDetailComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.stopImageRotation();
+    this.limpiarImagenComentario();
   }
 
   volver(): void {
@@ -225,6 +229,22 @@ export class EventDetailComponent implements OnInit, OnDestroy {
         };
       })
       .filter((entry): entry is SocialEntry => !!entry);
+  }
+
+  get mostrarAccionesInscripcion(): boolean {
+    return !this.isAdmin && !this.isOrganizer;
+  }
+
+  puedeEliminarComentario(comentario: EventoCommentResponse): boolean {
+    if (this.isAdmin) return true;
+
+    const comentarioUsuarioId =
+      (comentario as any)?.usuario?.idUsuario ??
+      (comentario as any)?.usuarioId ??
+      (comentario as any)?.usuario?.id ??
+      null;
+
+    return !!this.user?.id && comentarioUsuarioId != null && Number(this.user.id) === Number(comentarioUsuarioId);
   }
 
   goToImage(index: number): void {
@@ -276,7 +296,7 @@ export class EventDetailComponent implements OnInit, OnDestroy {
     this.eventoService.obtenerEventoPorId(id).subscribe({
       next: (e: any) => {
         this.evento = this.mapToVM(e);
-        this.canManage = this.isOrganizer;
+        this.canManage = this.isOrganizer || this.isAdmin;
         this.form = { ...this.getEmptyForm(), ...this.evento };
         this.syncImageGallery();
         this.isLoading = false;
@@ -605,6 +625,11 @@ export class EventDetailComponent implements OnInit, OnDestroy {
       return;
     }
 
+    if (this.isAdmin || this.isOrganizer) {
+      this.isRegistered = false;
+      return;
+    }
+
     this.isRegistered = this.inscripcionService.estaInscritoLocal(eventoId);
 
     this.inscripcionService.getMisInscripciones().subscribe({
@@ -633,8 +658,12 @@ export class EventDetailComponent implements OnInit, OnDestroy {
   onJoin(): void {
     if (!this.evento?.id) return;
 
+    if (this.isAdmin) {
+      return;
+    }
+
     if (!this.isLoggedIn) {
-      Swal.fire({
+      ParchaSwal.fire({
         icon: 'info',
         title: 'Inicia sesión',
         text: 'Debes iniciar sesión para inscribirte.',
@@ -644,7 +673,7 @@ export class EventDetailComponent implements OnInit, OnDestroy {
     }
 
     if (this.isOrganizer) {
-      Swal.fire({
+      ParchaSwal.fire({
         icon: 'warning',
         title: 'Eres el organizador',
         text: 'No puedes inscribirte a tu propio evento.',
@@ -657,7 +686,7 @@ export class EventDetailComponent implements OnInit, OnDestroy {
 
     const esGratis = this.evento.eventoGratuito === true;
 
-    Swal.fire({
+    ParchaSwal.fire({
       title: esGratis ? '¿Inscribirte al evento?' : '¿Continuar al pago?',
       text: esGratis
         ? 'Aparecerás como inscrito en este evento.'
@@ -677,7 +706,7 @@ export class EventDetailComponent implements OnInit, OnDestroy {
             this.inscripcionService.marcarComoInscrito(Number(this.evento!.id));
             this.isRegistered = true;
 
-            Swal.fire({
+            ParchaSwal.fire({
               icon: 'success',
               title: '¡Inscripción exitosa!',
               text: 'Ya quedaste inscrito al evento.',
@@ -692,9 +721,9 @@ export class EventDetailComponent implements OnInit, OnDestroy {
               err?.error ||
               'No se pudo inscribir. Intenta de nuevo.';
 
-            Swal.fire({
+            ParchaSwal.fire({
               icon: 'error',
-              title: 'No se pudo inscribir',
+              title: err?.status === 403 ? 'No puedes inscribirte en este momento' : 'No se pudo inscribir',
               text: msg,
               confirmButtonText: 'Ok'
             });
@@ -726,9 +755,9 @@ export class EventDetailComponent implements OnInit, OnDestroy {
             err?.error ||
             'No se pudo iniciar el pago simulado.';
 
-          Swal.fire({
+          ParchaSwal.fire({
             icon: 'error',
-            title: 'No se pudo iniciar el pago',
+            title: err?.status === 403 ? 'No puedes inscribirte en este momento' : 'No se pudo iniciar el pago',
             text: msg,
             confirmButtonText: 'Ok'
           });
@@ -885,6 +914,7 @@ export class EventDetailComponent implements OnInit, OnDestroy {
     this.eventoService.actualizarEvento(Number(this.evento.id), payload).subscribe({
       next: (actualizado: any) => {
         this.evento = this.mapToVM(actualizado);
+        this.canManage = this.isOrganizer || this.isAdmin;
         this.editMode = false;
         this.form = { ...this.evento };
         this.syncImageGallery();
@@ -905,7 +935,7 @@ export class EventDetailComponent implements OnInit, OnDestroy {
   eliminarEvento(): void {
     if (!this.evento?.id) return;
 
-    Swal.fire({
+    ParchaSwal.fire({
       icon: 'warning',
       title: '¿Eliminar evento?',
       text: 'Esta acción no se puede deshacer.',
@@ -969,7 +999,7 @@ export class EventDetailComponent implements OnInit, OnDestroy {
     if (!this.evento?.id) return;
 
     if (!this.isLoggedIn) {
-      Swal.fire({
+      ParchaSwal.fire({
         icon: 'info',
         title: 'Inicia sesión',
         text: 'Debes iniciar sesión para comentar.',
@@ -1004,15 +1034,14 @@ export class EventDetailComponent implements OnInit, OnDestroy {
   }
 
   puedeBorrar(c: EventoCommentResponse): boolean {
-    const myId = this.user?.id;
-    return this.isLoggedIn && myId != null && Number(myId) === Number(c.usuarioId);
+    return this.puedeEliminarComentario(c);
   }
 
   eliminarComentario(id: number): void {
     if (!id) return;
 
     if (!this.isLoggedIn) {
-      Swal.fire({
+      ParchaSwal.fire({
         icon: 'info',
         title: 'Inicia sesión',
         text: 'Debes iniciar sesión.',
@@ -1021,7 +1050,7 @@ export class EventDetailComponent implements OnInit, OnDestroy {
       return;
     }
 
-    Swal.fire({
+    ParchaSwal.fire({
       icon: 'warning',
       title: '¿Eliminar comentario?',
       text: 'Esta acción no se puede deshacer.',
@@ -1091,9 +1120,9 @@ export class EventDetailComponent implements OnInit, OnDestroy {
   }
 
   onCancelJoin(): void {
-    if (!this.evento?.id || !this.isLoggedIn || !this.isRegistered) return;
+    if (!this.evento?.id || !this.isLoggedIn || !this.isRegistered || this.isAdmin || this.isOrganizer) return;
 
-    Swal.fire({
+    ParchaSwal.fire({
       title: '¿Cancelar inscripción?',
       text: 'Ya no aparecerás como inscrito en este evento.',
       icon: 'warning',
@@ -1117,7 +1146,7 @@ export class EventDetailComponent implements OnInit, OnDestroy {
             }
           });
 
-          Swal.fire({
+          ParchaSwal.fire({
             icon: 'success',
             title: 'Inscripción cancelada',
             text: 'Ya no estás inscrito en este evento.',
@@ -1132,7 +1161,7 @@ export class EventDetailComponent implements OnInit, OnDestroy {
             err?.error ||
             'No se pudo cancelar la inscripción.';
 
-          Swal.fire({
+          ParchaSwal.fire({
             icon: 'error',
             title: 'Error',
             text: msg,

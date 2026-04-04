@@ -47,6 +47,8 @@ export const API_CONFIG = {
       eliminar: '/api/comentarios/:commentId'
     },
     admin: {
+      eventos: '/admin/eventos',
+      eliminarEvento: '/admin/eventos/:id',
       eventosPendientes: '/admin/eventos/pendientes',
       aprobarEvento: '/admin/eventos/:id/aprobar',
       rechazarEvento: '/admin/eventos/:id/rechazar',

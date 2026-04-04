@@ -116,33 +116,35 @@
               </div>
             }
 
-            <div class="join-wrapper">
-              <button
-                class="btn-join"
-                type="button"
-                (click)="isRegistered ? onCancelJoin() : onJoin()"
-                [disabled]="isJoining || !isLoggedIn || isOrganizer"
-              >
-                @if (isJoining) {
-                  <span>Procesando...</span>
-                }
-                @if (!isJoining && isOrganizer) {
-                  <span>Eres el organizador</span>
-                }
-                @if (!isJoining && !isOrganizer && !isRegistered) {
-                  <span>Inscribirme</span>
-                }
-                @if (!isJoining && isRegistered) {
-                  <span>Cancelar inscripción</span>
-                }
-              </button>
+            @if (mostrarAccionesInscripcion) {
+              <div class="join-wrapper">
+                <button
+                  class="btn-join"
+                  type="button"
+                  (click)="isRegistered ? onCancelJoin() : onJoin()"
+                  [disabled]="isJoining || !isLoggedIn || isOrganizer"
+                >
+                  @if (isJoining) {
+                    <span>Procesando...</span>
+                  }
+                  @if (!isJoining && isOrganizer) {
+                    <span>Eres el organizador</span>
+                  }
+                  @if (!isJoining && !isOrganizer && !isRegistered) {
+                    <span>Inscribirme</span>
+                  }
+                  @if (!isJoining && isRegistered) {
+                    <span>Cancelar inscripción</span>
+                  }
+                </button>
 
-              @if (!isLoggedIn) {
-                <span class="join-hint">
-                  Inicia sesión para inscribirte.
-                </span>
-              }
-            </div>
+                @if (!isLoggedIn) {
+                  <span class="join-hint">
+                    Inicia sesión para inscribirte.
+                  </span>
+                }
+              </div>
+            }
 
             <div class="story-card">
               <div class="story-head">
