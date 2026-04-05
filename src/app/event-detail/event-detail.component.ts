@@ -1,6 +1,7 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { Subscription } from 'rxjs';
 import { EventoService } from '../services/evento';
 import { NavbarComponent } from '../shared/navbar/navbar.component';
 import { WeatherService, ClimaResponse } from '../services/weather.service';
@@ -90,6 +91,8 @@ export class EventDetailComponent implements OnInit, OnDestroy {
   canManage = false;
   editMode = false;
   form: EventoVM = this.getEmptyForm();
+
+  private routeParamSub: Subscription | null = null;
 
   comentarios: EventoCommentResponse[] = [];
   comentariosPage = 0;
@@ -182,19 +185,22 @@ export class EventDetailComponent implements OnInit, OnDestroy {
       }
     });
 
-    const idParam = this.route.snapshot.paramMap.get('id');
-    const id = Number(idParam);
+    this.routeParamSub = this.route.paramMap.subscribe(paramMap => {
+      const idParam = paramMap.get('id');
+      const id = Number(idParam);
 
-    if (!idParam || Number.isNaN(id) || id <= 0) {
-      this.isLoading = false;
-      this.errorMsg = 'ID de evento inválido.';
-      return;
-    }
+      if (!idParam || Number.isNaN(id) || id <= 0) {
+        this.isLoading = false;
+        this.errorMsg = 'ID de evento inválido.';
+        return;
+      }
 
-    this.loadEvento(id);
+      this.loadEvento(id);
+    });
   }
 
   ngOnDestroy(): void {
+    this.routeParamSub?.unsubscribe();
     this.stopImageRotation();
     this.limpiarImagenComentario();
   }

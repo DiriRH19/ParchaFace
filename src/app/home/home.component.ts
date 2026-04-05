@@ -9,7 +9,7 @@ import {
 } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
 import { FooterComponent } from '../shared/footer/footer.component';
 import { NavbarComponent } from '../shared/navbar/navbar.component';
@@ -29,6 +29,7 @@ export class HomeComponent implements OnInit, OnDestroy {
   private eventoService = inject(EventoService);
   private authService = inject(AuthService);
   private router = inject(Router);
+  private route = inject(ActivatedRoute);
   private platformId = inject(PLATFORM_ID);
 
   mapLoading = false;
@@ -80,14 +81,19 @@ export class HomeComponent implements OnInit, OnDestroy {
 
 
   ngOnInit(): void {
-     this.loadEvents();
+    this.loadEvents();
 
     const userSub = this.authService.userData$.subscribe(userData => {
       this.userData = userData;
       this.syncMapProfileImage();
     });
 
+    const querySub = this.route.queryParamMap.subscribe(() => {
+      this.applyAssistantFiltersFromQuery();
+    });
+
     this.subscriptions.add(userSub);
+    this.subscriptions.add(querySub);
   }
 
   ngOnDestroy(): void {
@@ -250,6 +256,40 @@ export class HomeComponent implements OnInit, OnDestroy {
     }
   }
 
+  private applyAssistantFiltersFromQuery(): void {
+    const params = this.route.snapshot.queryParamMap;
+    if (!params.keys.length) {
+      return;
+    }
+
+    const q = (params.get('q') ?? params.get('query') ?? '').trim();
+    const city = (params.get('city') ?? '').trim();
+    const category = (params.get('category') ?? '').trim();
+    const eventIdParam = params.get('eventId');
+
+    const combinedSearch = [q, city].filter(Boolean).join(' ').trim();
+
+    if (combinedSearch) {
+      this.searchText = combinedSearch;
+    }
+
+    if (category) {
+      this.categoriaFiltro = category;
+    }
+
+    setTimeout(async () => {
+      await this.onFiltersChanged();
+
+      const eventId = eventIdParam ? Number(eventIdParam) : null;
+      if (eventId && !Number.isNaN(eventId)) {
+        const event = this.filteredEvents.find(item => item.idEvento === eventId);
+        if (event) {
+          await this.selectEvent(event, true);
+        }
+      }
+    }, 0);
+  }
+
   getEventImages(evento: EventoMapa): string[] {
     const anyEvento = evento as any;
 
@@ -333,6 +373,7 @@ export class HomeComponent implements OnInit, OnDestroy {
         this.eventsLoading = false;
         this.heroIndex = 0;
         this.itemImageIndexes.clear();
+        this.applyAssistantFiltersFromQuery();
 
         if (this.events.length === 0) {
           this.mapNotice = 'Aún no hay eventos públicos con ubicación para mostrar.';

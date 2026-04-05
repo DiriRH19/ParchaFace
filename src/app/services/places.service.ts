@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, shareReplay } from 'rxjs';
+import {buildApiUrl} from '../config/api.config';
 
 export interface RadarLatLng { lat: number; lng: number; }
 export interface RadarPlace {
@@ -15,7 +16,7 @@ export interface RadarPlace {
 
 @Injectable({ providedIn: 'root' })
 export class PlacesService {
-  private readonly apiUrl = 'http://localhost:8080/api/places';
+  private readonly apiUrl = buildApiUrl('/api/places');
   private cache = new Map<string, Observable<RadarPlace[]>>();
 
   constructor(private http: HttpClient) {}

@@ -1,0 +1,197 @@
+<div class="assistant-shell" *ngIf="isLoggedIn">
+  <button
+    class="assistant-fab"
+    type="button"
+    (click)="toggle()"
+    aria-label="Abrir asistente"
+  >
+    <div class="assistant-mascot">
+      <div class="assistant-mascot-ring"></div>
+      <div class="assistant-mascot-face">
+        <span class="spark spark-1"></span>
+        <span class="spark spark-2"></span>
+
+        <div class="eyes">
+          <span class="eye">
+            <span class="pupil"></span>
+          </span>
+          <span class="eye">
+            <span class="pupil"></span>
+          </span>
+        </div>
+
+        <div class="cheeks">
+          <span class="cheek"></span>
+          <span class="cheek"></span>
+        </div>
+
+        <div class="mouth"></div>
+      </div>
+    </div>
+
+    <div class="assistant-fab-text">
+      <span class="assistant-name">ParchaBot</span>
+      <span class="assistant-status">Tu parche inteligente</span>
+    </div>
+  </button>
+
+  <section class="assistant-panel" *ngIf="state.isOpen">
+    <header class="assistant-header">
+      <div class="assistant-header-left">
+        <div class="assistant-header-avatar">
+          <div class="assistant-mascot small">
+            <div class="assistant-mascot-ring"></div>
+            <div class="assistant-mascot-face">
+              <span class="spark spark-1"></span>
+              <span class="spark spark-2"></span>
+
+              <div class="eyes">
+                <span class="eye">
+                  <span class="pupil"></span>
+                </span>
+                <span class="eye">
+                  <span class="pupil"></span>
+                </span>
+              </div>
+
+              <div class="cheeks">
+                <span class="cheek"></span>
+                <span class="cheek"></span>
+              </div>
+
+              <div class="mouth"></div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h3>Parchi</h3>
+          <p>Asistente de ParchaFace</p>
+        </div>
+      </div>
+
+      <div class="assistant-header-actions">
+        <button class="clear-btn" type="button" (click)="clearCurrentConversation()">
+          Limpiar
+        </button>
+        <button class="close-btn" type="button" (click)="close()">×</button>
+      </div>
+    </header>
+
+    <div class="assistant-body">
+      <aside class="assistant-sidebar">
+        <button class="new-chat-btn" type="button" (click)="newConversation()">
+          + Nueva conversación
+        </button>
+
+        <div class="conversation-list">
+          <button
+            type="button"
+            class="conversation-item"
+            *ngFor="let conversation of state.conversations; trackBy: trackByConversation"
+            [class.active]="conversation.id === state.currentConversationId"
+            (click)="openConversation(conversation.id)"
+          >
+            <div class="conversation-item-top">
+              <span class="conversation-title">{{ conversation.title }}</span>
+
+              <button
+                type="button"
+                class="delete-conversation-btn"
+                (click)="deleteConversation($event, conversation.id)"
+                aria-label="Eliminar conversación"
+                title="Eliminar conversación"
+              >
+                ×
+              </button>
+            </div>
+
+            <span class="conversation-date">
+              {{ formatConversationDate(conversation.updatedAt) }}
+            </span>
+          </button>
+        </div>
+      </aside>
+
+      <div class="assistant-main">
+        <div class="assistant-messages" #messagesContainer>
+          <div
+            class="message"
+            *ngFor="let msg of state.messages; trackBy: trackByMessage"
+            [class.user]="msg.role === 'user'"
+            [class.assistant]="msg.role === 'assistant'"
+          >
+            <div class="message-bubble">
+              {{ msg.text }}
+            </div>
+
+            <div class="message-options" *ngIf="msg.options?.length">
+              <button
+                type="button"
+                class="option-chip"
+                *ngFor="let option of msg.options"
+                (click)="onOptionClick(option)"
+              >
+                {{ option.label }}
+              </button>
+            </div>
+          </div>
+
+          <div class="typing-row" *ngIf="state.isLoading">
+            <div class="typing-bubble">
+              <span></span><span></span><span></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="assistant-input">
+          <input
+            type="text"
+            [(ngModel)]="draft"
+            placeholder="Escribe algo como: armame un plan porfa"
+            (keydown.enter)="sendCurrentMessage()"
+          />
+
+          <button
+            type="button"
+            class="send-btn"
+            (click)="sendCurrentMessage()"
+            [disabled]="state.isLoading"
+          >
+            Enviar
+          </button>
+        </div>
+
+        <div class="assistant-shortcuts">
+          <button
+            type="button"
+            (click)="onOptionClick({ id: 'go-community', label: 'Ir a community', message: 'llévame a community' })"
+          >
+            Community
+          </button>
+
+          <button
+            type="button"
+            (click)="onOptionClick({ id: 'go-profile', label: 'Ir a perfil', message: 'abre mi perfil' })"
+          >
+            Perfil
+          </button>
+
+          <button
+            type="button"
+            (click)="onOptionClick({ id: 'go-explore', label: 'Explorar eventos', message: 'quiero ver eventos' })"
+          >
+            Eventos
+          </button>
+
+          <button
+            type="button"
+            (click)="onOptionClick({ id: 'recommend', label: 'Recomiéndame algo', message: 'según mis preferencias qué me recomiendas' })"
+          >
+            Recomiéndame
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>

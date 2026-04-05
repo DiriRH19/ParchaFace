@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, shareReplay } from 'rxjs';
+import {buildApiUrl} from '../config/api.config';
 
 export interface ClimaResponse {
   ciudad: string;
@@ -13,12 +14,10 @@ export interface ClimaResponse {
   timezone: string;
 }
 
-/**
- * ✅ Cache por ciudad para no llamar mil veces cuando hay muchas cards
- */
+
 @Injectable({ providedIn: 'root' })
 export class WeatherService {
-  private readonly apiUrl = 'http://localhost:8080/api/clima';
+  private readonly apiUrl = buildApiUrl('/api/clima');
   private cache = new Map<string, Observable<ClimaResponse>>();
 
   constructor(private http: HttpClient) {}
@@ -40,7 +39,7 @@ export class WeatherService {
 
   getCiudades(query: string) {
     return this.http.get<{ nombre: string; departamento: string }[]>(
-      `http://localhost:8080/api/clima/ciudades?query=${encodeURIComponent(query)}`
+      `${this.apiUrl}/ciudades?query=${encodeURIComponent(query)}`
     );
   }
 }
