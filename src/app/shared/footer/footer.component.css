@@ -412,6 +412,33 @@
   }
 }
 
+@media (max-width: 480px) {
+  .footer-top,
+  .footer-bottom {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .footer-logo-row {
+    align-items: flex-start;
+  }
+
+  .footer-description {
+    margin-top: 16px;
+    font-size: 0.92rem;
+  }
+
+  .ft-panel {
+    width: calc(100% - 12px);
+    max-height: calc(100svh - 20px);
+  }
+
+  .ft-header {
+    gap: 12px;
+    align-items: flex-start;
+  }
+}
+
 /* ===== DARK MODE ===== */
 
 :host-context(.dark) .footer-shell {

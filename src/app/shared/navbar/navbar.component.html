@@ -55,6 +55,9 @@
           @if (isAdminOnlyNavbar) {
             <app-notification-bell></app-notification-bell>
             <app-theme-toggle></app-theme-toggle>
+            <button type="button" class="btn-logout-nav" (click)="onLogoutClick()">
+              Cerrar sesión
+            </button>
 
           } @else {
             <button type="button" class="btn-transport-nav" (click)="toggleTransportModal()">

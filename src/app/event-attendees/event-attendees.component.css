@@ -35,7 +35,6 @@
 
 .back-link,
 .inline-link {
-  background: #ffffff;
   color: var(--text-primary);
   border: 1px solid var(--border-color);
 }

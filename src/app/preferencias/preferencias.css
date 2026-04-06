@@ -256,3 +256,22 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+@media (max-width: 420px) {
+  .preferences-shell {
+    padding: 72px 14px 20px;
+  }
+
+  .back-link {
+    top: 16px;
+    left: 14px;
+  }
+
+  .preferences-card {
+    padding: 24px 16px;
+  }
+
+  .preferences-grid {
+    grid-template-columns: 1fr;
+  }
+}

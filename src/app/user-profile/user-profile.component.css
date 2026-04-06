@@ -534,10 +534,14 @@
 @media (max-width: 768px) {
   .profile-header {
     padding: 16px 18px;
+    flex-wrap: wrap;
+    gap: 12px;
   }
 
   .profile-tabs {
     padding: 0 20px;
+    flex-wrap: nowrap;
+    overflow-x: auto;
   }
 
   .cover-image {
@@ -597,5 +601,51 @@
 
   .stat-card {
     min-width: 108px;
+  }
+}
+
+@media (max-width: 560px) {
+  .profile-card {
+    padding: 20px 14px 28px;
+  }
+
+  .profile-picture-actions {
+    width: 100%;
+  }
+
+  .btn-follow,
+  .profile-picture-actions .btn-cancel {
+    width: 100%;
+    justify-content: center;
+    text-align: center;
+  }
+
+  .profile-info {
+    padding-left: 16px;
+  }
+
+  .user-meta,
+  .user-stats {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .stat-card {
+    width: 100%;
+    max-width: 220px;
+  }
+
+  .profile-tabs {
+    padding: 0 16px;
+  }
+
+  .tab-btn {
+    white-space: nowrap;
+    padding: 12px 18px;
+  }
+
+  .section-card {
+    padding: 18px;
   }
 }

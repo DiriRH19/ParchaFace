@@ -1,7 +1,7 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { Subscription } from 'rxjs';
+import { forkJoin, Subscription } from 'rxjs';
 import { EventoService } from '../services/evento';
 import { NavbarComponent } from '../shared/navbar/navbar.component';
 import { WeatherService, ClimaResponse } from '../services/weather.service';
@@ -18,6 +18,7 @@ import {
   EventoCommentResponse,
   PageResponse
 } from '../services/evento-comment.service';
+import { AdminService } from '../services/admin.service';
 
 type EventoVM = {
   id?: number;
@@ -172,6 +173,7 @@ export class EventDetailComponent implements OnInit, OnDestroy {
     private route: ActivatedRoute,
     private router: Router,
     private eventoService: EventoService,
+    private adminService: AdminService,
     private weatherService: WeatherService,
     private toast: ToastService,
     private auth: AuthService,
@@ -367,6 +369,11 @@ export class EventDetailComponent implements OnInit, OnDestroy {
         }
 
         if (err?.status === 403) {
+          if (this.isAdmin) {
+            this.loadEventoAsAdmin(id);
+            return;
+          }
+
           this.errorMsg = 'No tienes permisos para ver este evento.';
           return;
         }
@@ -375,6 +382,38 @@ export class EventDetailComponent implements OnInit, OnDestroy {
           err?.error?.message ||
           err?.error?.error ||
           'No se pudo cargar el evento. Revisa la consola.';
+      }
+    });
+  }
+
+  private loadEventoAsAdmin(id: number): void {
+    forkJoin({
+      eventos: this.adminService.listarEventos(),
+      pendientes: this.adminService.listarEventosPendientes()
+    }).subscribe({
+      next: ({ eventos, pendientes }) => {
+        const adminEvento = [...(eventos ?? []), ...(pendientes ?? [])].find(
+          item => Number(item?.idEvento) === id
+        );
+
+        if (!adminEvento) {
+          this.errorMsg = 'No se encontró el evento.';
+          return;
+        }
+
+        this.evento = this.mapToVM(adminEvento);
+        this.canManage = true;
+        this.form = { ...this.getEmptyForm(), ...this.evento };
+        this.syncImageGallery();
+        this.isLoading = false;
+
+        this.loadClimaForEvento();
+        this.loadInscritosSiPuede();
+      },
+      error: (adminErr) => {
+        console.error('Error cargando evento como admin:', adminErr);
+        this.isLoading = false;
+        this.errorMsg = 'No tienes permisos para ver este evento.';
       }
     });
   }

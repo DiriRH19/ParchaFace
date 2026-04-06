@@ -207,10 +207,8 @@
   min-height: 36px;
   padding: 0 12px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.92);
   border: 1px solid rgba(23, 50, 72, 0.10);
   backdrop-filter: blur(10px);
-  color: #173248;
   font-size: 0.8rem;
   font-weight: 600;
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);

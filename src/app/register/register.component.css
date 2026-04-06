@@ -4,6 +4,7 @@
 
 .register-container {
   min-height: 100vh;
+  min-height: 100svh;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -346,6 +347,7 @@
 @media (max-width: 768px) {
   .register-container {
     padding: 20px 16px;
+    background-attachment: scroll;
   }
 
   .register-card {
@@ -355,5 +357,39 @@
   .back-link {
     top: 16px;
     left: 16px;
+  }
+
+  .register-container::before {
+    background-attachment: scroll;
+  }
+}
+
+@media (max-width: 480px) {
+  .register-container {
+    padding: 16px 12px 24px;
+  }
+
+  .register-card {
+    padding: 26px 18px;
+    border-radius: 18px;
+  }
+
+  .register-title {
+    font-size: 24px;
+  }
+
+  .register-subtitle,
+  .login-link,
+  .checkbox-label {
+    font-size: 13px;
+  }
+
+  .password-input-wrapper .form-input {
+    padding-right: 84px;
+  }
+
+  .toggle-password {
+    right: 10px;
+    font-size: 12px;
   }
 }
