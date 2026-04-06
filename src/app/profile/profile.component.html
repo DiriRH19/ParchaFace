@@ -584,6 +584,16 @@
               <button
                 class="settings-action-card settings-action-card-danger"
                 type="button"
+                (click)="cerrarSesion()"
+                [disabled]="isDeletingAccount"
+              >
+                <h3>Cerrar sesión</h3>
+                <p>Cierra tu sesión actual de forma segura.</p>
+              </button>
+
+              <button
+                class="settings-action-card settings-action-card-danger"
+                type="button"
                 (click)="eliminarCuenta()"
                 [disabled]="isDeletingAccount"
               >

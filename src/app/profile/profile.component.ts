@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { forkJoin } from 'rxjs';
 import { API_CONFIG, buildApiUrl, buildMediaUrl } from '../config/api.config';
@@ -103,7 +103,8 @@ export class ProfileComponent implements OnInit {
     private authService: AuthService,
     private profileDataService: ProfileDataService,
     private usuariosService: UsuariosService,
-    private http: HttpClient
+    private http: HttpClient,
+    private router: Router
   ) {}
 
   ngOnInit(): void {
@@ -381,6 +382,23 @@ export class ProfileComponent implements OnInit {
     });
   }
 
+  cerrarSesion(): void {
+    ParchaSwal.fire({
+      icon: 'warning',
+      title: '¿Cerrar sesión?',
+      text: 'Tu sesión actual se cerrará en este dispositivo.',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, cerrar sesión',
+      cancelButtonText: 'Cancelar',
+      reverseButtons: true
+    }).then((result) => {
+      if (!result.isConfirmed) return;
+
+      this.authService.logout();
+      this.router.navigate(['/login']);
+    });
+  }
+
   eliminarCuenta(): void {
     if (this.isDeletingAccount) return;
 
@@ -505,7 +523,6 @@ export class ProfileComponent implements OnInit {
     this.editForm.redesSociales = this.editForm.redesSociales.filter((_, i) => i !== index);
   }
 
-
   onPerfilSelected(event: any): void {
     const file = event?.target?.files?.[0];
     if (!file) return;
@@ -583,8 +600,6 @@ export class ProfileComponent implements OnInit {
       }
     });
   }
-
-
 
   onPortadaSelected(event: any): void {
     const file = event?.target?.files?.[0];
