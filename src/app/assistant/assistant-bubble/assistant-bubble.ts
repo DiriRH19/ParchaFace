@@ -1,8 +1,18 @@
-import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
+import {
+  AfterViewInit,
+  Component,
+  ElementRef,
+  HostListener,
+  OnDestroy,
+  OnInit,
+  QueryList,
+  ViewChild,
+  ViewChildren
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { firstValueFrom } from 'rxjs';
+import { Subscription, firstValueFrom } from 'rxjs';
 
 import {
   AssistantPageContext,
@@ -16,7 +26,10 @@ import {
   AssistantOption,
   AssistantStateService
 } from '../../services/assistant-state.service';
-import { AssistantAction, AssistantActionsService } from '../../services/assistant-actions.service';
+import {
+  AssistantAction,
+  AssistantActionsService
+} from '../../services/assistant-actions.service';
 import { AuthService } from '../../services/auth.service';
 
 @Component({
@@ -26,9 +39,15 @@ import { AuthService } from '../../services/auth.service';
   templateUrl: './assistant-bubble.html',
   styleUrl: './assistant-bubble.css'
 })
-export class AssistantBubbleComponent implements OnInit {
+export class AssistantBubbleComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('messagesContainer')
   private messagesContainer?: ElementRef<HTMLDivElement>;
+
+  @ViewChildren('eye')
+  private eyeRefs?: QueryList<ElementRef<HTMLSpanElement>>;
+
+  @ViewChildren('pupil')
+  private pupilRefs?: QueryList<ElementRef<HTMLSpanElement>>;
 
   draft = '';
   isLoggedIn = false;
@@ -36,9 +55,10 @@ export class AssistantBubbleComponent implements OnInit {
   private userLat: number | null = null;
   private userLng: number | null = null;
   private geolocationRequested = false;
+  private authSubscription?: Subscription;
+  private eyeChangesSubscription?: Subscription;
 
   private readonly blockedTerms: string[] = [
-    // español
     'hp', 'hpta', 'hptas',
     'hijueputa', 'hijo de puta', 'hija de puta', 'jueputa',
     'puta', 'puto', 'putita', 'putito',
@@ -60,7 +80,6 @@ export class AssistantBubbleComponent implements OnInit {
     'boludo', 'boluda',
     'verga',
 
-    // inglés
     'fuck', 'fucking', 'fucker', 'motherfucker',
     'shit', 'bullshit',
     'asshole', 'bitch', 'son of a bitch',
@@ -78,7 +97,7 @@ export class AssistantBubbleComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.authService.isLoggedIn$.subscribe((value) => {
+    this.authSubscription = this.authService.isLoggedIn$.subscribe((value) => {
       this.isLoggedIn = value;
 
       if (!value) {
@@ -86,11 +105,25 @@ export class AssistantBubbleComponent implements OnInit {
         this.userLat = null;
         this.userLng = null;
         this.geolocationRequested = false;
+        this.resetEyes();
         return;
       }
 
       this.tryRequestUserLocation();
     });
+  }
+
+  ngAfterViewInit(): void {
+    this.resetEyes();
+
+    this.eyeChangesSubscription = this.eyeRefs?.changes.subscribe(() => {
+      this.resetEyes();
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.authSubscription?.unsubscribe();
+    this.eyeChangesSubscription?.unsubscribe();
   }
 
   toggle(): void {
@@ -104,11 +137,14 @@ export class AssistantBubbleComponent implements OnInit {
 
     if (this.state.isOpen) {
       this.scrollMessagesToBottom();
+    } else {
+      this.resetEyes();
     }
   }
 
   close(): void {
     this.state.close();
+    this.resetEyes();
   }
 
   newConversation(): void {
@@ -198,6 +234,50 @@ export class AssistantBubbleComponent implements OnInit {
     });
   }
 
+  @HostListener('document:mousemove', ['$event'])
+  onDocumentMouseMove(event: MouseEvent): void {
+    const eyes = this.eyeRefs?.toArray() ?? [];
+    const pupils = this.pupilRefs?.toArray() ?? [];
+
+    if (!eyes.length || !pupils.length) {
+      return;
+    }
+
+    for (let i = 0; i < Math.min(eyes.length, pupils.length); i++) {
+      this.movePupilInsideEye(eyes[i].nativeElement, pupils[i].nativeElement, event);
+    }
+  }
+
+  @HostListener('document:mouseleave')
+  onDocumentMouseLeave(): void {
+    this.resetEyes();
+  }
+
+  private movePupilInsideEye(
+    eyeEl: HTMLSpanElement,
+    pupilEl: HTMLSpanElement,
+    event: MouseEvent
+  ): void {
+    const rect = eyeEl.getBoundingClientRect();
+
+    const eyeCenterX = rect.left + rect.width / 2;
+    const eyeCenterY = rect.top + rect.height / 2;
+
+    const dx = event.clientX - eyeCenterX;
+    const dy = event.clientY - eyeCenterY;
+
+    const maxMoveX = 2.2;
+    const maxMoveY = 2.6;
+
+    const normalizedX = Math.max(-1, Math.min(1, dx / 120));
+    const normalizedY = Math.max(-1, Math.min(1, dy / 120));
+
+    const moveX = normalizedX * maxMoveX;
+    const moveY = normalizedY * maxMoveY;
+
+    pupilEl.style.transform = `translate(${moveX}px, ${moveY}px)`;
+  }
+
   private tryRequestUserLocation(): void {
     if (this.geolocationRequested) return;
     if (!('geolocation' in navigator)) return;
@@ -241,8 +321,6 @@ export class AssistantBubbleComponent implements OnInit {
       userLng: this.userLng,
       currentView: this.router.url
     };
-
-
   }
 
   private buildRequest(message: string): AssistantRequest {
@@ -360,12 +438,6 @@ export class AssistantBubbleComponent implements OnInit {
     }
   }
 
-  private readQuery(action: AssistantAction): Record<string, any> | null {
-    return action.query && typeof action.query === 'object'
-      ? action.query
-      : null;
-  }
-
   private readActionType(action: AssistantAction): string {
     return typeof action.type === 'string' ? action.type.trim().toLowerCase() : '';
   }
@@ -424,6 +496,13 @@ export class AssistantBubbleComponent implements OnInit {
   private ensureConversation(): void {
     if (!this.state.currentConversationId) {
       this.state.startNewConversation();
+    }
+  }
+
+  private resetEyes(): void {
+    const pupils = this.pupilRefs?.toArray() ?? [];
+    for (const pupil of pupils) {
+      pupil.nativeElement.style.transform = 'translate(0px, 0px)';
     }
   }
 }

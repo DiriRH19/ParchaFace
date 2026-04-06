@@ -107,7 +107,7 @@ export class AssistantStateService {
         {
           role: 'assistant',
           text:
-            'Hola, soy Parchi. Puedo ayudarte a encontrar eventos, recomendarte según tus gustos, armar planes, orientarte con transporte y explicarte cómo funciona ParchaFace.'
+            'Hola, soy ParchaBot. Puedo ayudarte a encontrar eventos, recomendarte según tus gustos, armar planes, orientarte con transporte y explicarte cómo funciona ParchaFace.'
         }
       ]
     };
