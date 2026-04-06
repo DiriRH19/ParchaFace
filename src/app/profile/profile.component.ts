@@ -1,9 +1,10 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { forkJoin } from 'rxjs';
-import { buildMediaUrl } from '../config/api.config';
+import { API_CONFIG, buildApiUrl, buildMediaUrl } from '../config/api.config';
 
 import { AuthService, UserData } from '../services/auth.service';
 import {
@@ -11,6 +12,7 @@ import {
   ProfileActivityItem,
   ProfileEventItem
 } from '../services/profile-data.service';
+import { ParchaSwal } from '../shared/swal/parcha-swal';
 import {
   UsuariosService,
   PerfilUsuarioDto,
@@ -64,6 +66,9 @@ export class ProfileComponent implements OnInit {
   showDiscardModal = false;
   saveError = '';
 
+  isDeletingAccount = false;
+  deleteAccountError = '';
+
   editForm: { nombre: string; correo: string; acercaDe: string; redesSociales: SocialLink[] } = {
     nombre: '',
     correo: '',
@@ -97,7 +102,8 @@ export class ProfileComponent implements OnInit {
   constructor(
     private authService: AuthService,
     private profileDataService: ProfileDataService,
-    private usuariosService: UsuariosService
+    private usuariosService: UsuariosService,
+    private http: HttpClient
   ) {}
 
   ngOnInit(): void {
@@ -372,6 +378,62 @@ export class ProfileComponent implements OnInit {
         this.saveError = typeof msg === 'string' ? msg : 'No se pudo guardar los cambios.';
         this.isSaving = false;
       }
+    });
+  }
+
+  eliminarCuenta(): void {
+    if (this.isDeletingAccount) return;
+
+    ParchaSwal.fire({
+      icon: 'warning',
+      title: '¿Eliminar cuenta?',
+      text: 'Esta acción marcará tu cuenta como cancelada y cerrará tu sesión.',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar',
+      reverseButtons: true
+    }).then((result) => {
+      if (!result.isConfirmed) return;
+
+      this.isDeletingAccount = true;
+      this.deleteAccountError = '';
+
+      const token = this.authService.getToken();
+      let headers = new HttpHeaders();
+
+      if (token) {
+        headers = headers.set('Authorization', `Bearer ${token}`);
+      }
+
+      this.http.delete<{ message: string }>(
+        buildApiUrl(`${API_CONFIG.endpoints.usuarios.base}/mi-cuenta`),
+        { headers }
+      ).subscribe({
+        next: () => {
+          this.isDeletingAccount = false;
+
+          ParchaSwal.fire({
+            icon: 'success',
+            title: 'Cuenta eliminada',
+            text: 'Tu cuenta fue eliminada correctamente.',
+            confirmButtonText: 'Ok'
+          }).then(() => {
+            this.authService.logout();
+          });
+        },
+        error: (err) => {
+          console.error('Error eliminando cuenta:', err);
+          this.deleteAccountError = 'No se pudo eliminar la cuenta.';
+          this.isDeletingAccount = false;
+
+          ParchaSwal.fire({
+            icon: 'error',
+            title: 'No se pudo eliminar',
+            text: this.deleteAccountError,
+            confirmButtonText: 'Ok'
+          });
+        }
+      });
     });
   }
 

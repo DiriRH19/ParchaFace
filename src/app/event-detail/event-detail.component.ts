@@ -55,6 +55,9 @@ type EventoVM = {
   recordatoriosAutomaticos: boolean;
 
   idOrganizador?: number | null;
+  organizadorNombre: string;
+  organizadorCorreo: string;
+  organizadorFoto: string;
 };
 
 type SocialEntry = {
@@ -62,6 +65,15 @@ type SocialEntry = {
   label: string;
   icon: string;
   url: string;
+};
+
+type InscritoEvento = {
+  idUsuario: number;
+  nombre: string;
+  correo: string;
+  fotoPerfil?: string | null;
+  acercaDe?: string | null;
+  fechaInscripcion?: string | null;
 };
 
 @Component({
@@ -91,6 +103,10 @@ export class EventDetailComponent implements OnInit, OnDestroy {
   canManage = false;
   editMode = false;
   form: EventoVM = this.getEmptyForm();
+
+  inscritos: InscritoEvento[] = [];
+  inscritosLoading = false;
+  inscritosErrorMsg = '';
 
   private routeParamSub: Subscription | null = null;
 
@@ -145,7 +161,10 @@ export class EventDetailComponent implements OnInit, OnDestroy {
       permitirComentarios: true,
       recordatoriosAutomaticos: false,
 
-      idOrganizador: null
+      idOrganizador: null,
+      organizadorNombre: '',
+      organizadorCorreo: '',
+      organizadorFoto: ''
     };
   }
 
@@ -167,6 +186,8 @@ export class EventDetailComponent implements OnInit, OnDestroy {
 
       if (!v) {
         this.isRegistered = false;
+        this.inscritos = [];
+        this.inscritosErrorMsg = '';
         return;
       }
 
@@ -179,6 +200,7 @@ export class EventDetailComponent implements OnInit, OnDestroy {
       this.user = u;
       this.isAdmin = this.auth.isAdmin();
       this.canManage = this.isOrganizer || this.isAdmin;
+      this.loadInscritosSiPuede();
 
       if (this.isLoggedIn && this.evento?.id) {
         this.loadIsRegistered();
@@ -239,6 +261,18 @@ export class EventDetailComponent implements OnInit, OnDestroy {
 
   get mostrarAccionesInscripcion(): boolean {
     return !this.isAdmin && !this.isOrganizer;
+  }
+
+  get puedeVerInscritos(): boolean {
+    return this.isOrganizer || this.isAdmin;
+  }
+
+  get organizadorFotoUrl(): string {
+    return this.eventoService.getFullImageUrl(this.evento?.organizadorFoto || '');
+  }
+
+  getInscritoFoto(path?: string | null): string {
+    return this.eventoService.getFullImageUrl(path || '');
   }
 
   puedeEliminarComentario(comentario: EventoCommentResponse): boolean {
@@ -309,6 +343,7 @@ export class EventDetailComponent implements OnInit, OnDestroy {
 
         this.loadClimaForEvento();
         this.loadIsRegistered();
+        this.loadInscritosSiPuede();
 
         if (this.evento?.permitirComentarios !== false && this.evento?.id) {
           this.cargarComentarios();
@@ -431,19 +466,22 @@ export class EventDetailComponent implements OnInit, OnDestroy {
       permitirComentarios: e?.permitirComentarios !== false,
       recordatoriosAutomaticos: Boolean(e?.recordatoriosAutomaticos),
 
-      idOrganizador: idOrganizador != null ? Number(idOrganizador) : null
+      idOrganizador: idOrganizador != null ? Number(idOrganizador) : null,
+      organizadorNombre: e?.nombreOrganizador ?? e?.organizador?.nombre ?? '',
+      organizadorCorreo: e?.correoOrganizador ?? e?.organizador?.correo ?? '',
+      organizadorFoto: e?.organizador?.fotoPerfilUrl ?? e?.organizador?.fotoPerfil ?? ''
     };
   }
 
   private extractImageUrls(e: any): string[] {
     const fromArray = Array.isArray(e?.imagenes)
       ? e.imagenes
-        .map((img: any) =>
-          this.eventoService.getFullImageUrl(
-            String(img?.imageUrl || img?.imagenUrl || img?.url || '')
+          .map((img: any) =>
+            this.eventoService.getFullImageUrl(
+              String(img?.imageUrl || img?.imagenUrl || img?.url || '')
+            )
           )
-        )
-        .filter((url: string) => !!url)
+          .filter((url: string) => !!url)
       : [];
 
     const fromDirectArrays = [
@@ -473,11 +511,13 @@ export class EventDetailComponent implements OnInit, OnDestroy {
     );
 
     return Array.from(
-      new Set([
-        ...fromArray,
-        ...fromDirectArrays,
-        ...(portada ? [portada] : [])
-      ].filter(Boolean))
+      new Set(
+        [
+          ...fromArray,
+          ...fromDirectArrays,
+          ...(portada ? [portada] : [])
+        ].filter(Boolean)
+      )
     );
   }
 
@@ -606,9 +646,16 @@ export class EventDetailComponent implements OnInit, OnDestroy {
   }
 
   get isOrganizer(): boolean {
-    const myId = this.user?.id;
+    const myId = this.user?.id ?? this.user?.idUsuario;
     const orgId = this.evento?.idOrganizador;
-    return myId != null && orgId != null && Number(myId) === Number(orgId);
+
+    const myCorreo = (this.user?.correo || '').trim().toLowerCase();
+    const orgCorreo = (this.evento?.organizadorCorreo || '').trim().toLowerCase();
+
+    const sameId = myId != null && orgId != null && Number(myId) === Number(orgId);
+    const sameCorreo = !!myCorreo && !!orgCorreo && myCorreo === orgCorreo;
+
+    return sameId || sameCorreo;
   }
 
   get cupoLleno(): boolean {
@@ -657,6 +704,33 @@ export class EventDetailComponent implements OnInit, OnDestroy {
       error: (err) => {
         console.error('Error cargando inscripciones:', err);
         this.isRegistered = this.inscripcionService.estaInscritoLocal(eventoId);
+      }
+    });
+  }
+
+  private loadInscritosSiPuede(): void {
+    const idEvento = Number(this.evento?.id);
+
+    if (!idEvento || !this.isLoggedIn || !this.puedeVerInscritos) {
+      this.inscritos = [];
+      this.inscritosLoading = false;
+      this.inscritosErrorMsg = '';
+      return;
+    }
+
+    this.inscritosLoading = true;
+    this.inscritosErrorMsg = '';
+
+    this.inscripcionService.obtenerInscritosEvento(idEvento).subscribe({
+      next: (data) => {
+        this.inscritos = data ?? [];
+        this.inscritosLoading = false;
+      },
+      error: (err) => {
+        console.error('Error cargando inscritos:', err);
+        this.inscritos = [];
+        this.inscritosErrorMsg = 'No se pudieron cargar los inscritos.';
+        this.inscritosLoading = false;
       }
     });
   }
@@ -711,6 +785,7 @@ export class EventDetailComponent implements OnInit, OnDestroy {
           next: () => {
             this.inscripcionService.marcarComoInscrito(Number(this.evento!.id));
             this.isRegistered = true;
+            this.loadInscritosSiPuede();
 
             ParchaSwal.fire({
               icon: 'success',
@@ -924,6 +999,7 @@ export class EventDetailComponent implements OnInit, OnDestroy {
         this.editMode = false;
         this.form = { ...this.evento };
         this.syncImageGallery();
+        this.loadInscritosSiPuede();
         this.toast.show('¡Editado exitosamente! ✨', 'success');
       },
       error: (err) => {
@@ -1146,6 +1222,7 @@ export class EventDetailComponent implements OnInit, OnDestroy {
             next: (list) => {
               this.inscripcionService.sincronizarInscripciones(list);
               this.loadIsRegistered();
+              this.loadInscritosSiPuede();
             },
             error: () => {
               this.inscripcionService.desmarcarComoInscrito(Number(this.evento!.id));

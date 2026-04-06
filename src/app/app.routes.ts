@@ -48,6 +48,13 @@ export const routes: Routes = [
   { path: 'event/:id', component: EventDetailComponent, canActivate: [adminSessionOnlyGuard], data: { allowAdminSession: true } },
 
   {
+    path: 'event/:id/inscritos',
+    canActivate: [authGuard, adminSessionOnlyGuard],
+    loadComponent: () =>
+      import('./event-attendees/event-attendees.component').then(m => m.EventAttendeesComponent)
+  },
+
+  {
     path: 'pago/simulado/:idPago',
     canActivate: [authGuard, adminSessionOnlyGuard],
     loadComponent: () =>

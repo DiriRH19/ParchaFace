@@ -93,6 +93,22 @@
               }
             </div>
 
+            @if (canManage && evento.id) {
+              <div class="attendees-link-wrap">
+                <a class="attendees-link-card" [routerLink]="['/event', evento.id, 'inscritos']">
+                  <div class="attendees-link-icon">👥</div>
+
+                  <div class="attendees-link-body">
+                    <span class="attendees-link-kicker">Gestión del evento</span>
+                    <h3>Ver personas inscritas</h3>
+                    <p>Consulta la lista completa de asistentes y entra a sus perfiles.</p>
+                  </div>
+
+                  <span class="attendees-link-arrow">→</span>
+                </a>
+              </div>
+            }
+
             @if (socialEntries.length) {
               <div class="social-block">
                 <div class="social-block-head">
@@ -414,6 +430,35 @@
               </div>
             </div>
           </div>
+
+          @if (evento.idOrganizador) {
+            <div class="info-panel creator-panel">
+              <div class="info-panel-top">
+                <span class="info-icon info-icon-people"></span>
+                <div class="info-panel-head">
+                  <span class="info-kicker">Creador</span>
+                  <div class="info-label">Organizador del evento</div>
+                </div>
+              </div>
+
+              <a class="creator-link" [routerLink]="['/usuarios', evento.idOrganizador]">
+                <div class="creator-avatar">
+                  @if (organizadorFotoUrl) {
+                    <img [src]="organizadorFotoUrl" [alt]="evento.organizadorNombre || 'Creador'" />
+                  } @else {
+                    <div class="creator-avatar-placeholder">
+                      {{ (evento.organizadorNombre || 'PF').slice(0, 2).toUpperCase() }}
+                    </div>
+                  }
+                </div>
+
+                <div class="creator-meta">
+                  <h4>{{ evento.organizadorNombre || 'Usuario' }}</h4>
+                  <p>{{ evento.organizadorCorreo || 'Ver perfil' }}</p>
+                </div>
+              </a>
+            </div>
+          }
 
           @if (evento.emailContacto || evento.telefonoContacto || evento.sitioWeb) {
             <div class="info-panel">

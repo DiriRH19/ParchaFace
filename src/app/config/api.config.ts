@@ -33,7 +33,8 @@ export const API_CONFIG = {
       seguidores: '/usuarios/:id/seguidores',
       siguiendo: '/usuarios/:id/siguiendo',
       seguir: '/usuarios/:id/seguir',
-      buscar: '/usuarios/buscar'
+      buscar: '/usuarios/buscar',
+      eliminarMiCuenta: '/usuarios/mi-cuenta'
     },
     perfil: {
       base: '/perfil',

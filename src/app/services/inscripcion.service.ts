@@ -2,6 +2,15 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, tap } from 'rxjs';
 
+export interface InscritoEvento {
+  idUsuario: number;
+  nombre: string;
+  correo: string;
+  fotoPerfil?: string | null;
+  acercaDe?: string | null;
+  fechaInscripcion?: string | null;
+}
+
 @Injectable({ providedIn: 'root' })
 export class InscripcionService {
   private baseUrl = 'http://localhost:8080';
@@ -23,6 +32,10 @@ export class InscripcionService {
       .pipe(
         tap(() => this.desmarcarComoInscrito(idEvento))
       );
+  }
+
+  obtenerInscritosEvento(idEvento: number): Observable<InscritoEvento[]> {
+    return this.http.get<InscritoEvento[]>(`${this.baseUrl}/inscripciones/eventos/${idEvento}/inscritos`);
   }
 
   getMisInscripciones(): Observable<any[]> {

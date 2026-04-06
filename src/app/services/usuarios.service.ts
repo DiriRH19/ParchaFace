@@ -111,4 +111,11 @@ export class UsuariosService {
       }
     );
   }
+
+    eliminarMiCuenta(): Observable<{ message: string }> {
+    return this.http.delete<{ message: string }>(
+      buildApiUrl(API_CONFIG.endpoints.usuarios.eliminarMiCuenta),
+      { headers: this.getAuthHeaders() }
+    );
+  }
 }

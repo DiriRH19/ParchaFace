@@ -580,7 +580,21 @@
                 <h3>Ver mis eventos</h3>
                 <p>Revisa lo que has creado y a lo que te has inscrito.</p>
               </button>
+
+              <button
+                class="settings-action-card settings-action-card-danger"
+                type="button"
+                (click)="eliminarCuenta()"
+                [disabled]="isDeletingAccount"
+              >
+                <h3>{{ isDeletingAccount ? 'Eliminando cuenta...' : 'Eliminar cuenta' }}</h3>
+                <p>Desactiva tu cuenta actual y cierra tu sesión.</p>
+              </button>
             </div>
+
+            @if (deleteAccountError) {
+              <p class="section-text error-text">{{ deleteAccountError }}</p>
+            }
           </div>
         }
       }

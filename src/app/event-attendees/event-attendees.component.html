@@ -1,0 +1,95 @@
+<app-navbar></app-navbar>
+
+<div class="attendees-page">
+  <div class="attendees-shell">
+    <div class="top-row">
+      <a class="back-link" [routerLink]="['/event', eventId]">← Volver al evento</a>
+      <button class="refresh-btn" type="button" (click)="recargar()">Recargar</button>
+    </div>
+
+    <div class="hero-card">
+      <p class="eyebrow">Gestión del evento</p>
+      <h1>Personas inscritas</h1>
+      <p class="hero-copy">
+        Revisa quién se registró, entra a sus perfiles y lleva un mejor control del evento.
+      </p>
+
+      <div class="hero-meta">
+        <div class="meta-chip">
+          <span class="meta-label">Evento</span>
+          <strong>{{ eventTitle || 'Cargando...' }}</strong>
+        </div>
+
+        <div class="meta-chip">
+          <span class="meta-label">Total inscritos</span>
+          <strong>{{ totalInscritos }}</strong>
+        </div>
+      </div>
+    </div>
+
+    @if (loading) {
+      <div class="state-card">
+        <div class="spinner"></div>
+        <p>Cargando inscritos...</p>
+      </div>
+    }
+
+    @if (!loading && error) {
+      <div class="state-card error-card">
+        <h3>{{ error }}</h3>
+        <a class="back-link inline-link" [routerLink]="['/event', eventId]">Volver al evento</a>
+      </div>
+    }
+
+    @if (!loading && !error) {
+      <div class="toolbar-card">
+        <input
+          class="search-input"
+          type="text"
+          [(ngModel)]="search"
+          placeholder="Buscar por nombre, correo o descripción"
+        >
+      </div>
+
+      @if (inscritosFiltrados.length === 0) {
+        <div class="state-card empty-card">
+          <h3>No hay resultados</h3>
+          <p>
+            {{ totalInscritos === 0
+              ? 'Todavía no hay personas inscritas en este evento.'
+              : 'No encontramos inscritos con ese filtro.' }}
+          </p>
+        </div>
+      } @else {
+        <div class="attendees-grid">
+          @for (inscrito of inscritosFiltrados; track inscrito.idUsuario) {
+            <a class="attendee-card" [routerLink]="['/usuarios', inscrito.idUsuario]">
+              <div class="avatar-wrap">
+                @if (getFoto(inscrito.fotoPerfil)) {
+                  <img class="avatar-img" [src]="getFoto(inscrito.fotoPerfil)" [alt]="inscrito.nombre" />
+                } @else {
+                  <div class="avatar-placeholder">
+                    {{ (inscrito.nombre || 'PF').slice(0, 2).toUpperCase() }}
+                  </div>
+                }
+              </div>
+
+              <div class="attendee-body">
+                <h3>{{ inscrito.nombre }}</h3>
+                <p class="mail">{{ inscrito.correo }}</p>
+                <p class="about">
+                  {{ inscrito.acercaDe?.trim() ? inscrito.acercaDe : 'Sin descripción disponible.' }}
+                </p>
+              </div>
+
+              <div class="attendee-footer">
+                <span class="date-chip">{{ inscrito.fechaInscripcion || 'Sin fecha' }}</span>
+                <span class="profile-chip">Ver perfil</span>
+              </div>
+            </a>
+          }
+        </div>
+      }
+    }
+  </div>
+</div>
