@@ -1,5 +1,5 @@
-import { Component } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, Inject, PLATFORM_ID } from '@angular/core';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { RouterLink, Router, ActivatedRoute } from '@angular/router';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { AuthService } from '../services/auth.service';
@@ -29,7 +29,8 @@ export class LoginComponent implements AfterViewInit {
     private fb: FormBuilder,
     private authService: AuthService,
     private router: Router,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    @Inject(PLATFORM_ID) private platformId: Object
   ) {
     this.loginForm = this.fb.group({
       correo: ['', [Validators.required, Validators.email]],
@@ -109,12 +110,25 @@ export class LoginComponent implements AfterViewInit {
   }
 
   ngAfterViewInit(): void {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+
     this.initGoogleLoginButton();
   }
 
   initGoogleLoginButton(): void {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+
     if (!window.google) {
       console.error('Google Identity Services no cargó');
+      return;
+    }
+
+    const googleButtonContainer = document.getElementById('google-login-btn');
+    if (!googleButtonContainer) {
       return;
     }
 
@@ -124,7 +138,7 @@ export class LoginComponent implements AfterViewInit {
     });
 
     window.google.accounts.id.renderButton(
-      document.getElementById('google-login-btn'),
+      googleButtonContainer,
       {
         theme: 'outline',
         size: 'large',

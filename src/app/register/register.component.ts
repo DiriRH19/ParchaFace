@@ -1,5 +1,5 @@
-import { Component } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, Inject, PLATFORM_ID } from '@angular/core';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { RouterLink, Router } from '@angular/router';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
 import { AuthService } from '../services/auth.service';
@@ -29,7 +29,8 @@ export class RegisterComponent implements AfterViewInit {
   constructor(
     private fb: FormBuilder,
     private authService: AuthService,
-    private router: Router
+    private router: Router,
+    @Inject(PLATFORM_ID) private platformId: Object
   ) {
     this.registerForm = this.fb.group({
       usuario: ['', [Validators.required]],
@@ -120,12 +121,25 @@ export class RegisterComponent implements AfterViewInit {
   }
 
   ngAfterViewInit(): void {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+
     this.initGoogleButton();
   }
 
   initGoogleButton(): void {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+
     if (!window.google) {
       console.error('Google Identity Services no cargó');
+      return;
+    }
+
+    const googleButtonContainer = document.getElementById('google-btn');
+    if (!googleButtonContainer) {
       return;
     }
 
@@ -135,7 +149,7 @@ export class RegisterComponent implements AfterViewInit {
     });
 
     window.google.accounts.id.renderButton(
-      document.getElementById('google-btn'),
+      googleButtonContainer,
       {
         theme: 'outline',
         size: 'large',
