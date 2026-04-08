@@ -1,17 +1,25 @@
-import { Component } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, Inject, PLATFORM_ID } from '@angular/core';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { RouterLink, Router } from '@angular/router';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
 import { AuthService } from '../services/auth.service';
+import { AfterViewInit } from '@angular/core';
+import { environment } from '../../environments/environment';
+
+declare global {
+  interface Window {
+    google: any;
+  }
+}
 
 @Component({
   selector: 'app-register',
   standalone: true,
   imports: [CommonModule, RouterLink, ReactiveFormsModule],
   templateUrl: './register.component.html',
-  styleUrls: ['./register.component.css']
+  styleUrls: ['./register.component.css'],
 })
-export class RegisterComponent {
+export class RegisterComponent implements AfterViewInit {
   showPassword = false;
   showConfirmPassword = false;
   registerForm: FormGroup;
@@ -21,12 +29,17 @@ export class RegisterComponent {
   constructor(
     private fb: FormBuilder,
     private authService: AuthService,
-    private router: Router
+    private router: Router,
+    @Inject(PLATFORM_ID) private platformId: Object
   ) {
     this.registerForm = this.fb.group({
       usuario: ['', [Validators.required]],
       correo: ['', [Validators.required, Validators.email]],
-      contrasena: ['', [Validators.required, Validators.minLength(8)]],
+      contrasena: ['', [
+        Validators.required,
+        Validators.minLength(8),
+        Validators.pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/)
+      ]],
       confirmarContrasena: ['', [Validators.required]],
       acceptTerms: [false, [Validators.requiredTrue]]
     }, { validators: [this.passwordsMatchValidator] });
@@ -63,14 +76,20 @@ export class RegisterComponent {
     const { usuario, correo, contrasena, confirmarContrasena } = this.registerForm.value;
 
     this.authService.register(usuario, correo, contrasena, confirmarContrasena).subscribe({
-      next: (response) => {
+      next: () => {
         this.isLoading = false;
-        this.router.navigate(['/']);
+        this.router.navigate(['/preferencias']);
       },
       error: (error) => {
         this.isLoading = false;
-        console.error('Error completo de registro:', error);
-        
+        console.error('Error completo de registro:', error && error.message ? error.message : error.status || error);
+
+        const token = localStorage.getItem('token');
+        if (token) {
+          this.router.navigate(['/preferencias']);
+          return;
+        }
+
         if (error.status === 0) {
           this.errorMessage = 'No se puede conectar con el servidor. Verifica que el backend esté corriendo en http://localhost:8080';
         } else if (error.error) {
@@ -81,7 +100,7 @@ export class RegisterComponent {
             } else {
               errorObj = error.error;
             }
-            
+
             if (errorObj.error) {
               this.errorMessage = errorObj.error;
             } else if (errorObj.message) {
@@ -100,5 +119,61 @@ export class RegisterComponent {
       }
     });
   }
-}
 
+  ngAfterViewInit(): void {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+
+    this.initGoogleButton();
+  }
+
+  initGoogleButton(): void {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+
+    if (!window.google) {
+      console.error('Google Identity Services no cargó');
+      return;
+    }
+
+    const googleButtonContainer = document.getElementById('google-btn');
+    if (!googleButtonContainer) {
+      return;
+    }
+
+    window.google.accounts.id.initialize({
+      client_id: environment.googleClientId,
+      callback: (response: any) => this.handleGoogleResponse(response)
+    });
+
+    window.google.accounts.id.renderButton(
+      googleButtonContainer,
+      {
+        theme: 'outline',
+        size: 'large',
+        text: 'signup_with',
+        shape: 'pill',
+        width: 280
+      }
+    );
+  }
+
+  handleGoogleResponse(response: any): void {
+    this.isLoading = true;
+    this.errorMessage = '';
+
+    this.authService.googleLogin(response.credential).subscribe({
+      next: () => {
+        this.isLoading = false;
+        this.router.navigate(['/preferencias']);
+      },
+      error: (error) => {
+        this.isLoading = false;
+        this.errorMessage =
+          error?.error?.error || 'No se pudo registrar con Google';
+      }
+    });
+  }
+}

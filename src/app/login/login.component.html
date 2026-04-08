@@ -1,68 +1,100 @@
 <div class="login-container">
+
   <div class="back-link">
     <a routerLink="/">
       <span>←</span> Volver al inicio
     </a>
   </div>
+
   <div class="login-card">
     <div class="logo-section">
-      <img src="https://res.cloudinary.com/dgaxlowpd/image/upload/v1765764539/logoParchaFace_fzz8sh.png" alt="ParchaFace Logo" class="logo-img">
+      <img
+        src="https://res.cloudinary.com/dgaxlowpd/image/upload/v1765764539/logoParchaFace_fzz8sh.png"
+        alt="ParchaFace Logo"
+        class="logo-img"
+      />
     </div>
+
     <h1 class="welcome-title">¡Bienvenido de vuelta!</h1>
     <p class="welcome-subtitle">Inicia sesión para descubrir eventos increíbles</p>
+
     <form class="login-form" [formGroup]="loginForm" (ngSubmit)="onSubmit()">
-      <div *ngIf="errorMessage" class="error-message">
-        {{ errorMessage }}
-      </div>
+      @if (errorMessage) {
+        <div class="error-message">
+          {{ errorMessage }}
+        </div>
+      }
+
       <div class="form-group">
         <label class="form-label">Correo Electrónico</label>
-        <input 
-          type="email" 
+        <input
+          type="email"
           formControlName="correo"
-          placeholder="tu@email.com" 
+          placeholder="tu@email.com"
           class="form-input"
-          [class.error]="f['correo'].invalid && f['correo'].touched">
-        <div *ngIf="f['correo'].invalid && f['correo'].touched" class="error-text">
-          <div *ngIf="f['correo'].errors?.['required']">El correo es requerido</div>
-          <div *ngIf="f['correo'].errors?.['email']">El correo no es válido</div>
-        </div>
+          [class.error]="f['correo'].invalid && f['correo'].touched"
+        />
+
+        @if (f['correo'].invalid && f['correo'].touched) {
+          <div class="error-text">
+            @if (f['correo'].errors?.['required']) {
+              <div>El correo es requerido</div>
+            }
+            @if (f['correo'].errors?.['email']) {
+              <div>El correo no es válido</div>
+            }
+          </div>
+        }
       </div>
+
       <div class="form-group">
         <label class="form-label">Contraseña</label>
+
         <div class="password-input-wrapper">
-          <input 
-            [type]="showPassword ? 'text' : 'password'" 
+          <input
+            [type]="showPassword ? 'text' : 'password'"
             formControlName="contrasena"
-            placeholder="Tu contraseña" 
+            placeholder="Tu contraseña"
             class="form-input"
-            [class.error]="f['contrasena'].invalid && f['contrasena'].touched">
-          <button type="button" class="toggle-password" (click)="togglePassword()">{{ showPassword ? 'Ocultar' : 'Mostrar' }}</button>
+            [class.error]="f['contrasena'].invalid && f['contrasena'].touched"
+          />
+          <button type="button" class="toggle-password" (click)="togglePassword()">
+            {{ showPassword ? 'Ocultar' : 'Mostrar' }}
+          </button>
         </div>
-        <div *ngIf="f['contrasena'].invalid && f['contrasena'].touched" class="error-text">
-          <div *ngIf="f['contrasena'].errors?.['required']">La contraseña es requerida</div>
-        </div>
+
+        @if (f['contrasena'].touched && f['contrasena'].invalid) {
+          <div class="pf-alert pf-alert--error">
+            <div class="pf-alert__title">Revisa tu contraseña</div>
+            <ul class="pf-alert__list">
+              @if (f['contrasena'].errors?.['required']) {
+                <li>La contraseña es requerida.</li>
+              }
+            </ul>
+          </div>
+        }
       </div>
+
       <div class="form-options">
         <label class="checkbox-label">
-          <input type="checkbox" formControlName="rememberMe" class="checkbox">
+          <input type="checkbox" formControlName="rememberMe" class="checkbox" />
           <span>Recordarme</span>
         </label>
-        <a href="#" class="forgot-password">¿Olvidaste tu contraseña?</a>
+        <a routerLink="/forgot-password" class="forgot-link">¿Olvidaste tu contraseña?</a>
       </div>
+
       <button type="submit" class="btn-login" [disabled]="isLoading">
         {{ isLoading ? 'Iniciando sesión...' : 'Iniciar Sesión' }}
       </button>
+
       <div class="divider">
         <span>O continúa con</span>
       </div>
+
       <div class="social-buttons">
-        <button type="button" class="social-btn google">
-          <span>G</span> Google
-        </button>
-        <button type="button" class="social-btn twitter">
-          Twitter
-        </button>
+        <div id="google-login-btn"></div>
       </div>
+
       <div class="register-link">
         <span>¿No tienes cuenta?</span>
         <a routerLink="/register" class="link">Regístrate aquí</a>

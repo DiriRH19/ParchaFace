@@ -1,0 +1,297 @@
+<app-navbar></app-navbar>
+
+<div class="admin-page">
+  <section class="admin-hero">
+    <div>
+      <p class="admin-eyebrow">Administrador</p>
+      <h1 class="admin-title">Panel de control</h1>
+      <p class="admin-subtitle">
+        Aprueba eventos, modera comunidad y administra usuarios con el mismo sistema visual de ParchaFace.
+      </p>
+    </div>
+
+    <button type="button" class="btn-refresh" (click)="cargarTodo()">Actualizar</button>
+  </section>
+
+  <div class="admin-stats">
+    <article class="stat-card">
+      <span class="stat-label">Solicitudes pendientes</span>
+      <strong class="stat-value">{{ eventosPendientes().length }}</strong>
+    </article>
+
+    <article class="stat-card">
+      <span class="stat-label">Todos los eventos</span>
+      <strong class="stat-value">{{ eventos().length }}</strong>
+    </article>
+
+    <article class="stat-card">
+      <span class="stat-label">Usuarios</span>
+      <strong class="stat-value">{{ usuarios().length }}</strong>
+    </article>
+
+    <article class="stat-card">
+      <span class="stat-label">Discusiones</span>
+      <strong class="stat-value">{{ posts().length }}</strong>
+    </article>
+
+    <article class="stat-card">
+      <span class="stat-label">Comentarios comunidad</span>
+      <strong class="stat-value">{{ comentarios().length }}</strong>
+    </article>
+  </div>
+
+  <div *ngIf="loading()" class="admin-empty">Cargando panel administrador...</div>
+
+  <ng-container *ngIf="!loading()">
+    <section class="admin-section">
+      <div class="section-heading">
+        <h2>Solicitudes de eventos</h2>
+        <span class="section-badge">{{ eventosPendientes().length }}</span>
+      </div>
+
+      <div *ngIf="eventosPendientes().length === 0" class="admin-empty">
+        No hay solicitudes pendientes.
+      </div>
+
+      <div class="events-grid" *ngIf="eventosPendientes().length > 0">
+        <article
+          class="event-card clickable"
+          *ngFor="let evento of eventosPendientes()"
+          (click)="verEvento(evento.idEvento)"
+        >
+          <img
+            *ngIf="evento.imagenPortadaUrl"
+            [src]="evento.imagenPortadaUrl"
+            [alt]="evento.titulo"
+            class="event-image"
+          >
+
+          <div class="event-body">
+            <div class="event-header-row">
+              <h3>{{ evento.titulo }}</h3>
+              <span class="status-chip pending">{{ badgeEstado(evento.estadoEvento) }}</span>
+            </div>
+
+            <p class="event-meta">
+              {{ evento.categoria || 'Sin categoría' }} ·
+              {{ evento.ciudad || evento.nombreLugar || 'Sin ubicación' }}
+            </p>
+
+            <p class="event-meta">
+              Organizador: {{ evento.organizador?.nombre || evento.organizador?.correo || 'Usuario' }}
+            </p>
+
+            <p class="event-description">{{ evento.descripcion || 'Sin descripción' }}</p>
+
+            <div class="event-actions">
+              <button
+                type="button"
+                class="btn-approve"
+                (click)="aprobarEvento(evento.idEvento, $event)"
+              >
+                Aprobar
+              </button>
+
+              <button
+                type="button"
+                class="btn-reject"
+                (click)="rechazarEvento(evento.idEvento, $event)"
+              >
+                Rechazar
+              </button>
+
+              <button
+                type="button"
+                class="btn-danger"
+                (click)="eliminarEvento(evento.idEvento, $event)"
+              >
+                Eliminar
+              </button>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="admin-section">
+      <div class="section-heading">
+        <h2>Todos los eventos</h2>
+        <span class="section-badge">{{ eventos().length }}</span>
+      </div>
+
+      <div *ngIf="eventos().length === 0" class="admin-empty">
+        No hay eventos registrados.
+      </div>
+
+      <div class="events-grid" *ngIf="eventos().length > 0">
+        <article
+          class="event-card clickable"
+          *ngFor="let evento of eventos()"
+          (click)="verEvento(evento.idEvento)"
+        >
+          <img
+            *ngIf="evento.imagenPortadaUrl"
+            [src]="evento.imagenPortadaUrl"
+            [alt]="evento.titulo"
+            class="event-image"
+          >
+
+          <div class="event-body">
+            <div class="event-header-row">
+              <h3>{{ evento.titulo }}</h3>
+              <span class="status-chip">{{ badgeEstado(evento.estadoEvento) }}</span>
+            </div>
+
+            <p class="event-meta">
+              {{ evento.categoria || 'Sin categoría' }} ·
+              {{ evento.ciudad || evento.nombreLugar || 'Sin ubicación' }}
+            </p>
+
+            <p class="event-meta">
+              Organizador: {{ evento.organizador?.nombre || evento.organizador?.correo || 'Usuario' }}
+            </p>
+
+            <p class="event-description">{{ evento.descripcion || 'Sin descripción' }}</p>
+
+            <div class="event-actions">
+              <button
+                type="button"
+                class="btn-danger"
+                (click)="eliminarEvento(evento.idEvento, $event)"
+              >
+                Eliminar
+              </button>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="admin-section">
+      <div class="section-heading">
+        <h2>Usuarios</h2>
+        <span class="section-badge">{{ usuarios().length }}</span>
+      </div>
+
+      <div class="admin-table-wrapper">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>Usuario</th>
+              <th>Rol</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let usuario of usuarios()">
+              <td>
+                <strong>{{ usuario.nombre }}</strong>
+                <div class="table-subline">{{ usuario.correo }}</div>
+              </td>
+              <td>{{ usuario.rol }}</td>
+              <td>
+                <span
+                  class="status-chip"
+                  [class.active]="usuario.estado === 'ACTIVO'"
+                  [class.blocked]="usuario.estado !== 'ACTIVO'"
+                >
+                  {{ badgeEstado(usuario.estado) }}
+                </span>
+                <div class="table-subline" *ngIf="usuario.suspensionHasta">
+                  Hasta {{ formatSuspensionHasta(usuario.suspensionHasta) }}
+                </div>
+              </td>
+              <td>
+                <div class="table-actions">
+                  <button
+                    type="button"
+                    class="btn-secondary"
+                    *ngIf="usuario.estado === 'ACTIVO'"
+                    (click)="suspenderUsuario(usuario.idUsuario)"
+                  >
+                    Suspender
+                  </button>
+
+                  <button
+                    type="button"
+                    class="btn-secondary"
+                    *ngIf="usuario.estado !== 'ACTIVO'"
+                    (click)="activarUsuario(usuario.idUsuario)"
+                  >
+                    Activar
+                  </button>
+
+                  <button
+                    type="button"
+                    class="btn-danger"
+                    (click)="eliminarUsuario(usuario.idUsuario)"
+                  >
+                    Eliminar
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="admin-section moderation-grid">
+      <div class="moderation-card">
+        <div class="section-heading">
+          <h2>Discusiones</h2>
+          <span class="section-badge">{{ posts().length }}</span>
+        </div>
+
+        <div *ngIf="posts().length === 0" class="admin-empty small">
+          No hay discusiones.
+        </div>
+
+        <article class="moderation-item" *ngFor="let post of posts()">
+          <div>
+            <h3>{{ post.title }}</h3>
+            <p class="moderation-meta">
+              {{ autorNombre(post) }} · {{ post.category || 'Sin categoría' }}
+            </p>
+            <p class="moderation-text">{{ post.content }}</p>
+          </div>
+
+          <button
+            type="button"
+            class="btn-danger"
+            (click)="eliminarPost(post.idPost)"
+          >
+            Eliminar
+          </button>
+        </article>
+      </div>
+
+      <div class="moderation-card">
+        <div class="section-heading">
+          <h2>Comentarios comunidad</h2>
+          <span class="section-badge">{{ comentarios().length }}</span>
+        </div>
+
+        <div *ngIf="comentarios().length === 0" class="admin-empty small">
+          No hay comentarios.
+        </div>
+
+        <article class="moderation-item" *ngFor="let comentario of comentarios()">
+          <div>
+            <h3>#{{ comentario.postId }} · {{ autorNombre(comentario) }}</h3>
+            <p class="moderation-text">{{ comentario.content }}</p>
+          </div>
+
+          <button
+            type="button"
+            class="btn-danger"
+            (click)="eliminarComentario(comentario.idComment)"
+          >
+            Eliminar
+          </button>
+        </article>
+      </div>
+    </section>
+  </ng-container>
+</div>

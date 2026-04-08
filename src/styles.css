@@ -1,3 +1,5 @@
+@import 'leaflet/dist/leaflet.css';
+
 :root {
   --bg-primary: #FDFBF6;
   --bg-secondary: #F8F5ED;
@@ -16,19 +18,61 @@
   --shadow-hover: 0 4px 12px rgba(0, 0, 0, 0.12);
 }
 
+html.dark {
+  --bg-primary: #1a1a1a;
+  --bg-secondary: #2d2d2d;
+  --bg-card: #262626;
+  --accent-yellow: #D4941A;
+  --accent-yellow-light: #E8A92F;
+  --accent-purple: #2d1f33;
+  --accent-pink: #C44A7B;
+  --accent-red: #D63333;
+  --accent-orange: #D97131;
+  --text-primary: #F5F5F5;
+  --text-secondary: #B0B0B0;
+  --text-light: #808080;
+  --border-color: #404040;
+  --shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  --shadow-hover: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
 
+html {
+  overflow-x: hidden;
+  -webkit-text-size-adjust: 100%;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
 body {
+  min-width: 320px;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
     sans-serif;
   background-color: var(--bg-primary);
   color: var(--text-primary);
   line-height: 1.6;
+  overflow-x: hidden;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+img,
+picture,
+video,
+canvas,
+svg {
+  max-width: 100%;
+}
+
+input,
+select,
+textarea,
+button {
+  max-width: 100%;
 }
 
 a {
@@ -49,15 +93,16 @@ input, select, textarea {
 }
 
 .container {
+  width: min(100%, 1200px);
   max-width: 1200px;
   margin: 0 auto;
-  padding: 0 20px;
+  padding: 0 clamp(14px, 3vw, 20px);
 }
 
 .card {
   background: var(--bg-card);
   border-radius: 12px;
-  padding: 24px;
+  padding: clamp(18px, 3vw, 24px);
   box-shadow: var(--shadow);
 }
 
@@ -86,4 +131,202 @@ input, select, textarea {
 
 .btn-secondary:hover {
   background: var(--bg-secondary);
+}
+
+html, body { height: 100%; }
+body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
+
+html, body { height: 100%; }
+body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
+
+html, body { height: 100%; }
+body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
+
+/* =========================
+   SWEETALERT2 - TEMA GLOBAL PARCHAFACE
+   ========================= */
+
+.parcha-swal-popup.swal2-popup {
+  width: min(560px, calc(100vw - 32px));
+  padding: 28px 28px 24px;
+  border-radius: 24px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-card) !important;
+  color: var(--text-primary) !important;
+  box-shadow: var(--shadow-hover);
+}
+
+.parcha-swal-title.swal2-title {
+  margin: 0;
+  padding: 0;
+  color: var(--text-primary) !important;
+  font-size: clamp(1.9rem, 2vw, 2.8rem);
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.parcha-swal-html.swal2-html-container {
+  margin: 14px 0 0;
+  padding: 0;
+  color: var(--text-secondary) !important;
+  font-size: 1.08rem;
+  line-height: 1.55;
+}
+
+.parcha-swal-actions.swal2-actions {
+  width: 100%;
+  margin-top: 24px;
+  gap: 12px;
+}
+
+.parcha-swal-confirm.swal2-confirm,
+.parcha-swal-cancel.swal2-cancel {
+  min-width: 150px;
+  min-height: 50px;
+  padding: 12px 18px;
+  border-radius: 14px;
+  font-size: 1rem;
+  font-weight: 700;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    background-color 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.parcha-swal-confirm.swal2-confirm {
+  background: var(--accent-yellow) !important;
+  color: #161616 !important;
+  border: none !important;
+  box-shadow: var(--shadow);
+}
+
+.parcha-swal-confirm.swal2-confirm:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-hover);
+}
+
+.parcha-swal-cancel.swal2-cancel {
+  background: transparent !important;
+  color: var(--text-primary) !important;
+  border: 1px solid var(--border-color) !important;
+  box-shadow: none !important;
+}
+
+.parcha-swal-cancel.swal2-cancel:hover {
+  background: var(--bg-secondary) !important;
+  transform: translateY(-1px);
+}
+
+.parcha-swal-input.swal2-input,
+.parcha-swal-input.swal2-textarea,
+.parcha-swal-input.swal2-select {
+  width: 100% !important;
+  margin: 18px 0 0 !important;
+  min-height: 54px;
+  border-radius: 16px !important;
+  border: 1px solid var(--border-color) !important;
+  background: var(--bg-secondary) !important;
+  color: var(--text-primary) !important;
+  box-shadow: none !important;
+  padding: 12px 14px !important;
+}
+
+.parcha-swal-input.swal2-textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+.parcha-swal-input.swal2-input:focus,
+.parcha-swal-input.swal2-textarea:focus,
+.parcha-swal-input.swal2-select:focus {
+  border-color: var(--accent-yellow) !important;
+  box-shadow: 0 0 0 4px rgba(232, 169, 47, 0.14) !important;
+}
+
+.parcha-swal-popup .swal2-close {
+  color: var(--text-secondary);
+  transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.parcha-swal-popup .swal2-close:hover {
+  color: var(--text-primary);
+  transform: scale(1.05);
+}
+
+.parcha-swal-popup .swal2-icon.swal2-warning {
+  border-color: rgba(232, 169, 47, 0.35) !important;
+  color: var(--accent-yellow) !important;
+}
+
+.parcha-swal-popup .swal2-icon.swal2-error {
+  border-color: rgba(239, 68, 68, 0.28) !important;
+  color: #ef4444 !important;
+}
+
+.parcha-swal-popup .swal2-icon.swal2-success {
+  border-color: rgba(34, 197, 94, 0.24) !important;
+  color: #22c55e !important;
+}
+
+.parcha-swal-popup .swal2-icon.swal2-info {
+  border-color: rgba(59, 130, 246, 0.24) !important;
+  color: #3b82f6 !important;
+}
+
+html.dark .parcha-swal-popup.swal2-popup {
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.45);
+}
+
+html.dark .parcha-swal-confirm.swal2-confirm {
+  color: #141414 !important;
+}
+
+@media (max-width: 640px) {
+  .parcha-swal-popup.swal2-popup {
+    padding: 22px 18px 18px;
+    border-radius: 20px;
+  }
+
+  .parcha-swal-title.swal2-title {
+    font-size: 1.7rem;
+  }
+
+  .parcha-swal-actions.swal2-actions {
+    flex-direction: column;
+  }
+
+  .parcha-swal-confirm.swal2-confirm,
+  .parcha-swal-cancel.swal2-cancel {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .container {
+    padding: 0 14px;
+  }
+
+  .card {
+    border-radius: 16px;
+  }
+
+  .btn-primary,
+  .btn-secondary {
+    width: 100%;
+  }
+
+  .parcha-swal-popup.swal2-popup {
+    width: min(100vw - 20px, 520px);
+    padding: 20px 16px 16px;
+    border-radius: 18px;
+  }
+
+  .parcha-swal-title.swal2-title {
+    font-size: 1.45rem;
+  }
+
+  .parcha-swal-html.swal2-html-container {
+    font-size: 0.98rem;
+  }
 }

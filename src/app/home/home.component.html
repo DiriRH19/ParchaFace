@@ -1,35 +1,156 @@
 <app-navbar></app-navbar>
-<div class="landing-container">
-  <div class="hero-section">
-    <h1 class="hero-title">
-      Conecta con <span class="highlight">Eventos</span><span class="highlight-normal"> Increíbles</span>
-    </h1>
-    <p class="hero-subtitle">
-      Descubre conciertos, partidos, fiestas, competencias gaming y más. Crea tus propios eventos y conecta con personas que comparten tus pasiones.
-    </p>
-    <div class="hero-buttons">
-      <button class="btn-primary" routerLink="/register">Comenzar Ahora</button>
-      <button class="btn-secondary" routerLink="/explore">Explorar Eventos</button>
+
+<div class="map-page">
+  <section class="hero-carousel-shell" *ngIf="currentHeroSlide as slide">
+    <div class="hero-carousel-card">
+      <img
+        [src]="slide.imageUrl"
+        [alt]="slide.titulo"
+        class="hero-carousel-image"
+      />
+
+      <div class="hero-carousel-gradient"></div>
+
+      <div class="hero-carousel-content">
+        <span class="hero-slide-tag">{{ slide.categoria || 'Evento' }}</span>
+        <h1>{{ slide.titulo }}</h1>
+        <p>{{ slide.lugar }} · {{ slide.fecha }}</p>
+
+        <div class="hero-carousel-actions">
+          <button
+            type="button"
+            class="btn-dark"
+            (click)="openHeroEvent()"
+            *ngIf="slide.eventId != null"
+          >
+            Ver evento
+          </button>
+
+          <a class="btn-light" routerLink="/create-event">
+            Crear evento
+          </a>
+        </div>
+      </div>
+
+      <div class="hero-carousel-dots" *ngIf="heroSlides.length > 1">
+        <button
+          type="button"
+          *ngFor="let item of heroSlides; let i = index"
+          class="hero-dot"
+          [class.active]="i === heroIndex"
+          (click)="setHeroIndex(i)"
+          [attr.aria-label]="'Ir al slide ' + (i + 1)"
+        ></button>
+      </div>
     </div>
+  </section>
+
+  <section class="map-controls-card">
+    <div class="map-search-group">
+      <label class="control-label">Buscar</label>
+      <input
+        type="text"
+        class="map-search-input"
+        placeholder="Buscar eventos, lugares o categorías"
+        [(ngModel)]="searchText"
+        (ngModelChange)="onFiltersChanged()"
+      />
+    </div>
+
+    <div class="map-filter-group">
+      <label class="control-label">Categoría</label>
+      <select
+        class="map-filter-select"
+        [(ngModel)]="categoriaFiltro"
+        (ngModelChange)="onFiltersChanged()"
+      >
+        <option value="">Todas las categorías</option>
+        <option *ngFor="let category of uniqueCategories" [value]="category">
+          {{ category }}
+        </option>
+      </select>
+    </div>
+
+    <button class="btn-reset" (click)="resetFilters()">
+      Limpiar
+    </button>
+  </section>
+
+  <div *ngIf="mapLoading || eventsLoading" class="map-status">
+    Cargando mapa y eventos...
   </div>
 
-  <div class="features-section">
-    <div class="feature-card">
-      <div class="feature-icon music">🎵</div>
-      <h3 class="feature-title">Conciertos y Música</h3>
-      <p class="feature-description">Descubre los mejores eventos musicales cerca de ti</p>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon gaming">🎮</div>
-      <h3 class="feature-title">Gaming y Esports</h3>
-      <p class="feature-description">Únete a torneos y competencias gaming épicas</p>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon party">🎉</div>
-      <h3 class="feature-title">Fiestas y Social</h3>
-      <p class="feature-description">Conecta con tu comunidad en eventos sociales</p>
-    </div>
+  <div *ngIf="mapError" class="map-status error">
+    {{ mapError }}
   </div>
 
-  <app-footer></app-footer>
+  <div *ngIf="mapNotice" class="map-status notice">
+    {{ mapNotice }}
+  </div>
+
+  <section class="map-layout">
+    <aside class="events-panel">
+      <div class="events-panel-header">
+        <div>
+          <p class="section-tag">Listado</p>
+          <h2>{{ filteredEvents.length }} eventos</h2>
+          <p class="events-panel-subtitle">
+            Resultados visibles según tu búsqueda actual.
+          </p>
+        </div>
+      </div>
+
+      <div class="events-list" *ngIf="filteredEvents.length > 0; else emptyEvents">
+        <article
+          class="map-event-item"
+          *ngFor="let evento of filteredEvents"
+          [id]="'map-event-item-' + evento.idEvento"
+          [class.active]="isSelected(evento)"
+          (click)="selectEvent(evento)"
+        >
+          <div class="event-item-thumb" *ngIf="getCurrentItemImage(evento)">
+            <img [src]="getCurrentItemImage(evento)" [alt]="evento.titulo" />
+
+            <div class="thumb-dots" *ngIf="getEventImages(evento).length > 1">
+              <span
+                *ngFor="let img of getEventImages(evento); let i = index"
+                class="thumb-dot"
+                [class.active]="i === getCurrentItemImageIndex(evento)"
+              ></span>
+            </div>
+          </div>
+
+          <div class="event-item-content">
+            <div class="event-item-top">
+              <span class="event-category">
+                {{ evento.categoria || 'Evento' }}
+              </span>
+            </div>
+
+            <h3>{{ evento.titulo }}</h3>
+            <p>{{ getEventDateLabel(evento) }}</p>
+            <p>{{ getEventLocation(evento) }}</p>
+
+            <div class="event-item-actions">
+              <button class="btn-item-primary" (click)="goToEventDetail(evento, $event)">
+                Ver detalle
+              </button>
+            </div>
+          </div>
+        </article>
+      </div>
+
+      <ng-template #emptyEvents>
+        <div class="empty-events">
+          No hay eventos que coincidan con tu búsqueda.
+        </div>
+      </ng-template>
+    </aside>
+
+    <div class="map-card">
+      <div #mapContainer class="leaflet-map"></div>
+    </div>
+  </section>
 </div>
+
+<app-footer></app-footer>

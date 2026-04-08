@@ -1,34 +1,124 @@
 <div class="event-card">
   <div class="event-image">
     <span class="category-tag">{{ event.category }}</span>
+
+    @if (displayedImage) {
+      <img
+        [src]="displayedImage"
+        alt="Imagen del evento"
+        class="event-img"
+        loading="lazy"
+        (error)="onImgError()"
+      >
+    } @else {
+      <div class="event-img-placeholder">
+        Sin imagen
+      </div>
+    }
+
     <div class="action-icons">
-      <button class="icon-btn heart"></button>
-      <button class="icon-btn share"></button>
+      <button class="icon-btn heart" type="button" aria-label="Agregar a favoritos">
+        <span>♥</span>
+      </button>
+      <button class="icon-btn share" type="button" aria-label="Compartir evento">
+        <span>↗</span>
+      </button>
     </div>
-    <div class="rating-badge">
-      {{ event.rating }}
-    </div>
+
+    @if (hasCapacityInfo) {
+      <div class="capacity-badge">
+        <span class="capacity-dot"></span>
+        <span class="capacity-label">Inscritos</span>
+        <span class="capacity-value">{{ inscritosTexto }}</span>
+      </div>
+    }
+    @if (hasMultipleImages) {
+      <div class="image-counter">
+        {{ currentImageIndex + 1 }} / {{ eventImages.length }}
+      </div>
+
+      <div class="image-dots">
+        @for (img of eventImages; track img; let i = $index) {
+          <button
+            type="button"
+            class="image-dot"
+            [class.active]="i === currentImageIndex"
+            (click)="goToImage(i)"
+            [attr.aria-label]="'Ver imagen ' + (i + 1)"
+          ></button>
+        }
+      </div>
+    }
   </div>
+
   <div class="event-content">
     <h3 class="event-title">{{ event.title }}</h3>
     <p class="event-description">{{ event.description }}</p>
+
     <div class="event-details">
       <div class="detail-item">
-        <span class="icon"></span>
+        <span class="icon">📅</span>
         <span>{{ event.date }}</span>
       </div>
+
       <div class="detail-item">
-        <span class="icon"></span>
+        <span class="icon">📍</span>
         <span>{{ event.location }}</span>
       </div>
+
+      @if (event.ciudad) {
+        <div class="detail-item">
+          <span class="icon">🌤️</span>
+
+          @if (climaLoading) {
+            <span>Clima...</span>
+          }
+
+          @if (!climaLoading && clima) {
+            <span>
+              {{ clima.temperaturaC }} °C • 💨 {{ clima.vientoKmh }} km/h
+            </span>
+          }
+
+          @if (!climaLoading && !clima && climaError) {
+            <span>Clima no disponible</span>
+          }
+        </div>
+      }
+
       <div class="detail-item">
-        <span class="icon"></span>
+        <span class="icon">👥</span>
         <span>{{ event.attendees }}</span>
       </div>
     </div>
+
+    @if (socialEntries.length) {
+      <div class="social-links">
+        @for (social of socialEntries; track social.key) {
+          <a
+            class="social-chip"
+            [href]="social.url"
+            target="_blank"
+            rel="noopener noreferrer"
+            [attr.aria-label]="'Abrir ' + social.label"
+          >
+            <span class="social-icon">{{ social.icon }}</span>
+            <span class="social-text">{{ social.label }}</span>
+          </a>
+        }
+      </div>
+    }
+
     <div class="event-footer">
       <div class="price">{{ event.price }}</div>
-      <button class="btn-details" routerLink="/event/1">Ver Detalles</button>
+
+      <a
+        class="btn-details"
+        [routerLink]="event.id != null ? ['/event', event.id] : ['/explore']"
+        [class.disabled]="event.id == null"
+      >
+        Ver Detalles
+      </a>
     </div>
   </div>
 </div>

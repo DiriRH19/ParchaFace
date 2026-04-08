@@ -1,0 +1,5 @@
+@if (toast.toast$ | async) {
+  <div class="toast" [class.show]="(toast.toast$ | async)?.show" [class.success]="(toast.toast$ | async)?.type==='success'" [class.error]="(toast.toast$ | async)?.type==='error'">
+    <span>{{ (toast.toast$ | async)?.message }}</span>
+  </div>
+}

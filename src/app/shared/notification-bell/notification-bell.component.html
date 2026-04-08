@@ -1,0 +1,72 @@
+<div class="notif-wrap" (click)="$event.stopPropagation()">
+  @if (store.count$ | async; as c) {
+    @if (c > 0) {
+      <button
+        class="bell has-unread"
+        type="button"
+        (click)="toggle($event)"
+        aria-label="Notificaciones"
+      >
+        <mat-icon>notifications</mat-icon>
+        <span class="badge">{{ c }}</span>
+      </button>
+    } @else {
+      <button
+        class="bell"
+        type="button"
+        (click)="toggle($event)"
+        aria-label="Notificaciones"
+      >
+        <mat-icon>notifications</mat-icon>
+      </button>
+    }
+  } @else {
+    <button
+      class="bell"
+      type="button"
+      (click)="toggle($event)"
+      aria-label="Notificaciones"
+    >
+      <mat-icon>notifications</mat-icon>
+    </button>
+  }
+
+  @if (open) {
+    <div class="dropdown">
+      <div class="header">
+        <div class="title">Notificaciones</div>
+        <button class="link" type="button" (click)="marcarTodas($event)">Leer todas</button>
+      </div>
+
+      @if (store.lista$ | async; as lista) {
+        <div class="list">
+          @if (lista.length === 0) {
+            <div class="empty">
+              No tienes notificaciones.
+            </div>
+          } @else {
+            @for (n of lista; track n.id_notificacion) {
+              <button
+                type="button"
+                class="item"
+                [class.unread]="!n.leido"
+                [class.clickable]="esNavegable(n)"
+                (click)="abrirNotificacion(n, $event)"
+              >
+                <div class="msg-row">
+                  <div class="msg">{{ n.mensaje }}</div>
+
+                  @if (esNavegable(n)) {
+                    <mat-icon class="go-icon">chevron_right</mat-icon>
+                  }
+                </div>
+
+                <div class="date">{{ formatFecha(n.fechaEnvio) }}</div>
+              </button>
+            }
+          }
+        </div>
+      }
+    </div>
+  }
+</div>

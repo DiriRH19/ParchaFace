@@ -1,0 +1,158 @@
+<app-navbar></app-navbar>
+
+<section class="detail-page">
+  <div class="detail-shell">
+    <div class="detail-topbar">
+      <button type="button" class="btn btn--ghost" (click)="back()">← Volver</button>
+
+      @if (post()) {
+        <div class="detail-topbar__meta">
+          <span class="detail-topbar__count">Comentarios: {{ post()?.commentsCount }}</span>
+        </div>
+      }
+    </div>
+
+    @if (loading()) {
+      <div class="detail-card state-card">Cargando discusión...</div>
+    }
+
+    @if (!loading() && error()) {
+      <div class="detail-card state-card state-card--error">{{ error() }}</div>
+    }
+
+    @if (!loading() && post(); as p) {
+      <article class="detail-post detail-card">
+        <div class="detail-post__kicker">
+          <span class="detail-kicker">Discusión</span>
+        </div>
+
+        <div class="detail-post__header">
+          <h1 class="detail-post__title">{{ p.title }}</h1>
+
+          <div class="detail-post__meta">
+            @if (p.city) { <span class="topic-chip topic-chip--city">{{ p.city }}</span> }
+            @if (p.category) { <span class="topic-chip topic-chip--category">{{ p.category }}</span> }
+            <span class="detail-muted">• {{ p.authorName }}</span>
+            <span class="detail-muted">• {{ p.createdAt | date:'medium' }}</span>
+          </div>
+        </div>
+
+        <div class="detail-rating">
+          <div class="detail-rating__left">
+            <div class="detail-rating__label">Tu valoración</div>
+
+            <div class="stars">
+              @for (s of [1,2,3,4,5]; track s) {
+                <button
+                  type="button"
+                  class="star"
+                  [class.star--on]="(ratingSummary()?.myRating || 0) >= s"
+                  (click)="ratePost(s)"
+                  [attr.aria-label]="'Calificar ' + s + ' estrellas'"
+                >
+                  ★
+                </button>
+              }
+            </div>
+          </div>
+
+          <div class="detail-rating__summary">
+            @if (ratingSummary()?.average != null) {
+              <span class="detail-rating__value">⭐ {{ ratingSummary()?.average }}</span>
+              <span class="detail-muted">({{ ratingSummary()?.count }} votos)</span>
+            } @else {
+              <span class="detail-muted">Sin calificaciones aún</span>
+            }
+          </div>
+        </div>
+
+        <div class="detail-post__content">
+          <p>{{ p.content }}</p>
+        </div>
+
+        @if (p.eventId && p.eventTitle) {
+          <div class="detail-event detail-card">
+            <div class="detail-event__left">
+              @if (p.eventImage) {
+                <div
+                  class="detail-event__thumb detail-event__thumb--image"
+                  [style.background-image]="'url(' + p.eventImage + ')'"
+                ></div>
+              } @else {
+                <div class="detail-event__thumb"></div>
+              }
+
+              <div class="detail-event__info">
+                <div class="detail-event__label">Ligado a evento</div>
+                <div class="detail-event__title">{{ p.eventTitle }}</div>
+              </div>
+            </div>
+
+            <button type="button" class="btn btn--primary" (click)="goToEvent(p.eventId!)">
+              Ver evento
+            </button>
+          </div>
+        }
+      </article>
+
+      <section class="composer-card detail-card">
+        <div class="composer-card__head">
+          <div>
+            <p class="composer-card__kicker">Participa</p>
+            <h2 class="composer-card__title">Escribe un comentario</h2>
+          </div>
+        </div>
+
+        <textarea
+          class="composer-textarea"
+          rows="4"
+          placeholder="Comparte tu opinión, recomendación o pregunta..."
+          [ngModel]="commentText()"
+          (ngModelChange)="commentText.set($event)"
+        ></textarea>
+
+        <div class="composer-card__actions">
+          <span class="detail-muted">Sé respetuoso y aporta valor a la conversación.</span>
+          <button type="button" class="btn btn--primary" (click)="submitComment()">Publicar</button>
+        </div>
+      </section>
+
+      <section class="comments-section">
+        <div class="comments-section__head">
+          <div>
+            <p class="comments-section__kicker">Conversación</p>
+            <h2 class="comments-section__title">Comentarios ({{ comments().length }})</h2>
+          </div>
+        </div>
+
+        @if (comments().length === 0) {
+          <div class="detail-card state-card">
+            Aún no hay comentarios. ¡Sé el primero en responder!
+          </div>
+        }
+
+        <div class="comment-list">
+          @for (c of comments(); track c.id) {
+            <article class="comment-card detail-card">
+              <div class="comment-card__top">
+                <div>
+                  <div class="comment-card__author">{{ c.authorName }}</div>
+                  <div class="detail-muted">{{ c.createdAt | date:'short' }}</div>
+                </div>
+
+                <div class="comment-card__actions">
+                  <button type="button" class="like-pill" (click)="toggleLike(c.id)">
+                    <span class="like-pill__icon" [class.like-pill__icon--on]="likesFor(c.id).likedByMe">👍</span>
+                    <span class="like-pill__count">{{ likesFor(c.id).likes }}</span>
+                  </button>
+                </div>
+              </div>
+
+              <div class="comment-card__content">{{ c.content }}</div>
+            </article>
+          }
+        </div>
+      </section>
+    }
+  </div>
+</section>

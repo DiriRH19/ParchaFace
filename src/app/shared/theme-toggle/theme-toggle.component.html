@@ -1,0 +1,22 @@
+@if (isLight()) {
+  <button
+    type="button"
+    class="theme-toggle"
+    (click)="toggleTheme()"
+    aria-label="Cambiar a tema oscuro"
+  >
+    <span class="theme-icon">🌙</span>
+  </button>
+}
+
+@if (isDark()) {
+  <button
+    type="button"
+    class="theme-toggle"
+    (click)="toggleTheme()"
+    aria-label="Cambiar a tema claro"
+  >
+    <span class="theme-icon">☀️</span>
+  </button>
+}
+

@@ -1,26 +1,233 @@
 <header class="navbar">
   <div class="navbar-content">
     <div class="navbar-left">
-      <a routerLink="/" class="logo">
-        <img src="https://res.cloudinary.com/dgaxlowpd/image/upload/v1765764539/logoParchaFace_fzz8sh.png" alt="ParchaFace Logo" class="logo-img">
+      <a [routerLink]="logoRoute" class="logo">
+        <img
+          src="https://res.cloudinary.com/dzjp34qp8/image/upload/v1773660533/event-marker_muuygp.png"
+          alt="ParchaFace Logo"
+          class="logo-img"
+        >
         <span class="logo-text">ParchaFace</span>
       </a>
+
       <nav class="nav-links">
-        <a routerLink="/explore" routerLinkActive="active">Eventos</a>
-        <a routerLink="/create-event" routerLinkActive="active">Crear Evento</a>
-        <a routerLink="/community" routerLinkActive="active">Comunidad</a>
+        @if (isAdminOnlyNavbar) {
+          <a
+            routerLink="/admin"
+            routerLinkActive="active"
+            [routerLinkActiveOptions]="{ exact: true }"
+          >
+            Administrar
+          </a>
+        } @else {
+          <a
+            routerLink="/explore"
+            routerLinkActive="active"
+            [routerLinkActiveOptions]="{ exact: true }"
+          >
+            Inicio
+          </a>
+
+          <a routerLink="/mapa" routerLinkActive="active">
+            Eventos
+          </a>
+
+          <a routerLink="/community" routerLinkActive="active">
+            Comunidad
+          </a>
+
+          <a routerLink="/create-event" routerLinkActive="active">
+            Crear evento
+          </a>
+        }
       </nav>
     </div>
+
     <div class="navbar-right">
-      <ng-container *ngIf="!isLoggedIn">
-        <a routerLink="/login" class="btn-login-nav">Iniciar Sesión</a>
-        <a routerLink="/register" class="btn-register-nav">Registrarse</a>
-      </ng-container>
-      <ng-container *ngIf="isLoggedIn">
-        <a routerLink="/profile" class="btn-profile-nav">{{ userData?.usuario || userData?.nombre || 'Mi Perfil' }}</a>
-        <button (click)="onLogoutClick()" class="btn-logout-nav">Cerrar Sesión</button>
-      </ng-container>
+      @if (authChecked) {
+        @if (!isLoggedIn) {
+          <app-theme-toggle></app-theme-toggle>
+          <a routerLink="/login" class="btn-login-nav">Iniciar sesión</a>
+          <a routerLink="/register" class="btn-register-nav">Registrarse</a>
+        }
+
+        @if (isLoggedIn) {
+          @if (isAdminOnlyNavbar) {
+            <app-notification-bell></app-notification-bell>
+            <app-theme-toggle></app-theme-toggle>
+            <button type="button" class="btn-logout-nav" (click)="onLogoutClick()">
+              Cerrar sesión
+            </button>
+
+          } @else {
+            <button type="button" class="btn-transport-nav" (click)="toggleTransportModal()">
+              <span class="nav-btn-mark">◈</span>
+              Transporte
+            </button>
+
+            <app-theme-toggle></app-theme-toggle>
+            <app-notification-bell></app-notification-bell>
+
+            <a
+              routerLink="/profile"
+              class="profile-avatar-link"
+              aria-label="Ir a mi perfil"
+              title="Mi perfil"
+            >
+              @if (navbarProfileImage) {
+                <img
+                  [src]="navbarProfileImage"
+                  alt="Foto de perfil"
+                  class="profile-avatar-img"
+                >
+              } @else {
+                <span class="profile-avatar-fallback">
+                  {{ (userData?.nombre || userData?.usuario || 'PF').slice(0, 2).toUpperCase() }}
+                </span>
+              }
+            </a>
+          }
+        }
+      }
     </div>
   </div>
 </header>
 
+@if (!isAdminOnlyNavbar && showEmergencyModal) {
+  <div class="em-modal">
+    <div class="em-backdrop" (click)="closeEmergencyModal()"></div>
+
+    <div class="em-panel" role="dialog" aria-modal="true" aria-label="Líneas de emergencia">
+      <div class="em-header">
+        <div class="em-title">
+          <span class="em-badge">✦</span>
+          Líneas de emergencia
+        </div>
+
+        <button class="em-close" type="button" (click)="closeEmergencyModal()" aria-label="Cerrar">
+          ✕
+        </button>
+      </div>
+
+      <div class="em-content">
+        <div class="em-grid">
+          <section class="em-section" aria-label="Emergencias Colombia">
+            <h3 class="em-section-title">Colombia (Nacional)</h3>
+
+            @for (item of colombia(); track item.tel) {
+              <a class="em-item" [class.primary]="item.primary" [href]="'tel:' + item.tel">
+                <span class="em-icon">{{ item.icon }}</span>
+                <span class="em-main">
+                  <span class="em-name">{{ item.name }}</span>
+                  <span class="em-number">{{ item.number }}</span>
+                </span>
+                <span class="em-desc">{{ item.desc }}</span>
+              </a>
+            }
+          </section>
+
+          <section class="em-section" aria-label="Emergencias Armenia Quindío">
+            <h3 class="em-section-title">Armenia (Quindío)</h3>
+
+            @for (item of armenia(); track item.tel) {
+              <a class="em-item" [class.primary]="item.primary" [href]="'tel:' + item.tel">
+                <span class="em-icon">{{ item.icon }}</span>
+                <span class="em-main">
+                  <span class="em-name">{{ item.name }}</span>
+                  <span class="em-number">{{ item.number }}</span>
+                </span>
+                <span class="em-desc">{{ item.desc }}</span>
+              </a>
+            }
+          </section>
+        </div>
+      </div>
+    </div>
+  </div>
+}
+
+@if (!isAdminOnlyNavbar && showTransportModal) {
+  <div class="em-modal">
+    <div class="em-backdrop" (click)="closeTransportModal()"></div>
+
+    <div class="em-panel" role="dialog" aria-modal="true" aria-label="Transporte">
+      <div class="em-header">
+        <div class="em-title">
+          <span class="em-badge">◈</span>
+          Transporte
+        </div>
+
+        <button class="em-close" type="button" (click)="closeTransportModal()" aria-label="Cerrar">
+          ✕
+        </button>
+      </div>
+
+      <div class="em-content">
+        <div class="em-grid em-grid-3">
+          <section class="em-section" aria-label="Apps de movilidad">
+            <h3 class="em-section-title">Apps de movilidad</h3>
+
+            @for (item of transportApps(); track item.href) {
+              <a
+                class="em-item"
+                [class.primary]="item.primary"
+                [href]="item.href"
+                [attr.target]="isExternal(item.href) ? '_blank' : null"
+                [attr.rel]="isExternal(item.href) ? 'noopener noreferrer' : null"
+              >
+                <span class="em-icon">{{ item.icon }}</span>
+                <span class="em-main">
+                  <span class="em-name">{{ item.name }}</span>
+                  <span class="em-number">{{ item.number }}</span>
+                </span>
+                <span class="em-desc">{{ item.desc }}</span>
+              </a>
+            }
+          </section>
+
+          <section class="em-section" aria-label="Taxis Colombia">
+            <h3 class="em-section-title">Colombia (Nacional)</h3>
+
+            @for (item of taxisColombia(); track item.href) {
+              <a
+                class="em-item"
+                [class.primary]="item.primary"
+                [href]="item.href"
+                [attr.target]="isExternal(item.href) ? '_blank' : null"
+                [attr.rel]="isExternal(item.href) ? 'noopener noreferrer' : null"
+              >
+                <span class="em-icon">{{ item.icon }}</span>
+                <span class="em-main">
+                  <span class="em-name">{{ item.name }}</span>
+                  <span class="em-number">{{ item.number }}</span>
+                </span>
+                <span class="em-desc">{{ item.desc }}</span>
+              </a>
+            }
+          </section>
+
+          <section class="em-section" aria-label="Taxis Armenia Quindío">
+            <h3 class="em-section-title">Armenia (Quindío)</h3>
+
+            @for (item of taxisArmenia(); track item.href) {
+              <a
+                class="em-item"
+                [class.primary]="item.primary"
+                [href]="item.href"
+                [attr.target]="isExternal(item.href) ? '_blank' : null"
+                [attr.rel]="isExternal(item.href) ? 'noopener noreferrer' : null"
+              >
+                <span class="em-icon">{{ item.icon }}</span>
+                <span class="em-main">
+                  <span class="em-name">{{ item.name }}</span>
+                  <span class="em-number">{{ item.number }}</span>
+                </span>
+                <span class="em-desc">{{ item.desc }}</span>
+              </a>
+            }
+          </section>
+        </div>
+      </div>
+    </div>
+  </div>
+}

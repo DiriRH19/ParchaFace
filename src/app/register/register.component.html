@@ -1,19 +1,30 @@
 <div class="register-container">
+
   <div class="back-link">
     <a routerLink="/">
       <span>←</span> Volver al inicio
     </a>
   </div>
+
   <div class="register-card">
     <div class="logo-section">
-      <img src="https://res.cloudinary.com/dgaxlowpd/image/upload/v1765764539/logoParchaFace_fzz8sh.png" alt="ParchaFace Logo" class="logo-img">
+      <img
+        src="https://res.cloudinary.com/dgaxlowpd/image/upload/v1765764539/logoParchaFace_fzz8sh.png"
+        alt="ParchaFace Logo"
+        class="logo-img"
+      >
     </div>
+
     <h1 class="register-title">¡Únete a ParchaFace!</h1>
     <p class="register-subtitle">Crea tu cuenta y comienza a descubrir eventos increíbles</p>
+
     <form class="register-form" [formGroup]="registerForm" (ngSubmit)="onSubmit()">
-      <div *ngIf="errorMessage" class="error-message">
-        {{ errorMessage }}
-      </div>
+      @if (errorMessage) {
+        <div class="error-message">
+          {{ errorMessage }}
+        </div>
+      }
+
       <div class="form-group">
         <label class="form-label">Usuario</label>
         <input type="text" placeholder="Tu nombre de usuario" class="form-input" formControlName="usuario">
@@ -21,6 +32,7 @@
           <div class="error">El usuario es obligatorio.</div>
         }
       </div>
+
       <div class="form-group">
         <label class="form-label">Correo Electrónico</label>
         <input type="email" placeholder="tu@email.com" class="form-input" formControlName="correo">
@@ -35,60 +47,85 @@
           </div>
         }
       </div>
+
       <div class="form-group">
         <label class="form-label">Contraseña</label>
+
         <div class="password-input-wrapper">
-          <input [type]="showPassword ? 'text' : 'password'" placeholder="Mínimo 8 caracteres" class="form-input" formControlName="contrasena">
-          <button type="button" class="toggle-password" (click)="togglePassword()">{{ showPassword ? 'Ocultar' : 'Mostrar' }}</button>
+          <input
+            [type]="showPassword ? 'text' : 'password'"
+            placeholder="Mínimo 8 caracteres"
+            class="form-input"
+            formControlName="contrasena"
+          >
+          <button type="button" class="toggle-password" (click)="togglePassword()">
+            {{ showPassword ? 'Ocultar' : 'Mostrar' }}
+          </button>
         </div>
-        @if (f['contrasena']?.touched && f['contrasena']?.errors) {
-          <div class="error">
-            @if (f['contrasena']?.errors?.['required']) {
-              <div>La contraseña es obligatoria.</div>
-            }
-            @if (f['contrasena']?.errors?.['minlength']) {
-              <div>La contraseña debe tener al menos 8 caracteres.</div>
-            }
-          </div>
-        }
+
+        <div class="pf-alert pf-alert--warn"
+             *ngIf="f['contrasena']?.touched && f['contrasena']?.invalid">
+          <div class="pf-alert__title">Tu contraseña debe cumplir:</div>
+          <ul class="pf-alert__list">
+            <li *ngIf="f['contrasena']?.errors?.['required']">La contraseña es obligatoria.</li>
+            <li *ngIf="f['contrasena']?.errors?.['minlength']">Mínimo 8 caracteres.</li>
+            <li *ngIf="f['contrasena']?.errors?.['pattern']">Mayúscula, minúscula, número y un símbolo.</li>
+          </ul>
+        </div>
       </div>
+
       <div class="form-group">
         <label class="form-label">Confirmar Contraseña</label>
         <div class="password-input-wrapper">
-          <input [type]="showConfirmPassword ? 'text' : 'password'" placeholder="Repite tu contraseña" class="form-input" formControlName="confirmarContrasena">
-          <button type="button" class="toggle-password" (click)="toggleConfirmPassword()">{{ showConfirmPassword ? 'Ocultar' : 'Mostrar' }}</button>
+          <input
+            [type]="showConfirmPassword ? 'text' : 'password'"
+            placeholder="Repite tu contraseña"
+            class="form-input"
+            formControlName="confirmarContrasena"
+          >
+          <button type="button" class="toggle-password" (click)="toggleConfirmPassword()">
+            {{ showConfirmPassword ? 'Ocultar' : 'Mostrar' }}
+          </button>
         </div>
+
         @if ((f['confirmarContrasena']?.touched || registerForm.touched) && registerForm.errors?.['passwordMismatch']) {
           <div class="error">Las contraseñas no coinciden.</div>
         }
       </div>
+
       <div class="form-checkboxes">
         <label class="checkbox-label">
           <input type="checkbox" class="checkbox" formControlName="acceptTerms">
-          <span>Acepto los <a href="#" class="link">términos y condiciones</a> y la <a href="#" class="link">política de la privacidad</a></span>
+          <span>
+            Acepto los
+            <a href="https://terminosycondicionesparchaface.netlify.app/" target="_blank" rel="noopener noreferrer" class="link">términos y condiciones</a>
+            y la
+            <a href="https://politicadeprivacidadparchaface.netlify.app/" target="_blank" rel="noopener noreferrer" class="link">política de la privacidad</a>
+          </span>
         </label>
+
         <label class="checkbox-label">
           <input type="checkbox" class="checkbox">
           <span>Quiero recibir notificaciones sobre eventos y novedades de ParchaFace</span>
         </label>
+
         @if (f['acceptTerms']?.touched && f['acceptTerms']?.invalid) {
           <div class="error">Debes aceptar los términos para continuar.</div>
         }
       </div>
+
       <button type="submit" class="btn-register" [disabled]="registerForm.invalid || isLoading">
         {{ isLoading ? 'Creando cuenta...' : 'Crear Cuenta' }}
       </button>
+
       <div class="divider">
         <span>O regístrate con</span>
       </div>
+
       <div class="social-buttons">
-        <button type="button" class="social-btn google">
-          <span>G</span> Google
-        </button>
-        <button type="button" class="social-btn twitter">
-          Twitter
-        </button>
+        <div id="google-btn"></div>
       </div>
+
       <div class="login-link">
         <span>¿Ya tienes cuenta?</span>
         <a routerLink="/login" class="link">Inicia sesión aquí</a>

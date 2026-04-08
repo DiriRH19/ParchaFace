@@ -1,0 +1,54 @@
+<div class="preferences-page">
+  <div class="preferences-shell">
+      <div class="back-link">
+        <a routerLink="/profile"><span>←</span> Volver</a>
+      </div>
+    <div class="preferences-card">
+      <div class="preferences-logo-wrap">
+        <img
+          src="https://res.cloudinary.com/dgaxlowpd/image/upload/v1765764539/logoParchaFace_fzz8sh.png"
+          alt="ParchaFace"
+          class="preferences-logo"
+        >
+      </div>
+
+      <span class="preferences-kicker">Preferencias</span>
+
+      <h1 class="preferences-title">¿Qué te gusta?</h1>
+      <p class="preferences-subtitle">
+        Elige al menos una categoría. Así te mostraremos eventos que te interesan.
+      </p>
+
+      @if (errorMessage) {
+        <div class="preferences-alert preferences-alert--error">
+          {{ errorMessage }}
+        </div>
+      }
+
+      <div class="preferences-grid">
+        <button
+          type="button"
+          class="preference-chip"
+          *ngFor="let categoria of categorias"
+          [class.preference-chip--active]="isCategoriaSeleccionada(categoria)"
+          (click)="toggleCategoria(categoria)"
+        >
+          {{ categoria }}
+        </button>
+      </div>
+
+      <p class="preferences-footnote">
+        Puedes cambiar tus preferencias más tarde en tu perfil.
+      </p>
+
+      <button
+        type="button"
+        class="preferences-btn"
+        (click)="continuar()"
+        [disabled]="isLoading"
+      >
+        {{ isLoading ? 'Guardando...' : 'Continuar' }}
+      </button>
+    </div>
+  </div>
+</div>

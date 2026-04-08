@@ -1,0 +1,59 @@
+<div class="page">
+  <a class="back-link" routerLink="/forgot-password">
+    ← Volver a enviar correo
+  </a>
+
+  <div class="card">
+    <div class="logo-wrap">
+      <img
+        src="https://res.cloudinary.com/dgaxlowpd/image/upload/v1765764539/logoParchaFace_fzz8sh.png"
+        alt="ParchaFace"
+      />
+    </div>
+
+    <h1>Verificar código</h1>
+    <p class="subtitle">Escribe el código que te llegó al correo.</p>
+
+    <form [formGroup]="form" (ngSubmit)="submit()">
+      <label>Código</label>
+
+      <div class="input-wrap">
+        <input
+          type="text"
+          placeholder="Ej: 123456"
+          formControlName="codigo"
+          maxlength="6"
+          autocomplete="one-time-code"
+        />
+      </div>
+
+      @if (form.get('codigo')?.touched && form.get('codigo')?.invalid) {
+        <div class="hint error">
+          @if (form.get('codigo')?.errors?.['required']) {
+            <span>El código es obligatorio.</span>
+          }
+          @if (form.get('codigo')?.errors?.['pattern']) {
+            <span>El código debe tener 6 dígitos.</span>
+          }
+        </div>
+      }
+
+      <button class="btn" type="submit" [disabled]="loading || form.invalid">
+        {{ loading ? 'Validando...' : 'Continuar' }}
+      </button>
+
+      @if (msg) {
+        <div class="alert ok">{{ msg }}</div>
+      }
+      @if (error) {
+        <div class="alert err">{{ error }}</div>
+      }
+
+      <div class="links">
+        <a routerLink="/forgot-password">Volver a correo</a>
+        <span>•</span>
+        <a routerLink="/login">Volver al inicio</a>
+      </div>
+    </form>
+  </div>
+</div>

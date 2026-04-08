@@ -1,74 +1,333 @@
 <app-navbar></app-navbar>
-<div class="community-container">
-  <div class="community-header">
-    <h1 class="page-title">Comunidad ParchaFace</h1>
-    <p class="page-subtitle">Conecta con organizadores increíbles y descubre qué está pasando</p>
-  </div>
 
-  <div class="stats-grid">
-    <div class="stat-card" *ngFor="let stat of stats">
-      <div class="stat-value" [class]="'stat-' + stat.color">{{ stat.value }}</div>
-      <div class="stat-label">{{ stat.label }}</div>
-    </div>
-  </div>
+<section class="community-page">
+  <div class="community-shell">
 
-  <div class="search-section">
-    <div class="search-bar">
-      <span class="search-icon"></span>
-      <input type="text" placeholder="Buscar organizadores, usuarios..." class="search-input">
-    </div>
-    <div class="filter-buttons">
-      <button class="filter-btn" [class.active]="activeFilter === 'popular'" (click)="activeFilter = 'popular'">
-        Organizadores Populares
-      </button>
-      <button class="filter-btn" [class.active]="activeFilter === 'recent'" (click)="activeFilter = 'recent'">
-        Actividad Reciente
-      </button>
-    </div>
-  </div>
+    @if (showWelcome()) {
+      <div class="community-modal">
+        <div class="community-modal__backdrop" (click)="dismissWelcome()"></div>
 
-  <div class="organizers-grid">
-    <div class="organizer-card" *ngFor="let organizer of organizers">
-      <button class="follow-btn" [class.following]="organizer.isFollowing">
-        {{ organizer.isFollowing ? 'Siguiendo' : 'Seguir' }}
-      </button>
-      <div class="organizer-header">
-        <div class="organizer-avatar"></div>
-        <div class="organizer-info">
-          <h3 class="organizer-name">{{ organizer.name }}</h3>
-          <div class="organizer-location">
-            {{ organizer.location }}
+        <div class="community-modal__card community-card" role="dialog" aria-modal="true">
+          <p class="community-modal__eyebrow">Personaliza tu comunidad</p>
+          <h2 class="community-modal__title">Hazla más fácil de recorrer desde el inicio</h2>
+          <p class="community-modal__text">
+            Elige ciudad, intereses y lo que más buscas. Con eso te mostramos mejores conversaciones
+            y menos ruido.
+          </p>
+
+          <div class="onboarding-group">
+            <label class="onboarding-label">Ciudad</label>
+            <div class="chip-row">
+              @for (city of cityOptions().slice(0, 7); track city) {
+                <button
+                  type="button"
+                  class="chip-btn"
+                  [class.chip-btn--active]="onboardingCity() === city"
+                  (click)="onboardingCity.set(city)"
+                >
+                  {{ city }}
+                </button>
+              }
+            </div>
           </div>
-          <div class="organizer-rating">
-            {{ organizer.rating }}
+
+          <div class="onboarding-group">
+            <label class="onboarding-label">Intereses</label>
+            <div class="chip-row">
+              @for (category of interestOptions().slice(0, 9); track category) {
+                <button
+                  type="button"
+                  class="chip-btn"
+                  [class.chip-btn--active]="onboardingCategory() === category"
+                  (click)="onboardingCategory.set(category)"
+                >
+                  {{ category }}
+                </button>
+              }
+            </div>
+          </div>
+
+          <div class="onboarding-group">
+            <label class="onboarding-label">¿Qué quieres hacer aquí?</label>
+            <div class="chip-row">
+              @for (goal of onboardingGoals; track goal.value) {
+                <button
+                  type="button"
+                  class="chip-btn"
+                  [class.chip-btn--active]="onboardingGoal() === goal.value"
+                  (click)="onboardingGoal.set(goal.value)"
+                >
+                  {{ goal.label }}
+                </button>
+              }
+            </div>
+          </div>
+
+          <div class="community-modal__actions">
+            <button type="button" class="btn btn--ghost" (click)="dismissWelcome()">Más tarde</button>
+            <button type="button" class="btn btn--primary" (click)="applyOnboarding()">Aplicar</button>
           </div>
         </div>
       </div>
-      <p class="organizer-description">{{ organizer.description }}</p>
-      <div class="organizer-tags">
-        <span class="tag" *ngFor="let tag of organizer.tags">{{ tag }}</span>
-      </div>
-      <div class="organizer-stats">
-        <div class="stat-item">
-          <span class="stat-number yellow">{{ organizer.followers }}</span>
-          <span class="stat-text">Seguidores</span>
+    }
+
+    <header class="community-hero community-card">
+      <div class="community-hero__content">
+        <p class="community-kicker">Comunidad ParchaFace</p>
+        <h1 class="community-title">Encuentra gente, planes e historias sin perderte</h1>
+        <p class="community-subtitle">
+          Busca rápido, filtra solo lo importante y entra a conversaciones que sí tengan
+          que ver con tu parche y tu ciudad.
+        </p>
+
+        <div class="community-search">
+          <span class="community-search__icon" aria-hidden="true">⌕</span>
+          <input
+            type="text"
+            class="community-search__input"
+            [placeholder]="searchPlaceholder()"
+            [ngModel]="search()"
+            (ngModelChange)="search.set($event)"
+          >
+          @if (search()) {
+            <button type="button" class="community-search__clear" (click)="clearSearch()">Limpiar</button>
+          }
         </div>
-        <div class="stat-item">
-          <span class="stat-number">{{ organizer.events }}</span>
-          <span class="stat-text">Eventos</span>
+
+        <div class="community-inline-actions">
+          <button type="button" class="btn btn--primary" (click)="goToDiscussions()">
+            Ver conversaciones
+          </button>
+          <button type="button" class="btn btn--ghost" (click)="createPost()">
+            Crear publicación
+          </button>
+        </div>
+
+        <div class="community-inline-filters">
+          <div class="filter-group">
+            <span class="filter-group__label">Ciudad</span>
+            <div class="chip-row chip-row--soft">
+              @for (city of cityOptions().slice(0, 6); track city) {
+                <button
+                  type="button"
+                  class="filter-chip"
+                  [class.filter-chip--active]="selectedCity() === city"
+                  (click)="setCity(city)"
+                >
+                  {{ city }}
+                </button>
+              }
+            </div>
+          </div>
+
+          <div class="filter-group">
+            <span class="filter-group__label">Interés</span>
+            <div class="chip-row chip-row--soft">
+              @for (category of interestOptions().slice(0, 8); track category) {
+                <button
+                  type="button"
+                  class="filter-chip"
+                  [class.filter-chip--active]="selectedCategory() === category"
+                  (click)="setCategory(category)"
+                >
+                  {{ category }}
+                </button>
+              }
+            </div>
+          </div>
+        </div>
+
+        <p class="community-hero__meta">{{ heroLine() }}</p>
+      </div>
+
+      <div class="community-hero__visual" aria-live="polite">
+        <article class="hero-slide">
+          <img [src]="getHeroImage(currentHeroSlot())" [alt]="getHeroAlt(currentHeroSlot())">
+          <div class="hero-slide__overlay"></div>
+
+          <div class="hero-slide__content">
+            <span class="hero-slide__badge">
+              {{ getHeroSlideBadge(currentHeroSlot()) }}
+            </span>
+
+            <h3 class="hero-slide__title">
+              {{ getHeroSlideTitle(currentHeroSlot()) }}
+            </h3>
+
+            <p class="hero-slide__text">
+              {{ getHeroSlideText(currentHeroSlot()) }}
+            </p>
+          </div>
+        </article>
+
+        <div class="hero-slide__dots">
+          @for (slot of heroSlotOrder; track slot; let i = $index) {
+            <button
+              type="button"
+              class="hero-dot"
+              [class.hero-dot--active]="currentHeroIndex() === i"
+              (click)="setHeroSlide(i)"
+              [attr.aria-label]="'Mostrar slide ' + (i + 1)"
+            ></button>
+          }
         </div>
       </div>
-      <div class="recent-event">
-        <strong>Evento más reciente:</strong> {{ organizer.recentEvent }}
+    </header>
+
+    @if (canManageHeroMedia && showHeroAdmin()) {
+      <section class="hero-admin community-card">
+        <div class="hero-admin__head">
+          <div>
+            <p class="hero-admin__eyebrow">Solo desarrollo</p>
+            <h3 class="hero-admin__title">Editar imágenes del hero</h3>
+            <p class="hero-admin__text">
+              Panel oculto para subir o reemplazar las 3 imágenes del hero en Cloudinary.
+            </p>
+          </div>
+        </div>
+
+        <div class="hero-admin__grid">
+          @for (item of heroSlots; track item.slot) {
+            <article class="hero-upload-card">
+              <div class="hero-upload-card__preview">
+                <img [src]="getHeroPreview(item.slot)" [alt]="getHeroAlt(item.slot)">
+              </div>
+
+              <div class="hero-upload-card__body">
+                <h4 class="hero-upload-card__title">{{ item.label }}</h4>
+                <p class="hero-upload-card__helper">{{ item.helper }}</p>
+
+                <label class="hero-upload-card__label">Texto alternativo</label>
+                <input
+                  type="text"
+                  class="hero-upload-card__input"
+                  [ngModel]="getHeroAltDraft(item.slot)"
+                  (ngModelChange)="setHeroAltDraft(item.slot, $event)"
+                  placeholder="Describe la imagen"
+                >
+
+                <label class="hero-upload-card__label">Imagen</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  class="hero-upload-card__file"
+                  (change)="onHeroFileSelected(item.slot, $event)"
+                >
+
+                <button
+                  type="button"
+                  class="btn btn--primary"
+                  [disabled]="heroUploadingSlot() === item.slot"
+                  (click)="uploadHeroImage(item.slot)"
+                >
+                  {{ heroUploadingSlot() === item.slot ? 'Subiendo...' : 'Subir a Cloudinary' }}
+                </button>
+              </div>
+            </article>
+          }
+        </div>
+
+        @if (heroAdminMessage()) {
+          <div class="hero-admin__message">
+            {{ heroAdminMessage() }}
+          </div>
+        }
+      </section>
+    }
+
+    <section class="community-feed community-card">
+      <div class="community-feed__head">
+        <div>
+          <p class="community-feed__eyebrow">Explora</p>
+          <h2 class="community-feed__title">{{ feedTitle() }}</h2>
+        </div>
+
+        <div class="feed-tabs">
+          @for (tab of feedTabs(); track tab.id) {
+            <button
+              type="button"
+              class="feed-tab"
+              [class.feed-tab--active]="activeFeed() === tab.id"
+              (click)="setFeed(tab.id)"
+            >
+              <span>{{ tab.label }}</span>
+              <small>{{ tab.count }}</small>
+            </button>
+          }
+        </div>
       </div>
-      <div class="organizer-actions">
-        <button class="action-btn">
-          Ver Perfil
-        </button>
-        <button class="action-btn">
-          Contactar
-        </button>
+
+      @if (loading()) {
+        <div class="community-empty">Cargando conversaciones...</div>
+      } @else if (error()) {
+        <div class="community-empty">{{ error() }}</div>
+      } @else if (feedPosts().length === 0) {
+        <div class="community-empty">
+          No encontramos publicaciones con esos filtros. Prueba otra ciudad, otro interés o una búsqueda más amplia.
+        </div>
+      } @else {
+        <div class="community-feed__list">
+          @for (post of feedPosts(); track post.id; let i = $index) {
+            <button
+              type="button"
+              class="feed-card"
+              [class.feed-card--featured]="i === 0"
+              (click)="openDiscussion(post.id)"
+            >
+              <div class="feed-card__top">
+                <span class="feed-card__type">{{ post.typeLabel }}</span>
+                <span class="feed-card__time">{{ post.timeAgo }}</span>
+              </div>
+
+              <div class="feed-card__title">{{ post.title }}</div>
+              <div class="feed-card__excerpt">{{ post.excerpt }}</div>
+
+              <div class="feed-card__meta">
+                <span>{{ post.city }}</span>
+                <span>·</span>
+                <span>{{ post.category }}</span>
+
+                @if (post.eventTitle) {
+                  <span>·</span>
+                  <span>{{ post.eventTitle }}</span>
+                }
+              </div>
+
+              <div class="feed-card__bottom">
+                <span class="feed-card__author">por {{ post.author }}</span>
+                <span class="feed-card__replies">{{ post.replies }} comentarios</span>
+              </div>
+
+              @if (i === 0) {
+                <div class="feed-card__visual" aria-hidden="true">
+                  <div class="feed-card__visualGlow"></div>
+                  <div class="feed-card__visualOrb feed-card__visualOrb--gold"></div>
+                  <div class="feed-card__visualOrb feed-card__visualOrb--purple"></div>
+                </div>
+              }
+            </button>
+          }
+        </div>
+      }
+    </section>
+
+    <section class="community-members">
+      <div class="community-members__head">
+        <h3>Amigos activos</h3>
       </div>
-    </div>
+
+      <div class="community-members__list">
+        @for (member of activeMembers(); track member.id) {
+          <article class="member-pill community-card">
+            <div class="member-pill__name">{{ member.name }}</div>
+            <div class="member-pill__meta">{{ member.city }} · {{ member.postsCount }} aportes</div>
+            <div class="member-pill__vibe">{{ member.vibe }}</div>
+          </article>
+        }
+      </div>
+    </section>
+
   </div>
-</div>
+</section>
+
+<app-footer></app-footer>
