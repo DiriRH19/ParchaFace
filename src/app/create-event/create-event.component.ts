@@ -701,15 +701,18 @@ export class CreateEventComponent implements AfterViewInit, OnDestroy {
   private async getLeaflet(): Promise<typeof import('leaflet')> {
     if (this.leaflet) return this.leaflet;
 
-    const L = await import('leaflet');
+    const leafletModule = await import('leaflet');
+    const L = (leafletModule as any).default ?? leafletModule;
 
-    delete (L.Icon.Default.prototype as any)._getIconUrl;
+    if (L.Icon?.Default) {
+      delete (L.Icon.Default.prototype as any)._getIconUrl;
 
-    L.Icon.Default.mergeOptions({
-      iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-      iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-      shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png'
-    });
+      L.Icon.Default.mergeOptions({
+        iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+        iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+        shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png'
+      });
+    }
 
     this.leaflet = L;
     return L;
