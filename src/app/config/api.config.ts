@@ -8,7 +8,7 @@ const joinUrl = (base: string, path: string): string => {
   return `${normalizedBase}${normalizedPath}`;
 };
 
-const BASE_URL = normalizeBaseUrl(environment.apiUrl || 'http://localhost:8080');
+const BASE_URL = normalizeBaseUrl(environment.apiUrl);
 
 export const API_CONFIG = {
   baseUrl: BASE_URL,
