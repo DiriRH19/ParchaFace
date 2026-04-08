@@ -1,21 +1,22 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { buildApiUrl } from '../config/api.config';
 
 @Injectable({ providedIn: 'root' })
 export class PasswordResetService {
-  // AJUSTA si tu backend usa otro host/puerto
-  private baseUrl = 'http://localhost:8080/auth';
-
   constructor(private http: HttpClient) {}
 
   forgotPassword(correo: string): Observable<any> {
-    // tu backend espera: { correo: "..." }
-    return this.http.post(`${this.baseUrl}/forgot-password`, { correo });
+    return this.http.post(buildApiUrl('/auth/forgot-password'), { correo });
   }
 
-  resetPassword(correo: string, codigo: string, nuevaContrasena: string): Observable<any> {
-    return this.http.post(`${this.baseUrl}/reset-password`, {
+  resetPassword(
+    correo: string,
+    codigo: string,
+    nuevaContrasena: string
+  ): Observable<any> {
+    return this.http.post(buildApiUrl('/auth/reset-password'), {
       correo,
       codigo,
       nuevaContrasena,
@@ -23,6 +24,9 @@ export class PasswordResetService {
   }
 
   verifyResetCode(correo: string, codigo: string): Observable<any> {
-  return this.http.post(`${this.baseUrl}/verify-reset-code`, { correo, codigo });
-}
+    return this.http.post(buildApiUrl('/auth/verify-reset-code'), {
+      correo,
+      codigo,
+    });
+  }
 }

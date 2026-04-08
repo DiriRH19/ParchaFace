@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { UsuariosService, PerfilUsuarioDto, UsuarioResumenDto } from '../services/usuarios.service';
+import { buildMediaUrl } from '../config/api.config';
 
 @Component({
   selector: 'app-user-profile',
@@ -176,10 +177,7 @@ export class UserProfileComponent implements OnInit {
   }
 
   private buildImageUrl(path: string): string {
-    if (path.startsWith('http://') || path.startsWith('https://')) {
-      return path;
-    }
-    return `http://localhost:8080${path}`;
+    return buildMediaUrl(path);
   }
 
   private resetState(): void {

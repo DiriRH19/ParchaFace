@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, tap } from 'rxjs';
+import { buildApiUrl } from '../config/api.config';
 
 export interface InscritoEvento {
   idUsuario: number;
@@ -13,33 +14,32 @@ export interface InscritoEvento {
 
 @Injectable({ providedIn: 'root' })
 export class InscripcionService {
-  private baseUrl = 'http://localhost:8080';
   private storageKey = 'eventos-inscritos';
 
   constructor(private http: HttpClient) {}
 
   inscribirme(idEvento: number): Observable<any> {
     return this.http
-      .post(`${this.baseUrl}/inscripciones/eventos/${idEvento}/inscribirme`, {})
-      .pipe(
-        tap(() => this.marcarComoInscrito(idEvento))
-      );
+      .post(buildApiUrl(`/inscripciones/eventos/${idEvento}/inscribirme`), {})
+      .pipe(tap(() => this.marcarComoInscrito(idEvento)));
   }
 
-  cancelarInscripcion(idEvento: number) {
+  cancelarInscripcion(idEvento: number): Observable<any> {
     return this.http
-      .delete(`${this.baseUrl}/inscripciones/eventos/${idEvento}/cancelar`)
-      .pipe(
-        tap(() => this.desmarcarComoInscrito(idEvento))
-      );
+      .delete(buildApiUrl(`/inscripciones/eventos/${idEvento}/cancelar`))
+      .pipe(tap(() => this.desmarcarComoInscrito(idEvento)));
   }
 
   obtenerInscritosEvento(idEvento: number): Observable<InscritoEvento[]> {
-    return this.http.get<InscritoEvento[]>(`${this.baseUrl}/inscripciones/eventos/${idEvento}/inscritos`);
+    return this.http.get<InscritoEvento[]>(
+      buildApiUrl(`/inscripciones/eventos/${idEvento}/inscritos`)
+    );
   }
 
   getMisInscripciones(): Observable<any[]> {
-    return this.http.get<any[]>(`${this.baseUrl}/perfil/mis-eventos-inscritos`);
+    return this.http.get<any[]>(
+      buildApiUrl('/perfil/mis-eventos-inscritos')
+    );
   }
 
   marcarComoInscrito(idEvento: number): void {
@@ -57,12 +57,14 @@ export class InscripcionService {
   sincronizarInscripciones(list: any[]): void {
     const ids = Array.isArray(list)
       ? list
-        .map(i => Number(
-          i?.idEvento ??
-          i?.evento?.idEvento ??
-          i?.evento?.id ??
-          i?.eventoId
-        ))
+        .map(i =>
+          Number(
+            i?.idEvento ??
+            i?.evento?.idEvento ??
+            i?.evento?.id ??
+            i?.eventoId
+          )
+        )
         .filter(id => !Number.isNaN(id))
       : [];
 
