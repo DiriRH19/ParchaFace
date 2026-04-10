@@ -7,7 +7,7 @@ import { environment } from '../../environments/environment';
 @Injectable({ providedIn: 'root' })
 export class NotificacionesService {
   private http = inject(HttpClient);
-  private base = '/notificaciones';
+  private base = `${environment.apiUrl}/notificaciones`;
 
   getMisNotificaciones(): Observable<Notificacion[]> {
     return this.http.get<Notificacion[]>(this.base);
