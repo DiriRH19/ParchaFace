@@ -292,17 +292,26 @@
   color: #8a6116;
 }
 
+/* =========================
+   AQUI ESTA EL ARREGLO
+   ========================= */
 .map-layout {
   display: grid;
   grid-template-columns: 390px minmax(0, 1fr);
   gap: 20px;
   align-items: stretch;
+
+  /* altura controlada para que no crezca con más eventos */
+  height: 760px;
+  min-height: 760px;
 }
 
 .events-panel {
   display: flex;
   flex-direction: column;
-  min-height: 760px;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
   border-radius: 28px;
   padding: 22px;
   background:
@@ -312,6 +321,7 @@
 
 .events-panel-header {
   margin-bottom: 18px;
+  flex-shrink: 0;
 }
 
 .events-panel-header h2 {
@@ -335,7 +345,12 @@
   display: flex;
   flex-direction: column;
   gap: 14px;
-  overflow: auto;
+
+  /* clave del scroll interno */
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
   padding-right: 4px;
 }
 
@@ -486,7 +501,8 @@
 .map-card {
   overflow: hidden;
   border-radius: 30px;
-  min-height: 760px;
+  height: 100%;
+  min-height: 0;
   background:
     radial-gradient(circle at top right, rgba(23, 50, 72, 0.08), transparent 18%),
     rgba(255, 255, 255, 0.84);
@@ -495,7 +511,7 @@
 .leaflet-map {
   width: 100%;
   height: 100%;
-  min-height: 760px;
+  min-height: 0;
 }
 
 .custom-event-marker {
@@ -511,15 +527,23 @@
 @media (max-width: 1180px) {
   .map-layout {
     grid-template-columns: 1fr;
-  }
-
-  .events-panel {
+    height: auto;
     min-height: auto;
   }
 
-  .map-card,
-  .leaflet-map {
+  .events-panel {
+    height: 520px;
+    min-height: 520px;
+  }
+
+  .map-card {
+    height: 620px;
     min-height: 620px;
+  }
+
+  .leaflet-map {
+    height: 100%;
+    min-height: 0;
   }
 
   .hero-carousel-image,
@@ -548,11 +572,18 @@
 
   .events-panel {
     padding: 18px;
+    height: 460px;
+    min-height: 460px;
   }
 
-  .map-card,
-  .leaflet-map {
+  .map-card {
+    height: 500px;
     min-height: 500px;
+  }
+
+  .leaflet-map {
+    height: 100%;
+    min-height: 0;
   }
 
   .hero-carousel-content {

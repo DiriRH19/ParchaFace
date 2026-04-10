@@ -100,7 +100,10 @@
         </div>
       </div>
 
-      <div class="events-list" *ngIf="filteredEvents.length > 0; else emptyEvents">
+      <div
+        class="events-list"
+        *ngIf="filteredEvents.length > 0; else emptyEvents"
+      >
         <article
           class="map-event-item"
           *ngFor="let evento of filteredEvents"
